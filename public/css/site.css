@@ -87,38 +87,17 @@ html[lang='bn'] .hero h1 em { font-style: normal; }
 .cta-note { margin-top: 18px; font-size: 0.88rem; color: rgb(255 255 255 / 0.55); max-width: 420px; }
 @keyframes ping { 0% { transform: scale(1); opacity: 0.7; } 70%, 100% { transform: scale(1.22, 1.5); opacity: 0; } }
 
-/* hero art: a line-drawn person with a toothache. Three.js draws it; the inline SVG is the fallback and the source. */
-.hero-stage { position: absolute; inset: 0 0 auto 0; height: 100vh; height: 100svh; z-index: 1; display: grid; place-items: center end; padding-right: clamp(16px, 6vw, 96px); pointer-events: none; }
-.person { position: relative; margin: 0; width: min(40vw, 520px); color: var(--mint-100); pointer-events: auto; cursor: pointer; text-align: center; -webkit-tap-highlight-color: transparent; animation: art-in 1.1s var(--ease) 0.15s both; }
-@keyframes art-in { from { opacity: 0; transform: translateY(18px) scale(0.98); } }
-.person-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: none; }
-.has-3d .person-canvas { display: block; }
-.has-3d .person-svg { visibility: hidden; }
-.person::before { content: ''; position: absolute; inset: 8% 4% 6%; z-index: -1; border-radius: 50%; background: radial-gradient(closest-side, rgb(45 212 191 / 0.2), transparent); transition: background 0.6s; }
-.has-3d .person::before { display: none; }
-.person-svg { width: 100%; height: auto; overflow: visible; animation: bob 6s ease-in-out infinite; }
-.person-svg path { vector-effect: non-scaling-stroke; }
-.person-svg .body path, .person-svg .head path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 1.6s ease forwards; }
-.person-svg .head path:nth-child(2) { animation-delay: 0.2s; }
-.person-svg .head path:nth-child(3) { animation-delay: 0.35s; }
-.person-svg .head path:nth-child(4), .person-svg .head path:nth-child(5) { animation-delay: 0.5s; }
-.person-svg .body path:nth-child(n+2) { animation-delay: 0.25s; }
-.person-svg .pain, .person-svg .hand, .person-svg .fx { transition: opacity 0.35s ease, transform 0.5s cubic-bezier(0.3, 1.2, 0.5, 1); }
-.person-svg .happy { opacity: 0; transition: opacity 0.4s ease 0.1s; }
-.person-svg .hand { transform-origin: 140px 330px; }
-.person-svg .fx { stroke: var(--coral); animation: zap 1.1s steps(2, end) infinite; }
-.person-svg .pain .fx { animation: none; }
-.person-svg .spark { stroke: var(--teal-400); transform-origin: 240px 250px; }
-.person-svg .happy path[stroke-dasharray] { stroke: var(--coral); }
-.person.is-happy .pain, .person.is-happy .fx, .in-call .person .pain, .in-call .person .fx { opacity: 0; animation: none; }
-.person.is-happy .hand, .in-call .person .hand { opacity: 0; transform: translate(-46px, 110px) rotate(-18deg); }
-.person.is-happy .happy, .in-call .person .happy { opacity: 1; }
-.person.is-happy .spark, .in-call .person .spark { animation: twinkle 1.6s ease-in-out infinite; }
-.art-hint { position: relative; margin-top: 6px; font-size: 0.88rem; color: rgb(255 255 255 / 0.6); }
-@keyframes draw { to { stroke-dashoffset: 0; } }
-@keyframes bob { 50% { transform: translateY(-8px); } }
-@keyframes zap { 50% { opacity: 0.25; } }
-@keyframes twinkle { 50% { opacity: 0.35; transform: scale(1.08); } }
+/* hero art: a 3D tooth fills the hero. Three.js draws it; the small tooth drawing is the fallback without WebGL. */
+.hero-stage { position: absolute; inset: 0 0 auto 0; height: 100vh; height: 100svh; z-index: 1; pointer-events: none; }
+.stage-art { position: absolute; inset: 0; margin: 0; color: var(--mint-100); animation: art-in 1.1s var(--ease) 0.15s both; }
+@keyframes art-in { from { opacity: 0; } }
+.stage-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: none; pointer-events: auto; touch-action: pan-y; -webkit-tap-highlight-color: transparent; }
+.has-3d .stage-canvas { display: block; }
+.has-3d .tooth-fallback { display: none; }
+.tooth-fallback { position: absolute; top: 50%; left: 75%; width: min(26vw, 260px); transform: translate(-50%, -50%); opacity: 0.85; }
+.art-hint { position: absolute; left: 75%; bottom: 7svh; transform: translateX(-50%); font-size: 0.88rem; color: rgb(255 255 255 / 0.6); white-space: nowrap; }
+.hero-inner { pointer-events: none; }
+.hero-inner > * { pointer-events: auto; }
 
 /* ---------- call panel and floating call button ---------- */
 .call-panel { position: fixed; z-index: 60; right: 24px; bottom: 24px; width: min(380px, calc(100vw - 24px)); padding: 20px; border-radius: 22px; color: #fff; background: rgb(7 28 36 / 0.78); border: 1px solid rgb(255 255 255 / 0.16); backdrop-filter: blur(18px) saturate(1.3); -webkit-backdrop-filter: blur(18px) saturate(1.3); box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.6); animation: rise 0.4s var(--ease); }
@@ -228,8 +207,7 @@ html[lang='bn'] .facts dt { letter-spacing: 0; text-transform: none; font-size: 
 }
 @media (max-width: 700px) {
   .hero { align-items: end; border-radius: 0 0 28px 28px; }
-  .hero-stage { place-items: start center; padding: 78px 0 0; }
-  .person { width: min(52vw, 230px); }
+  .tooth-fallback { left: 50%; top: 24%; width: min(38vw, 150px); }
   .art-hint { display: none; }
   .hero-inner { padding-top: 41svh; padding-bottom: 80px; }
   .btn-call { width: 100%; justify-content: flex-start; }
@@ -247,11 +225,9 @@ html[lang='bn'] .facts dt { letter-spacing: 0; text-transform: none; font-size: 
   .hero h1 { font-size: 2.15rem; }
   .lead { display: none; }
   .cta-row { margin-top: 24px; }
-  .person { width: 150px; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .person-svg .body path, .person-svg .head path { stroke-dashoffset: 0; }
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; transition-delay: 0s !important; }
   .reveal { opacity: 1; transform: none; }
 }

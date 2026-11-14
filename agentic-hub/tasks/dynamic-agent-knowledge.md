@@ -55,13 +55,13 @@ None.
 
 ## Subtasks
 
-- [~] 1. Contracts, decisions and epic
+- [x] 1. Contracts, decisions and epic
   - parallel: no
   - what: update `http-api` (agent prompt routes, skills payload with `kind`, `keywords` and `title_index_cap`, public site filter), `agent-tools` (`get_skill`), `data-model` (columns and the two settings keys). In `decisions.md` move the three defaults to decided if the owner confirms, drop the token estimate wording. Update `epics/knowledge.md` to match.
   - files: `agentic-hub/contracts/*`, `agentic-hub/decisions.md`, `agentic-hub/epics/knowledge.md`
   - done when: every route, tool, column and settings key in this spec is in a contract
 
-- [ ] 2. Domain: skill kind and keywords, agent prompt value object
+- [~] 2. Domain: skill kind and keywords, agent prompt value object
   - parallel: no (after 1)
   - what: `Skill` gets `kind` and `keywords` with validation. `rankSkills` uses keywords. New `AgentPrompt` value object with defaults, `{clinic}` replacement, limits and "empty means default".
   - files: `src/domain/skills/skill.js`, `src/domain/agent/agent-prompt.js`, `test/domain/skill.test.js`, `test/domain/agent-prompt.test.js`

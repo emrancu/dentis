@@ -51,30 +51,24 @@ describe('landing page copy', () => {
 });
 
 describe('static pages', () => {
-  it('the hero has the person drawing with both emotions and a canvas for the 3D version', () => {
+  it('the hero has a canvas for the 3D tooth and a static tooth as the fallback', () => {
     const html = read('index.html');
-    assert.match(html, /id="person"/);
-    assert.match(html, /class="pain"/);
-    assert.match(html, /class="happy"/);
-    assert.match(html, /<canvas class="person-canvas"/);
+    assert.match(html, /<canvas class="stage-canvas" id="stage-canvas"/);
+    assert.match(html, /class="tooth-fallback"/);
     assert.match(html, /<meta name="viewport"/);
   });
 
-  it('Three.js is loaded from a pinned version, and the morphing features are tagged in both moods', () => {
+  it('Three.js is loaded from a pinned version', () => {
     const html = read('index.html');
     assert.match(html, /three@\d+\.\d+\.\d+\/build\/three\.module\.js/);
-    for (const feature of ['brows', 'eyes', 'mouth']) assert.equal(html.split(`data-morph="${feature}"`).length - 1, 2, `${feature} must exist once in pain and once in happy`);
   });
 
-  it('the hero switches emotion by hover, tap and during a call, in CSS and in the 3D scene', () => {
-    const css = read('css/site.css');
-    const js = read('js/main.js');
-    assert.match(css, /\.person\.is-happy \.happy/);
-    assert.match(css, /\.in-call \.person \.happy/);
-    assert.match(js, /pointerenter/);
-    assert.match(js, /pointerleave/);
-    assert.match(js, /addEventListener\('click'/);
-    assert.match(js, /in-call/);
+  it('the 3D tooth cleans up on hover, tap and during a call, and spins on drag', () => {
+    const scene = read('js/hero3d.js');
+    assert.match(scene, /hover \|\| pinned \|\| active\(\)/);
+    assert.match(scene, /pointerdown/);
+    assert.match(read('js/main.js'), /in-call/);
+    assert.match(read('css/site.css'), /\.has-3d \.tooth-fallback/);
   });
 
   it('the old trust chips are gone', () => {

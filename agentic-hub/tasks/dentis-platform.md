@@ -70,7 +70,7 @@ Imagine the demo failed in front of the reviewer.
 | Someone abuses the open session endpoint | 10 sessions per IP per hour, 5-minute calls, short-lived key, API key stays on the server. |
 | Staff cannot see the call | Finish stores turns even with zero speech, status derived, portal tests cover the path. |
 | Admin key guessed | Constant-time compare, HttpOnly cookie. **No rate limit in code**: add a Cloudflare rule. |
-| WebGL missing or reduced motion | The inline SVG person is the fallback, with the same hover emotion. The 3D scene stops moving under `prefers-reduced-motion`. |
+| WebGL missing or reduced motion | A small static tooth drawing is the fallback. The 3D scene stops moving under `prefers-reduced-motion`. |
 | Re-running the seed duplicates data | Seed inserts are guarded and a test runs the seed twice. |
 | Recording fails | Best effort. A failure never affects the call. |
 

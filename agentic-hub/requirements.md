@@ -4,7 +4,7 @@ Source: `../StrategyByte_AI_Engineer_Task_Brief_14Nov.pdf`. Deadline: Mon 16 Nov
 
 | Brief | Requirement | Epic |
 |---|---|---|
-| A | Dental centre landing page with 3 or more sections, hero first, a Three.js line-drawn person with a toothache on the right of the hero whose emotion morphs to a smile on hover (3D in the hero is a plus in the brief), responsive, bilingual toggle (a plus). Main action **Book an appointment**, floating **Call Dentis** at the bottom right | [landing](epics/landing.md) |
+| A | Dental centre landing page with 3 or more sections, hero first, a Three.js 3D hero on the right (the brief asked for a person with a toothache; the owner replaced it with an interactive 3D tooth, see decisions), responsive, bilingual toggle (a plus). Main action **Book an appointment**, floating **Call Dentis** at the bottom right | [landing](epics/landing.md) |
 | B | The brief asks for a "Talk to our Bangla caller" option in the hero. Ours: **Book an appointment** (hero) and **Call Dentis** (floating), both live browser voice. Connecting, live, ended, mic and connection errors handled | [voice-call](epics/voice-call.md) |
 | C | Natural Bangla receptionist: greeting, name, phone read back, reason, date and time, booking or enquiry, out-of-scope handling, summary | [voice-agent](epics/voice-agent.md) |
 | C (ours) | Clinic knowledge ("skills") managed in admin and fetched by the agent through tool calls | [voice-agent](epics/voice-agent.md), [admin](epics/admin.md) |
