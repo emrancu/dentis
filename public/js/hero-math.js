@@ -17,42 +17,22 @@ export const easeOutBack = (t, s = 1.70158) => {
 /** Frame-rate independent smoothing toward a target (same feel at 30 and 120 fps). */
 export const damp = (current, target, rate, dt) => current + (target - current) * (1 - Math.exp(-rate * dt));
 
-/** out[i] = a[i] + (b[i] - a[i]) * t, for two flat coordinate arrays of the same length. */
-export function lerpFlat(a, b, t, out) {
-  for (let i = 0; i < a.length; i++) out[i] = a[i] + (b[i] - a[i]) * t;
-  return out;
-}
-
 /**
- * Writes a polyline (flat x,y,z,x,y,z…) as the segment pairs a fat line geometry stores:
- * segment i = [point i, point i+1]. Returns `out`.
+ * Turns a point on the unit sphere into a point on a molar crown: a wide body, four cusps on the
+ * shoulders with a dimple between them, and a slight waist towards the roots.
+ * The crown spans about x ±1.05, y -0.75..0.9, z ±0.9.
  */
-export function toSegments(flat, out) {
-  const points = flat.length / 3;
-  for (let i = 0; i < points - 1; i++) {
-    for (let k = 0; k < 3; k++) {
-      out[i * 6 + k] = flat[i * 3 + k];
-      out[i * 6 + 3 + k] = flat[(i + 1) * 3 + k];
-    }
+export function crownPoint(x, y, z) {
+  const ring = Math.hypot(x, z);
+  const angle = Math.atan2(z, x);
+  const cusps = 0.5 + 0.5 * Math.cos(4 * angle + Math.PI);
+  let height;
+  let squeeze = 1;
+  if (y >= 0) {
+    height = y * 0.5 + 0.7 * cusps * ring * ring * smoothstep(y / 0.45) * (1 - y * 0.5);
+  } else {
+    height = y * 0.75;
+    squeeze = 1 - 0.2 * -y;
   }
-  return out;
-}
-
-/** How many of `total` segments are drawn at `progress` 0..1 (the draw-on effect). */
-export const revealCount = (progress, total) => Math.max(0, Math.min(total, Math.ceil(clamp01(progress) * total)));
-
-/**
- * Which layer of the drawing a path belongs to, from the class names of the element and its ancestors.
- * Layers decide the colour, depth and how the path reacts to the mood.
- */
-export function classify(classes, { morph = null } = {}) {
-  const has = (name) => classes.includes(name);
-  if (morph) return 'morph';
-  if (has('spark')) return 'spark';
-  if (has('fx')) return 'fx';
-  if (has('hand')) return 'hand';
-  if (has('happy')) return 'happy';
-  if (has('pain')) return 'pain';
-  if (has('body')) return 'body';
-  return 'head';
+  return [x * 1.05 * squeeze, height, z * 0.9 * squeeze];
 }

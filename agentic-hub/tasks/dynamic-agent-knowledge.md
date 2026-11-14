@@ -55,7 +55,7 @@ None.
 
 ## Subtasks
 
-- [ ] 1. Contracts, decisions and epic
+- [~] 1. Contracts, decisions and epic
   - parallel: no
   - what: update `http-api` (agent prompt routes, skills payload with `kind`, `keywords` and `title_index_cap`, public site filter), `agent-tools` (`get_skill`), `data-model` (columns and the two settings keys). In `decisions.md` move the three defaults to decided if the owner confirms, drop the token estimate wording. Update `epics/knowledge.md` to match.
   - files: `agentic-hub/contracts/*`, `agentic-hub/decisions.md`, `agentic-hub/epics/knowledge.md`
