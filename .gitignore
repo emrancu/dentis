@@ -1,0 +1,8 @@
+node_modules
+.wrangler
+.dev.vars
+
+# third-party interview brief: keep out of the public repo
+StrategyByte_AI_Engineer_Task_Brief_14Nov.pdf
+.DS_Store
+.claude/settings.local.json

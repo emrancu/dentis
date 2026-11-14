@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Dentis Dental Care, Dhanmondi, Dhaka</title>
+  <meta name="description" content="Dentis Dental Care in Dhanmondi, Dhaka. Gentle, modern dentistry for the whole family.">
+  <meta name="theme-color" content="#071c24">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/css/site.css">
+  <script type="importmap">
+  { "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  } }
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="site-header" id="header">
+    <a class="brand" href="#top" aria-label="Dentis Dental Care">
+      <img src="/logo-mark.svg" alt="" width="34" height="34">
+      <span class="brand-name">Dentis</span>
+    </a>
+    <nav class="nav" id="nav" aria-label="Main">
+      <a href="#services" data-i18n="nav.services">Services</a>
+      <a href="#visit-steps" data-i18n="nav.how">Your first visit</a>
+      <a href="#doctors" data-i18n="nav.doctors">Our dentists</a>
+      <a href="#visit" data-i18n="nav.visit">Visit us</a>
+    </nav>
+    <button class="btn-book" type="button" data-start-booking data-i18n="nav.book">Book appointment</button>
+    <button class="lang-btn" id="lang-btn" type="button" data-i18n="lang.switch" lang="bn">বাংলা</button>
+    <button class="menu-btn" id="menu-btn" type="button" aria-expanded="false" aria-controls="nav" data-i18n-aria="nav.menu" aria-label="Menu"><span></span><span></span></button>
+  </header>
+
+  <main id="main">
+    <!-- 1. Hero -->
+    <section class="hero" id="top">
+      <div class="hero-stage">
+        <figure class="person" id="person" aria-hidden="true">
+          <svg class="person-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 520" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <g class="body">
+              <path pathLength="1" d="M60 520C70 462 140 432 205 420"/>
+              <path pathLength="1" d="M420 520C410 462 340 432 275 420"/>
+              <path pathLength="1" d="M205 372V422M275 372V422"/>
+              <path pathLength="1" d="M205 422C225 444 255 444 275 422"/>
+            </g>
+            <g class="head">
+              <path pathLength="1" d="M240 122C318 122 354 186 350 256C346 330 300 386 240 386C180 386 134 330 130 256C126 186 162 122 240 122Z"/>
+              <path pathLength="1" d="M132 236C124 150 188 98 252 106C318 112 358 162 350 236"/>
+              <path pathLength="1" d="M152 178C196 152 262 142 334 174"/>
+              <path pathLength="1" d="M130 256C110 250 108 286 132 292M350 256C370 250 372 286 348 292"/>
+              <path pathLength="1" d="M240 262C236 286 230 298 248 300"/>
+            </g>
+            <g class="pain">
+              <path data-morph="brows" d="M174 214L214 230M306 214L266 230"/>
+              <path data-morph="eyes" d="M178 252L212 252M268 252L302 252"/>
+              <path d="M180 246L192 252L180 258M300 246L288 252L300 258"/>
+              <path data-morph="mouth" d="M204 336Q216 322 228 336T252 336T276 332"/>
+              <path class="swell" d="M158 300C152 322 164 346 188 350" stroke-dasharray="3 7"/>
+              <path class="fx" d="M338 160Q348 178 338 190Q328 178 338 160Z"/>
+            </g>
+            <g class="hand">
+              <path d="M116 344C104 312 126 282 158 290C186 298 192 336 178 354C166 370 128 374 116 344Z"/>
+              <path d="M138 302C146 314 146 324 142 334M154 298C162 312 162 324 158 336M170 304C176 316 176 326 172 336"/>
+              <path d="M116 344C108 384 118 430 134 474M178 354C184 396 198 440 218 474"/>
+            </g>
+            <g class="fx zap">
+              <path d="M112 290L94 280L108 272L90 258"/>
+              <path d="M104 318L82 318M112 346L92 358"/>
+            </g>
+            <g class="happy">
+              <path data-morph="brows" d="M174 224Q194 210 214 224M266 224Q286 210 306 224"/>
+              <path data-morph="eyes" d="M178 254Q195 234 212 254M268 254Q285 234 302 254"/>
+              <path data-morph="mouth" d="M188 314Q240 372 292 314"/>
+              <path d="M200 322Q240 356 280 322"/>
+              <path d="M160 296h22M298 296h22" stroke-dasharray="2 7"/>
+              <g class="spark">
+                <path d="M388 150l5 14 14 5-14 5-5 14-5-14-14-5 14-5Z"/>
+                <path d="M96 196l4 10 10 4-10 4-4 10-4-10-10-4 10-4Z"/>
+                <path d="M404 300l3 8 8 3-8 3-3 8-3-8-8-3 8-3Z"/>
+              </g>
+            </g>
+          </svg>
+          <canvas class="person-canvas" id="person-canvas"></canvas>
+          <figcaption class="art-hint" data-i18n="art.hint">Toothache? Hover or tap to see how we help.</figcaption>
+        </figure>
+      </div>
+
+      <div class="hero-inner">
+        <p class="eyebrow" data-i18n="hero.eyebrow">Dental care in Dhanmondi, Dhaka</p>
+        <h1 data-i18n-html="hero.title">Healthy teeth, <em>confident smiles</em>.</h1>
+        <p class="lead" data-i18n="hero.lead">Gentle, modern dentistry for the whole family.</p>
+        <div class="cta-row">
+          <button class="btn-call" id="book-btn" type="button" data-start-booking>
+            <span class="btn-call-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3"/><path d="M8 2.5v4M16 2.5v4M3 10h18M9 15l2 2 4-4"/></svg>
+            </span>
+            <span data-i18n="cta.book">Book an appointment</span>
+          </button>
+          <a class="btn-ghost" href="#services" data-i18n="cta.services">Our services</a>
+        </div>
+        <p class="cta-note" data-i18n="cta.note">Book by voice in Bangla or English. Calls are recorded for the clinic team.</p>
+      </div>
+
+      <aside class="call-panel" id="call-panel" data-state="idle" hidden role="dialog" aria-modal="false" data-i18n-aria="call.aria" aria-label="Call with the Bangla receptionist">
+        <div class="call-head">
+          <span class="call-dot" aria-hidden="true"></span>
+          <strong class="call-status" id="call-status" aria-live="polite"></strong>
+          <span class="call-timer" id="call-timer" aria-hidden="true">0:00</span>
+        </div>
+        <div class="call-body when-active">
+          <p class="call-caption" id="call-caption" lang="bn" aria-live="polite"></p>
+          <div class="wave" id="wave" aria-hidden="true"></div>
+          <div class="call-actions">
+            <button type="button" class="ctl" id="mute-btn" aria-pressed="false" data-i18n="call.mute">Mute</button>
+            <button type="button" class="ctl ctl-end" id="end-btn" data-i18n="call.end">End call</button>
+          </div>
+        </div>
+        <div class="call-body when-ended">
+          <h2 class="call-title" data-i18n="call.done.title">Thank you for calling Dentis</h2>
+          <p data-i18n="call.done.text">Your details were saved.</p>
+          <div class="call-actions">
+            <button type="button" class="ctl ctl-primary" data-restart data-i18n="call.again">Call again</button>
+            <a class="ctl" href="/admin/" target="_blank" rel="noopener" data-i18n="call.portal">See it in the staff portal</a>
+          </div>
+        </div>
+        <div class="call-body when-error">
+          <p class="call-error" id="call-error" role="alert"></p>
+          <div class="call-actions">
+            <button type="button" class="ctl ctl-primary" data-restart data-i18n="call.retry">Try again</button>
+            <button type="button" class="ctl" data-close data-i18n="call.close">Close</button>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- 2. Services (live from the admin's skills) -->
+    <section class="section" id="services">
+      <div class="wrap">
+        <header class="section-head reveal">
+          <p class="kicker" data-i18n="services.eyebrow">Our services</p>
+          <h2 data-i18n="services.title">Care for every stage of your smile</h2>
+          <p data-i18n="services.sub">Routine care, restorative work and cosmetic treatment, with fees explained before we begin.</p>
+        </header>
+        <div class="cards" id="services-list" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- 3. Your first visit -->
+    <section class="section section-tint" id="visit-steps">
+      <div class="wrap">
+        <header class="section-head reveal">
+          <p class="kicker" data-i18n="how.eyebrow">Your first visit</p>
+          <h2 data-i18n="how.title">What to expect</h2>
+          <p data-i18n="how.sub">No surprises. Here is how a visit with us works.</p>
+        </header>
+        <ol class="steps">
+          <li class="step reveal" style="--i:0"><span class="step-n">1</span><h3 data-i18n="how.1.t">Tell us what is bothering you</h3><p data-i18n="how.1.d"></p></li>
+          <li class="step reveal" style="--i:1"><span class="step-n">2</span><h3 data-i18n="how.2.t">A careful check-up</h3><p data-i18n="how.2.d"></p></li>
+          <li class="step reveal" style="--i:2"><span class="step-n">3</span><h3 data-i18n="how.3.t">A clear plan and a clear price</h3><p data-i18n="how.3.d"></p></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- 4. Why Dentis -->
+    <section class="section" id="why">
+      <div class="wrap">
+        <header class="section-head reveal">
+          <p class="kicker" data-i18n="why.eyebrow">Why Dentis</p>
+          <h2 data-i18n="why.title">Dentistry that respects your time and your trust</h2>
+        </header>
+        <div class="features">
+          <article class="feature reveal" style="--i:0"><h3 data-i18n="why.1.t">Fees explained first</h3><p data-i18n="why.1.d"></p></article>
+          <article class="feature reveal" style="--i:1"><h3 data-i18n="why.2.t">Gentle, unhurried care</h3><p data-i18n="why.2.d"></p></article>
+          <article class="feature reveal" style="--i:2"><h3 data-i18n="why.3.t">Specialists under one roof</h3><p data-i18n="why.3.d"></p></article>
+          <article class="feature reveal" style="--i:3"><h3 data-i18n="why.4.t">Easy to book</h3><p data-i18n="why.4.d"></p></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Dentists (live) -->
+    <section class="section section-tint" id="doctors">
+      <div class="wrap">
+        <header class="section-head reveal">
+          <p class="kicker" data-i18n="doctors.eyebrow">Our dentists</p>
+          <h2 data-i18n="doctors.title">Meet the team</h2>
+          <p data-i18n="doctors.sub">Dentists who explain before they treat.</p>
+        </header>
+        <div class="doctors" id="doctors-list"></div>
+      </div>
+    </section>
+
+    <!-- 6. Visit (live) -->
+    <section class="section" id="visit">
+      <div class="wrap visit">
+        <div class="reveal">
+          <p class="kicker" data-i18n="visit.eyebrow">Visit us</p>
+          <h2 data-i18n="visit.title">Find us in Dhanmondi</h2>
+          <dl class="facts" id="visit-facts"></dl>
+          <div class="cta-row">
+            <button class="btn-call btn-call-light" type="button" data-start-booking><span data-i18n="visit.cta">Book an appointment</span></button>
+            <button class="btn-outline" type="button" data-start-call data-i18n="visit.call">Call Dentis</button>
+          </div>
+        </div>
+        <div class="visit-art reveal" aria-hidden="true"><img src="/logo-mark.svg" alt="" width="180" height="180"></div>
+      </div>
+    </section>
+  </main>
+
+  <button class="fab" id="fab-call" type="button" data-i18n-aria="fab.aria" aria-label="Call Dentis and talk to the receptionist">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg>
+    <span class="fab-label" data-i18n="fab.label">Call Dentis</span>
+  </button>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div>
+        <img src="/logo.svg" alt="Dentis Dental Care" width="150" height="41">
+        <p class="footer-tag" data-i18n="footer.tag">Gentle, modern dentistry for the whole family.</p>
+      </div>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="#services" data-i18n="nav.services">Services</a>
+        <a href="#visit-steps" data-i18n="nav.how">Your first visit</a>
+        <a href="#doctors" data-i18n="nav.doctors">Our dentists</a>
+        <a href="#visit" data-i18n="nav.visit">Visit us</a>
+      </nav>
+      <div class="footer-contact" id="footer-contact"></div>
+    </div>
+    <div class="wrap footer-base">
+      <p data-i18n="footer.line">© Dentis Dental Care. A demo clinic with sample data.</p>
+      <a href="/admin/" data-i18n="footer.staff">Staff portal</a>
+    </div>
+  </footer>
+
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>

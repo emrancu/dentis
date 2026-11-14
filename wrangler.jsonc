@@ -1,0 +1,18 @@
+{
+  "name": "dentis",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"],
+    "html_handling": "auto-trailing-slash"
+  },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "dentis", "database_id": "REPLACE_WITH_ID_FROM_wrangler_d1_create" }
+  ],
+  "r2_buckets": [
+    { "binding": "RECORDINGS", "bucket_name": "dentis-recordings" }
+  ],
+  "observability": { "enabled": true }
+}

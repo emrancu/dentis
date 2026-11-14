@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 232 64" role="img" aria-label="Dentis Dental Care">
+  <defs>
+    <linearGradient id="d-body" x1="14" y1="4" x2="52" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2DD4BF"/>
+      <stop offset="1" stop-color="#0E7490"/>
+    </linearGradient>
+    <linearGradient id="d-shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#d-body)" d="M32 9.5c-5.2-3.6-13.4-4.6-18.2 0-4.6 4.4-4.2 11.4-2.4 17.4 1.8 6 .6 10.6 1.8 17.4 1 6 3 11.2 6.6 11.2 4.2 0 4.2-9.2 6.6-14.6.8-1.8 2.4-3 3.6-3s2.8 1.2 3.6 3c2.4 5.4 2.4 14.6 6.6 14.6 3.6 0 5.6-5.2 6.6-11.2 1.2-6.8 0-11.4 1.8-17.4 1.8-6 2.2-13-2.4-17.4-4.8-4.6-13-3.6-18.2 0Z"/>
+  <path fill="url(#d-shine)" d="M32 12c-4.4-2.6-10.6-3.2-14 .4-2.8 3-2.4 7.6-1.2 11.4 3.4-5 9.4-7.6 15.2-7.6Z"/>
+  <path d="M21.5 31.5c3 4.2 6.4 6 10.5 6s7.5-1.8 10.5-6" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/>
+  <path fill="#FF8A66" d="M53 5.5l1.5 4.5 4.5 1.5-4.5 1.5-1.5 4.5-1.5-4.5-4.5-1.5 4.5-1.5Z"/>
+  <text x="76" y="40" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="34" font-weight="600" letter-spacing="-0.5" fill="#0B1F2A">Dentis</text>
+  <text x="77" y="55" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="9.5" font-weight="600" letter-spacing="3.2" fill="#0E7490">DENTAL CARE</text>
+</svg>
