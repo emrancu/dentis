@@ -29,7 +29,7 @@ export function crownPoint(x, y, z) {
   let height;
   let squeeze = 1;
   if (y >= 0) {
-    height = y * 0.5 + 0.7 * cusps * ring * ring * smoothstep(y / 0.45) * (1 - y * 0.5);
+    height = y * 0.58 + 0.6 * cusps * ring * ring * smoothstep(y / 0.6) * (1 - y * 0.5);
   } else {
     height = y * 0.75;
     squeeze = 1 - 0.2 * -y;

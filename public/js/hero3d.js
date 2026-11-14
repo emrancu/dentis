@@ -164,14 +164,14 @@ export function startHero(canvas, active) {
   placement.add(glow);
 
   const rings = [
-    { radius: 2.15, tilt: [1.15, 0.2], speed: 0.45, gem: TEAL, size: 0.1 },
-    { radius: 2.5, tilt: [-0.55, 1.0], speed: -0.3, gem: 0xd9f7f0, size: 0.075 },
+    { radius: 2.15, tilt: [1.15, 0.2], speed: 0.45, color: TEAL, size: 0.1 },
+    { radius: 2.5, tilt: [-0.55, 1.0], speed: -0.3, color: 0xd9f7f0, size: 0.075 },
   ].map((r, i) => {
     const group = new THREE.Group();
     group.rotation.set(r.tilt[0], r.tilt[1], 0);
     const ring = new THREE.Mesh(new THREE.TorusGeometry(r.radius, 0.007, 8, 200), new THREE.MeshBasicMaterial({ color: TEAL, transparent: true, opacity: 0.4 }));
     const pivot = new THREE.Group();
-    const gem = new THREE.Mesh(new THREE.OctahedronGeometry(r.size), new THREE.MeshBasicMaterial({ color: r.gem }));
+    const gem = new THREE.Mesh(new THREE.OctahedronGeometry(r.size), new THREE.MeshBasicMaterial({ color: r.color }));
     gem.position.x = r.radius;
     pivot.add(gem);
     pivot.rotation.z = i * 2;

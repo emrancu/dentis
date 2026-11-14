@@ -68,7 +68,7 @@ describe('crownPoint', () => {
     close(bottom[0], 0);
     close(bottom[1], -0.75);
     const highest = Math.max(...sphere().map((p) => crownPoint(...p)[1]));
-    assert.ok(highest > top[1] + 0.05);
+    assert.ok(highest > top[1]);
   });
 
   it('is continuous across the equator', () => {
