@@ -7,6 +7,15 @@ A dental centre website: the hero's main action is **Book an appointment** (book
 - **Admin:** access-key login. Staff manage the agent's knowledge ("skills"), doctors and the clinic profile, and read every call.
 - **Code:** domain-driven layers, tested. Rules, decisions and contracts live in [`agentic-hub/`](agentic-hub/README.md). Agents read [`CLAUDE.md`](CLAUDE.md).
 
+## Admin: the agent's prompt and knowledge
+
+Everything the agent says and knows is edited in `/admin`, with no deploy. The next call uses it.
+
+- **Agent prompt:** edit the persona and tone (`Instructions`) and the `Greeting`. Write `{clinic}` where the clinic name goes. **Show final prompt** previews the whole prompt for unsaved text, and **Reset to default** restores the built-in text. The booking steps, tool rules, "facts only from tools" and safety rules are **locked in code**. They always come after your text and win over it, so they cannot be edited away.
+- **Agent knowledge:** each entry has a type (**Service**, **FAQ** or **Policy**), a title, a description, the details the agent will say, and keywords (other words callers use, in Bangla and English). Only **services** show on the website.
+- **How the agent finds an entry:** it is shown the titles of enabled entries (never the details), up to 40. It fetches one by exact title with `get_skill`, or searches with `lookup_skill` by the caller's own words. Past 40 entries the list is left out and the agent only searches. The page shows "N of 40 titles in the agent's index".
+- **Retrieval is tested:** `test/application/retrieval-eval.test.js` runs 32 Bangla and English phrasings through the real seed and ranking. The expected entry must be in the top 3 for at least 90 percent (today 32 of 32; 29 of 32 are first).
+
 ## How a call works
 
 ```
@@ -18,7 +27,7 @@ Browser ──POST /api/session {intent}──▶ StartCall: new call row, promp
    └─ PUT /api/calls/:id/recording ─▶ R2
 ```
 
-**Agent tools** (see [contract](agentic-hub/contracts/agent-tools.md)): `get_clinic_info`, `list_doctors`, `list_skills`, `lookup_skill`, `check_availability`, `book_appointment`, `reschedule_appointment`, `cancel_appointment`, `save_patient_details`, `request_human_callback`, `get_current_datetime`, `end_call`. Facts such as fees, hours and slots come only from these tools. Editing a skill in `/admin` changes the next call, with no deploy.
+**Agent tools** (see [contract](agentic-hub/contracts/agent-tools.md)): `get_clinic_info`, `list_doctors`, `list_skills`, `get_skill`, `lookup_skill`, `check_availability`, `book_appointment`, `reschedule_appointment`, `cancel_appointment`, `save_patient_details`, `request_human_callback`, `get_current_datetime`, `end_call`. Facts such as fees, hours and slots come only from these tools. Editing a skill in `/admin` changes the next call, with no deploy.
 
 **Data model** ([contract](agentic-hub/contracts/data-model.md)): `calls`, `call_extractions`, `transcript_turns`, `patients`, `appointments`, `callbacks`, `skills`, `doctors`, `settings`. Validation lives in the domain: Bangladeshi mobile numbers (Bangla digits and `+880` accepted), real future dates within 60 days, doctor hours, one active booking per doctor and slot (also a unique index). After a call a small model adds an English summary and translation and fills gaps in the extraction. It never overrides what the tools captured.
 
@@ -30,7 +39,7 @@ cp .dev.vars.example .dev.vars        # put your OPENAI_API_KEY and an ADMIN_ACC
 npm run db:init:local                 # apply migrations (tracked): schema + Dentis demo clinic + knowledge
 npm run db:samples:local              # optional: 4 invented sample calls from seed/
 npm run dev                           # http://localhost:8787  (admin: /admin)
-npm test                              # 273 tests, no setup needed
+npm test                              # 341 tests, no setup needed
 ```
 
 ## Deploy
@@ -64,13 +73,14 @@ agentic-hub/         requirements, principles, epics, contracts, task commands
 
 ## Tests
 
-`npm test` runs 273 tests with Node's built-in runner:
+`npm test` runs 341 tests with Node's built-in runner:
 
 | Folder | What it proves |
 |---|---|
-| `test/domain` | phone, slot, availability, call status, skill ranking rules |
+| `test/domain` | phone, slot, availability, call status, skill ranking (keywords, Bangla word endings), agent prompt rules |
 | `test/application` | every use case and every agent tool (success and failure paths) with in-memory ports |
 | `test/infrastructure` | the **real SQL and migrations** (via a `node:sqlite` stand-in for D1), OpenAI request shapes, HMAC |
+| `test/application/retrieval-eval.test.js` | Bangla and English questions find the right knowledge entry (top 3 for at least 90 percent) |
 | `test/interface` | the whole HTTP API end to end: sessions, tools, finish, recording, admin auth, CRUD |
 | `test/frontend` | transcript building from Realtime events, copy completeness in both languages, formatters |
 | `test/architecture.test.js` | layers only import inward (fails on a bad import) |

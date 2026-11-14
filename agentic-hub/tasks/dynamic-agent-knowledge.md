@@ -97,13 +97,13 @@ None.
   - files: `test/application/retrieval-eval.test.js`
   - done when: at least 90 percent have the expected skill in the top 3. If not, improve keywords or ranking, never lower the target quietly
 
-- [~] 8. Docs
+- [x] 8. Docs
   - parallel: no (after 6, 7)
   - what: README sections on the editable prompt and knowledge kinds, and the layout and test counts.
   - files: `README.md`, `CLAUDE.md` if conventions changed
   - done when: README matches what was built
 
-- [ ] 9. Premortem & spec re-evaluation
+- [~] 9. Premortem & spec re-evaluation
   - parallel: no (after all above)
   - premortem: <to fill when this subtask runs: imagine staff edited the prompt and the agent got worse or unsafe, an FAQ answer is wrong or missing, or a skill edit does not reach the call>
   - spec changes: <what changed in spec and contracts>
