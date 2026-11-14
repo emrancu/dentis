@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { Skill, rankSkills } from '../../src/domain/skills/skill.js';
+import { SKILL_KINDS, Skill, TITLE_INDEX_CAP, rankSkills, sameTitle, titleIndex } from '../../src/domain/skills/skill.js';
 
-const skill = (title, description, content = '', enabled = true) => new Skill({ id: title, title, description, content, enabled });
+const skill = (title, description, content = '', enabled = true, extra = {}) => new Skill({ id: title, title, description, content, enabled, ...extra });
 
 describe('Skill', () => {
   it('trims and defaults', () => {
@@ -19,7 +19,80 @@ describe('Skill', () => {
   });
 });
 
+describe('Skill kind and keywords', () => {
+  it('defaults to a service with no keywords', () => {
+    const s = new Skill({ title: 'Whitening', description: 'Brighter' });
+    assert.deepEqual([s.kind, s.keywords], ['service', '']);
+  });
+
+  it('accepts every kind and rejects others', () => {
+    for (const kind of SKILL_KINDS) assert.equal(skill('Title', 'ok', '', true, { kind }).kind, kind);
+    assert.throws(() => skill('Title', 'ok', '', true, { kind: 'blog' }), (e) => e.code === 'skill_kind_invalid');
+  });
+
+  it('trims keywords and limits them to 300 characters', () => {
+    assert.equal(skill('Title', 'ok', '', true, { keywords: '  a, b  ' }).keywords, 'a, b');
+    assert.throws(() => skill('Title', 'ok', '', true, { keywords: 'k'.repeat(301) }), (e) => e.code === 'skill_keywords_too_long');
+  });
+
+  it('compares titles ignoring case and spaces', () => {
+    assert.equal(sameTitle(' Root Canal ', 'root canal'), true);
+    assert.equal(sameTitle('Root canal', 'Fillings'), false);
+    assert.equal(sameTitle(null, ''), true);
+  });
+});
+
+describe('titleIndex', () => {
+  const many = (n, enabled = true) => Array.from({ length: n }, (_, i) => skill(`Skill ${String(i).padStart(3, '0')}`, 'ok', '', enabled));
+
+  it('lists enabled titles sorted', () => {
+    const r = titleIndex([skill('Zeta', 'ok'), skill('Alpha', 'ok'), skill('Hidden', 'ok', '', false)]);
+    assert.deepEqual(r, { overCap: false, titles: ['Alpha', 'Zeta'] });
+  });
+
+  it('lists up to the cap and drops the list past it', () => {
+    assert.equal(titleIndex(many(TITLE_INDEX_CAP)).overCap, false);
+    assert.equal(titleIndex(many(TITLE_INDEX_CAP)).titles.length, TITLE_INDEX_CAP);
+    assert.deepEqual(titleIndex(many(TITLE_INDEX_CAP + 1)), { overCap: true, titles: [] });
+  });
+
+  it('does not count disabled skills toward the cap', () => {
+    assert.equal(titleIndex([...many(TITLE_INDEX_CAP), ...many(10, false)]).overCap, false);
+  });
+
+  it('has a cap of 40', () => {
+    assert.equal(TITLE_INDEX_CAP, 40);
+  });
+});
+
 describe('rankSkills', () => {
+  it('finds a skill by its keywords, in Bangla and English', () => {
+    const list = [
+      skill('Tooth extraction', 'Removal of teeth', 'Fee 1000', true, { keywords: 'wisdom, দাঁত তোলা, আক্কেল দাঁত' }),
+      skill('Fillings', 'Cavity repair', 'Fee 1200', true, { keywords: 'ফিলিং, গর্ত' }),
+    ];
+    assert.equal(rankSkills(list, 'আক্কেল দাঁত')[0].title, 'Tooth extraction');
+    assert.equal(rankSkills(list, 'গর্ত হয়েছে')[0].title, 'Fillings');
+    assert.equal(rankSkills(list, 'wisdom')[0].title, 'Tooth extraction');
+  });
+
+  it('weights a keyword above the description and below the title', () => {
+    const inTitle = skill('Braces', 'x1', '', true);
+    const inKeywords = skill('Alignment', 'x2', '', true, { keywords: 'braces' });
+    const inDescription = skill('Orthodontics', 'About braces', '', true);
+    assert.deepEqual(rankSkills([inDescription, inKeywords, inTitle], 'braces').map((s) => s.title), ['Braces', 'Alignment', 'Orthodontics']);
+  });
+
+  it('ignores filler words that say nothing about the topic', () => {
+    const list = [skill('Parking', 'Where to park', 'Behind the building'), skill('Fees', 'What it costs', 'how much is the visit')];
+    assert.equal(rankSkills(list, 'how much for the visit')[0].title, 'Fees');
+    assert.deepEqual(rankSkills(list, 'how much do you for the'), []);
+    assert.deepEqual(rankSkills(list, 'কত কি আছে'), []);
+  });
+
+});
+
+describe('rankSkills (basics)', () => {
   const all = [
     skill('Scaling and polishing', 'Teeth cleaning', 'Fee 1500 taka'),
     skill('Root canal treatment', 'Saves an infected tooth', 'Fee 6000 taka'),

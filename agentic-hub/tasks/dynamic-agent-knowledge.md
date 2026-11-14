@@ -61,19 +61,19 @@ None.
   - files: `agentic-hub/contracts/*`, `agentic-hub/decisions.md`, `agentic-hub/epics/knowledge.md`
   - done when: every route, tool, column and settings key in this spec is in a contract
 
-- [~] 2. Domain: skill kind and keywords, agent prompt value object
+- [x] 2. Domain: skill kind and keywords, agent prompt value object
   - parallel: no (after 1)
   - what: `Skill` gets `kind` and `keywords` with validation. `rankSkills` uses keywords. New `AgentPrompt` value object with defaults, `{clinic}` replacement, limits and "empty means default".
   - files: `src/domain/skills/skill.js`, `src/domain/agent/agent-prompt.js`, `test/domain/skill.test.js`, `test/domain/agent-prompt.test.js`
   - done when: domain tests cover validation, keyword ranking, defaults, placeholder and limits
 
-- [ ] 3. Migration and D1 repository
+- [~] 3. Migration and D1 repository
   - parallel: yes (after 2)
   - what: `0004_knowledge.sql` adds `kind` and `keywords`, sets demo keywords, adds demo FAQ and policy entries. D1 skill repository reads and writes the new columns. The sqlite test helper applies `0004`.
   - files: `migrations/0004_knowledge.sql`, `src/infrastructure/d1/*`, `test/support/sqlite-d1.js`, `test/infrastructure/d1-repositories.test.js`
   - done when: the real SQL round-trips the new fields and the seed loads with keywords
 
-- [ ] 4. Application: agent settings, prompt builder, `get_skill`
+- [~] 4. Application: agent settings, prompt builder, `get_skill`
   - parallel: yes (after 2)
   - what: `AgentSettings` service (get with defaults, update, preview). `buildInstructions` takes the `AgentPrompt`, applies the title cap and the closing rule line. `StartCall` reads the settings. New `get_skill` tool, its definition and executor handler. `lookup_skill` uses keywords. `GetPublicSite` returns services only. Skill catalog accepts `kind` and `keywords`, rejects duplicate titles.
   - files: `src/application/agent/*`, `src/application/knowledge.js`, `src/application/clinic.js`, `src/application/call-records.js`, `src/composition.js`, `test/application/*`, `test/support/in-memory.js`

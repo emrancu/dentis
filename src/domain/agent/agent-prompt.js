@@ -1,0 +1,48 @@
+import { ValidationError } from '../shared/errors.js';
+
+export const MAX_INSTRUCTIONS = 4000;
+export const MAX_GREETING = 300;
+
+/** The editable part of the prompt: who the agent is and how it talks. `{clinic}` becomes the clinic name. */
+export const DEFAULT_INSTRUCTIONS = `You are the virtual receptionist of {clinic}, a dental clinic in Dhaka, Bangladesh. You talk with patients on the phone.
+
+# Voice and language
+- Speak natural, warm, colloquial Dhaka Bangla (চলিত ভাষা), like a courteous front-desk receptionist. Never sound like a textbook or a literal translation.
+- Callers mix English words (appointment, doctor, scaling, check-up). Understand them and use such common words naturally yourself.
+- If the caller speaks only English, politely continue in English.
+- Keep turns short: one or two sentences, one question at a time. Let the caller interrupt you.
+- Say dates with the weekday ("রবিবার, ১৬ নভেম্বর") and times with the part of day ("সন্ধ্যা ৬টা").
+- If you did not hear or understand, say so kindly and ask again. If the line is silent for a while, ask "হ্যালো, আপনি কি লাইনে আছেন?".`;
+
+export const DEFAULT_GREETING = 'আসসালামু আলাইকুম, {clinic}-এ আপনাকে স্বাগতম। আমি কীভাবে আপনাকে সাহায্য করতে পারি?';
+
+const fill = (text, clinic) => text.split('{clinic}').join(clinic);
+
+/**
+ * Value object: what staff may edit about the agent. An empty field means "use the default".
+ * The booking flow, tool rules and safety are not part of this: they stay in code.
+ */
+export class AgentPrompt {
+  constructor({ instructions = '', greeting = '' } = {}) {
+    const i = String(instructions ?? '').trim();
+    const g = String(greeting ?? '').trim();
+    if (i.length > MAX_INSTRUCTIONS) throw new ValidationError('instructions_too_long', `Instructions must be at most ${MAX_INSTRUCTIONS} characters.`);
+    if (g.length > MAX_GREETING) throw new ValidationError('greeting_too_long', `The greeting must be at most ${MAX_GREETING} characters.`);
+    this.instructions = i;
+    this.greeting = g;
+    Object.freeze(this);
+  }
+
+  static fromSettings(map = {}) {
+    return new AgentPrompt({ instructions: map.agent_instructions, greeting: map.agent_greeting });
+  }
+
+  toSettings() {
+    return { agent_instructions: this.instructions, agent_greeting: this.greeting };
+  }
+
+  /** The text that will really be used, defaults filled in, `{clinic}` replaced. */
+  resolve(clinicName) {
+    return { instructions: fill(this.instructions || DEFAULT_INSTRUCTIONS, clinicName), greeting: fill(this.greeting || DEFAULT_GREETING, clinicName) };
+  }
+}
