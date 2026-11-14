@@ -38,22 +38,29 @@ export function titleIndex(skills, cap = TITLE_INDEX_CAP) {
 const STOPWORDS = new Set(['the', 'is', 'do', 'you', 'for', 'my', 'to', 'of', 'can', 'how', 'much', 'what', 'does', 'are', 'and', 'have', 'কত', 'কি', 'কী', 'আমি', 'আমার', 'আছে', 'হয়', 'করে', 'করতে', 'চাই', 'আপনাদের', 'কোথায়']);
 const tokenize = (s) => String(s ?? '').toLowerCase().split(/[^\p{L}\p{M}\p{N}]+/u).filter((x) => x.length >= 2 && !STOPWORDS.has(x));
 
+/**
+ * Does the field mention the query word? Besides a plain substring match, a query word that starts with a
+ * word of the field counts too, so Bangla endings still match: "তোলার" finds "তোলা", "বাচ্চাদের" finds "বাচ্চা".
+ */
+const mentions = (text, words, token) => text.includes(token) || words.some((w) => w.length >= 3 && token.startsWith(w));
+
 /** Domain service: rank enabled skills against a free-text query (Bangla or English). */
 export function rankSkills(skills, query, limit = 3) {
   const q = String(query ?? '').trim().toLowerCase();
   const tokens = tokenize(q);
   if (!tokens.length) return [];
   const scored = skills.filter((s) => s.enabled).map((s) => {
-    const title = s.title.toLowerCase();
-    const words = s.keywords.toLowerCase();
-    const desc = s.description.toLowerCase();
-    const body = s.content.toLowerCase();
-    let score = (title.includes(q) ? 10 : 0) + (words.includes(q) ? 8 : 0);
+    const fields = [s.title, s.keywords, s.description, s.content].map((f) => {
+      const text = f.toLowerCase();
+      return { text, words: tokenize(text) };
+    });
+    const [title, words, desc, body] = fields;
+    let score = (title.text.includes(q) ? 10 : 0) + (words.text.includes(q) ? 8 : 0);
     for (const t of tokens) {
-      if (title.includes(t)) score += 5;
-      if (words.includes(t)) score += 4;
-      if (desc.includes(t)) score += 3;
-      if (body.includes(t)) score += 1;
+      if (mentions(title.text, title.words, t)) score += 5;
+      if (mentions(words.text, words.words, t)) score += 4;
+      if (mentions(desc.text, desc.words, t)) score += 3;
+      if (mentions(body.text, body.words, t)) score += 1;
     }
     return { skill: s, score };
   });

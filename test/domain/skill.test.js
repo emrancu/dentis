@@ -76,6 +76,22 @@ describe('rankSkills', () => {
     assert.equal(rankSkills(list, 'wisdom')[0].title, 'Tooth extraction');
   });
 
+  it('matches Bangla words that carry an ending: the field has the stem, the caller says the inflected form', () => {
+    const list = [
+      skill('Tooth extraction', 'Removal of teeth', '', true, { keywords: 'দাঁত তোলা' }),
+      skill('Treating children', 'Kids', '', true, { keywords: 'শিশু, বাচ্চা' }),
+      skill('Parking', 'Where to park', '', true, { keywords: 'গাড়ি' }),
+    ];
+    assert.equal(rankSkills(list, 'তোলার পর')[0].title, 'Tooth extraction');
+    assert.equal(rankSkills(list, 'বাচ্চাদের দেখেন')[0].title, 'Treating children');
+    assert.equal(rankSkills(list, 'গাড়িতে এসেছি')[0].title, 'Parking');
+  });
+
+  it('does not treat very short field words as stems', () => {
+    const list = [skill('Parking', 'Where to park', '', true, { keywords: 'গা' })];
+    assert.deepEqual(rankSkills(list, 'গাড়িতে'), []);
+  });
+
   it('weights a keyword above the description and below the title', () => {
     const inTitle = skill('Braces', 'x1', '', true);
     const inKeywords = skill('Alignment', 'x2', '', true, { keywords: 'braces' });

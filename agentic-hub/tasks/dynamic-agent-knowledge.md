@@ -91,13 +91,13 @@ None.
   - files: `public/admin/admin.js`, `public/admin/admin.css`
   - done when: a screenshot check at desktop and phone width shows both pages with their empty, saved, error and over-cap states, and a manual run edits the prompt and a skill against `wrangler dev`
 
-- [~] 7. Retrieval eval
+- [x] 7. Retrieval eval
   - parallel: no (after 3, 4)
   - what: about 30 Bangla and English questions mapped to expected skills, run through the real seed and ranking.
   - files: `test/application/retrieval-eval.test.js`
   - done when: at least 90 percent have the expected skill in the top 3. If not, improve keywords or ranking, never lower the target quietly
 
-- [ ] 8. Docs
+- [~] 8. Docs
   - parallel: no (after 6, 7)
   - what: README sections on the editable prompt and knowledge kinds, and the layout and test counts.
   - files: `README.md`, `CLAUDE.md` if conventions changed
