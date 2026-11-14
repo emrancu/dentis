@@ -67,7 +67,7 @@ None.
   - files: `src/domain/skills/skill.js`, `src/domain/agent/agent-prompt.js`, `test/domain/skill.test.js`, `test/domain/agent-prompt.test.js`
   - done when: domain tests cover validation, keyword ranking, defaults, placeholder and limits
 
-- [~] 3. Migration and D1 repository
+- [x] 3. Migration and D1 repository
   - parallel: yes (after 2)
   - what: `0004_knowledge.sql` adds `kind` and `keywords`, sets demo keywords, adds demo FAQ and policy entries. D1 skill repository reads and writes the new columns. The sqlite test helper applies `0004`.
   - files: `migrations/0004_knowledge.sql`, `src/infrastructure/d1/*`, `test/support/sqlite-d1.js`, `test/infrastructure/d1-repositories.test.js`

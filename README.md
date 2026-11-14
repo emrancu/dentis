@@ -27,8 +27,8 @@ Browser ──POST /api/session {intent}──▶ StartCall: new call row, promp
 ```bash
 npm install
 cp .dev.vars.example .dev.vars        # put your OPENAI_API_KEY and an ADMIN_ACCESS_KEY in it
-npm run db:init:local                 # schema + Dentis demo clinic (doctors, skills)
-npm run db:samples:local              # optional: 4 invented sample calls so the portal is not empty
+npm run db:init:local                 # apply migrations (tracked): schema + Dentis demo clinic + knowledge
+npm run db:samples:local              # optional: 4 invented sample calls from seed/
 npm run dev                           # http://localhost:8787  (admin: /admin)
 npm test                              # 273 tests, no setup needed
 ```
@@ -38,7 +38,7 @@ npm test                              # 273 tests, no setup needed
 ```bash
 npx wrangler d1 create dentis         # copy the database_id into wrangler.jsonc
 npx wrangler r2 bucket create dentis-recordings
-npm run db:init:remote
+npm run db:init:remote                # applies pending migrations once
 npm run db:samples:remote             # optional sample calls
 npx wrangler secret put OPENAI_API_KEY
 npx wrangler secret put ADMIN_ACCESS_KEY
@@ -56,7 +56,8 @@ src/infrastructure/  D1, R2, OpenAI, WebCrypto adapters
 src/interface/http/  router and routes
 src/composition.js   the only place that wires adapters to use cases
 public/              landing page (Three.js line-art hero) and /admin SPA, plain ES modules
-migrations/          0001 schema, 0002 demo clinic, 0003 optional sample calls
+migrations/          numbered, tracked migrations (schema, demo clinic, skill kinds + knowledge)
+seed/                optional sample calls, not a migration
 test/                mirrors src/, plus frontend and architecture tests
 agentic-hub/         requirements, principles, epics, contracts, task commands
 ```
@@ -79,7 +80,7 @@ agentic-hub/         requirements, principles, epics, contracts, task commands
 - **A live voice call was not run end to end.** This build environment had no OpenAI key or microphone. Everything around the call is tested: session creation, tool execution, transcript handling, status derivation, the call panel states. The Realtime endpoint shapes (`/v1/realtime/client_secrets`, `/v1/realtime/calls`, GA event names) follow OpenAI's docs as I know them. **Make one real call first** and watch the browser console if anything differs.
 - **Bangla quality is not measured.** The prompt asks for colloquial Dhaka Bangla, code-switching, digit read-back and safe behaviour. Accent and number recognition depend on the model. Read-back confirmation and the post-call analysis are the safety nets.
 - **Not deployed.** I had no Cloudflare account access. The steps above are tested only against `wrangler dev` with local D1.
-- **Sample calls are invented** (`0003_sample_calls.sql`). Replace them with your own test calls before submitting.
+- **Sample calls are invented** (`seed/sample_calls.sql`). Replace them with your own test calls before submitting.
 - Single shared access key, no per-user audit, no login rate limit in code.
 - Out of scope: phone (PSTN) calls, outbound calls, calendar sync, several clinics, payments. See [decisions](agentic-hub/decisions.md).
 

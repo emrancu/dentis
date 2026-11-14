@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 
 /**
@@ -8,8 +8,12 @@ import { DatabaseSync } from 'node:sqlite';
 export function createD1({ seed = false } = {}) {
   const db = new DatabaseSync(':memory:');
   db.exec('PRAGMA foreign_keys = ON');
-  db.exec(readFileSync(new URL('../../migrations/0001_init.sql', import.meta.url), 'utf8'));
-  if (seed) db.exec(readFileSync(new URL('../../migrations/0002_seed.sql', import.meta.url), 'utf8'));
+  // seed:false = schema only (0001, 0003). seed:true = every migration in order.
+  const files = readdirSync(new URL('../../migrations/', import.meta.url)).filter((f) => f.endsWith('.sql')).sort();
+  for (const f of files) {
+    if (!seed && !['0001_init.sql', '0003_skill_kind_keywords.sql'].includes(f)) continue;
+    db.exec(readFileSync(new URL(`../../migrations/${f}`, import.meta.url), 'utf8'));
+  }
 
   class Statement {
     constructor(sql, params = []) {
