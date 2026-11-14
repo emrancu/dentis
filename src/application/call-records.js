@@ -5,6 +5,7 @@ import { cleanName } from '../domain/scheduling/patient.js';
 import { PhoneNumber } from '../domain/scheduling/phone-number.js';
 import { ClinicProfile } from '../domain/clinic/clinic-profile.js';
 import { dhakaParts } from '../domain/shared/time.js';
+import { AgentPrompt } from '../domain/agent/agent-prompt.js';
 import { buildInstructions } from './agent/prompt.js';
 import { AGENT_TOOLS } from './agent/tools.js';
 
@@ -37,9 +38,10 @@ export class StartCall {
       const instructions = buildInstructions({
         profile: ClinicProfile.fromMap(map),
         doctors: doctors.filter((d) => d.active),
-        skillTitles: skills.filter((s) => s.enabled).map((s) => s.title),
+        skills,
         now: dhakaParts(now),
         intent: intent === 'booking' ? 'booking' : 'general',
+        agentPrompt: AgentPrompt.fromSettings(map),
       });
       const secret = await this.gateway.createClientSecret({ instructions, tools: AGENT_TOOLS });
       return { callId: call.id, clientSecret: secret.value, model: secret.model, maxSeconds: MAX_CALL_SECONDS };

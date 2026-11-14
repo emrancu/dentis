@@ -24,6 +24,7 @@ export class ToolExecutor {
         doctors: (await doctors.list()).filter((d) => d.active).map((d) => ({ name_en: d.nameEn, name_bn: d.nameBn, specialty: d.specialty, days: d.days, start_time: d.startTime, end_time: d.endTime })),
       }),
       list_skills: async () => ({ skills: await knowledge.list() }),
+      get_skill: (a) => knowledge.get({ title: a.title }),
       lookup_skill: (a) => knowledge.lookup({ query: a.query }),
       check_availability: (a) => checkAvailability.execute({ date: a.date, doctorName: a.doctor_name, period: a.period }),
       book_appointment: (a, callId) =>

@@ -16,7 +16,8 @@ export const AGENT_TOOLS = [
   tool('get_clinic_info', 'Get the clinic name, phone, address, directions, opening hours and visit-preparation notes. Always use this for hours or location questions.'),
   tool('list_doctors', 'List the doctors with their specialty, working days and hours.'),
   tool('list_skills', 'List the topics the clinic has information about (services, fees, policies, FAQs).'),
-  tool('lookup_skill', 'Search the clinic knowledge for a service, fee, policy or FAQ. Always use this before answering questions about treatments, prices or rules.', { query: str('What the caller asked about, in Bangla or English.') }, ['query']),
+  tool('get_skill', 'Get the full details of one knowledge topic by its exact title from the list in the prompt. Use this first when the caller asks about a listed service, fee, policy or FAQ.', { title: str('The exact title, as listed in the prompt.') }, ['title']),
+  tool('lookup_skill', 'Search the clinic knowledge by the caller\'s own words when no listed title fits, or when no list is shown. Matches titles, keywords and details.', { query: str('What the caller asked about, in Bangla or English.') }, ['query']),
   tool(
     'check_availability',
     'Find free appointment slots on a date.',

@@ -73,13 +73,13 @@ None.
   - files: `migrations/0004_knowledge.sql`, `src/infrastructure/d1/*`, `test/support/sqlite-d1.js`, `test/infrastructure/d1-repositories.test.js`
   - done when: the real SQL round-trips the new fields and the seed loads with keywords
 
-- [~] 4. Application: agent settings, prompt builder, `get_skill`
+- [x] 4. Application: agent settings, prompt builder, `get_skill`
   - parallel: yes (after 2)
   - what: `AgentSettings` service (get with defaults, update, preview). `buildInstructions` takes the `AgentPrompt`, applies the title cap and the closing rule line. `StartCall` reads the settings. New `get_skill` tool, its definition and executor handler. `lookup_skill` uses keywords. `GetPublicSite` returns services only. Skill catalog accepts `kind` and `keywords`, rejects duplicate titles.
   - files: `src/application/agent/*`, `src/application/knowledge.js`, `src/application/clinic.js`, `src/application/call-records.js`, `src/composition.js`, `test/application/*`, `test/support/in-memory.js`
   - done when: tests prove an edited prompt reaches the next session, the locked rules cannot be removed, the cap behaviour, `get_skill` success and failure, and that disabled or FAQ entries stay off the website
 
-- [ ] 5. HTTP routes
+- [~] 5. HTTP routes
   - parallel: no (after 3, 4)
   - what: `GET` and `PUT /api/admin/agent`, `POST /api/admin/agent/preview`, skills endpoints with the new fields and `title_index_cap`, validation errors as 400.
   - files: `src/interface/http/admin-routes.js`, `test/interface/http-api.test.js`

@@ -1,0 +1,111 @@
+import assert from 'node:assert/strict';
+import { beforeEach, describe, it } from 'node:test';
+import { TITLE_INDEX_CAP } from '../../src/domain/skills/skill.js';
+import { buildWorld, startCall } from '../support/fixtures.js';
+
+let world;
+let s;
+let callId;
+const code = (c) => (e) => e.code === c;
+const run = (name, args = {}) => s.toolExecutor.execute(name, args, callId);
+const add = (input) => s.skillCatalog.create({ description: 'About it', ...input });
+
+beforeEach(async () => {
+  world = await buildWorld();
+  s = world.services;
+  callId = await startCall(world);
+});
+
+describe('get_skill', () => {
+  it('returns the full details for an exact title, ignoring case and extra spaces', async () => {
+    const r = await run('get_skill', { title: '  root CANAL treatment ' });
+    assert.equal(r.ok, true);
+    assert.deepEqual(r.skill, { title: 'Root canal treatment', description: 'Saves an infected tooth.', content: 'Fee: 6000 to 12000 taka.' });
+  });
+
+  it('fails with a code and guidance for an unknown title', async () => {
+    const r = await run('get_skill', { title: 'Nope' });
+    assert.deepEqual([r.ok, r.error], [false, 'skill_not_found']);
+    assert.match(r.message, /lookup_skill/);
+    assert.equal((await run('get_skill')).ok, false);
+  });
+
+  it('never returns a disabled skill', async () => {
+    assert.equal((await run('get_skill', { title: 'Secret draft' })).ok, false);
+  });
+
+  it('works for FAQs and policies as well as services', async () => {
+    await add({ title: 'Where to park', kind: 'faq', content: 'Behind the building.' });
+    await add({ title: 'Cancellation policy', kind: 'policy', content: '4 hours notice.' });
+    assert.equal((await run('get_skill', { title: 'where to park' })).skill.content, 'Behind the building.');
+    assert.equal((await run('get_skill', { title: 'Cancellation policy' })).skill.content, '4 hours notice.');
+  });
+
+  it('shows an edit made in admin on the very next call', async () => {
+    await s.skillCatalog.update(1, { title: 'Scaling and polishing', description: 'Cleaning', content: 'Fee: 1800 taka.' });
+    assert.equal((await run('get_skill', { title: 'Scaling and polishing' })).skill.content, 'Fee: 1800 taka.');
+  });
+});
+
+describe('lookup_skill with keywords', () => {
+  it('finds a skill by a Bangla keyword that is not in its title or details', async () => {
+    await add({ title: 'Tooth extraction', content: 'Fee: 1000 taka.', keywords: 'wisdom, দাঁত তোলা, আক্কেল দাঁত' });
+    const r = await run('lookup_skill', { query: 'আক্কেল দাঁত ব্যথা করছে' });
+    assert.equal(r.skills[0].title, 'Tooth extraction');
+  });
+});
+
+describe('SkillCatalog kind, keywords and titles', () => {
+  it('stores the kind and keywords, defaulting to a service with none', async () => {
+    const a = await add({ title: 'Plain skill' });
+    const b = await add({ title: 'Parking', kind: 'faq', keywords: 'park, গাড়ি' });
+    assert.deepEqual([a.kind, a.keywords], ['service', '']);
+    assert.deepEqual([b.kind, b.keywords], ['faq', 'park, গাড়ি']);
+  });
+
+  it('rejects an unknown kind and over-long keywords', async () => {
+    await assert.rejects(add({ title: 'Bad kind', kind: 'blog' }), code('skill_kind_invalid'));
+    await assert.rejects(add({ title: 'Long words', keywords: 'k'.repeat(301) }), code('skill_keywords_too_long'));
+  });
+
+  it('refuses a duplicate title, ignoring case, on create and on update', async () => {
+    await assert.rejects(add({ title: ' scaling AND polishing ' }), code('skill_title_taken'));
+    await assert.rejects(s.skillCatalog.update(2, { title: 'Scaling and polishing', description: 'x1' }), code('skill_title_taken'));
+  });
+
+  it('lets a skill keep its own title when it is edited', async () => {
+    const updated = await s.skillCatalog.update(1, { title: 'Scaling and polishing', description: 'New text', kind: 'faq' });
+    assert.equal(updated.kind, 'faq');
+  });
+
+  it('allows a title again after the other skill was deleted', async () => {
+    await s.skillCatalog.remove(1);
+    await add({ title: 'Scaling and polishing' });
+  });
+});
+
+describe('what the website and the agent see', () => {
+  it('the website shows enabled services only, not FAQs, policies or disabled entries', async () => {
+    await add({ title: 'Where to park', kind: 'faq' });
+    await add({ title: 'Refund policy', kind: 'policy' });
+    await add({ title: 'Hidden service', enabled: false });
+    const site = await s.getPublicSite.execute();
+    assert.deepEqual(site.skills.map((k) => k.title), ['Scaling and polishing', 'Root canal treatment']);
+  });
+
+  it('the agent still sees FAQs and policies in list_skills and in the prompt', async () => {
+    await add({ title: 'Where to park', kind: 'faq' });
+    assert.ok((await run('list_skills')).skills.some((k) => k.title === 'Where to park'));
+    await startCall(world, '2.2.2.2');
+    assert.match(world.ports.gateway.sessions.at(-1).instructions, /- Where to park/);
+  });
+
+  it('past the cap a new session carries no title list but still has the search instruction', async () => {
+    for (let i = 0; i < TITLE_INDEX_CAP; i++) await add({ title: `Extra topic ${String(i).padStart(2, '0')}` });
+    await startCall(world, '3.3.3.3');
+    const prompt = world.ports.gateway.sessions.at(-1).instructions;
+    assert.doesNotMatch(prompt, /- Extra topic 00/);
+    assert.match(prompt, /too many topics to list here/);
+    assert.equal((await run('lookup_skill', { query: 'extra topic 07' })).found, true);
+  });
+});

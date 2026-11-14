@@ -1,5 +1,6 @@
 import { AdminAuth } from './application/admin-auth.js';
 import { AdminQueries, ResolveCallback, UpdateAppointmentStatus } from './application/admin-portal.js';
+import { AgentSettings } from './application/agent/agent-settings.js';
 import { ToolExecutor } from './application/agent/tool-executor.js';
 import { CallNotes } from './application/call-notes.js';
 import { AnalyzeCall, FinishCall, RequestCallback, SaveCallDetails, StartCall, StoreRecording } from './application/call-records.js';
@@ -34,6 +35,7 @@ export function buildServices(ports) {
     skillCatalog: new SkillCatalog({ skills, clock }),
     doctorDirectory: new DoctorDirectory({ doctors, appointments }),
     clinic,
+    agentSettings: new AgentSettings({ settings, doctors, skills, clock }),
     getPublicSite: new GetPublicSite({ clinic, skills, doctors }),
     startCall: new StartCall({ calls, doctors, skills, settings, gateway, security, clock, newId }),
     finishCall: new FinishCall({ calls, clock }),
