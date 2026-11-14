@@ -133,16 +133,10 @@ $('#mute-btn').addEventListener('click', () => {
 });
 addEventListener('pagehide', () => call.reportOnPageHide());
 
-/* ---------- hero illustration and waveform ---------- */
-const person = $('#person');
-person.addEventListener('pointerenter', () => person.classList.add('is-happy'));
-person.addEventListener('pointerleave', () => person.classList.remove('is-happy'));
-person.addEventListener('click', () => person.classList.toggle('is-happy')); // touch screens have no hover
-
-// The inline SVG is the fallback and the source of the drawing; Three.js animates it when WebGL is available.
-const isHappy = () => (person.classList.contains('is-happy') || document.body.classList.contains('in-call') ? 1 : 0);
+/* ---------- hero 3D tooth and waveform ---------- */
+// The 3D tooth stays clean while a call is on. Without WebGL the static tooth drawing in the page is the fallback.
 import('./hero3d.js')
-  .then(({ startHero }) => startHero($('#person-canvas'), $('.person-svg'), isHappy))
+  .then(({ startHero }) => startHero($('#stage-canvas'), () => document.body.classList.contains('in-call')))
   .then((hero) => hero && document.body.classList.add('has-3d'))
   .catch(() => {});
 

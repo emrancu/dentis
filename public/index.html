@@ -41,53 +41,10 @@
     <!-- 1. Hero -->
     <section class="hero" id="top">
       <div class="hero-stage">
-        <figure class="person" id="person" aria-hidden="true">
-          <svg class="person-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 520" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-            <g class="body">
-              <path pathLength="1" d="M60 520C70 462 140 432 205 420"/>
-              <path pathLength="1" d="M420 520C410 462 340 432 275 420"/>
-              <path pathLength="1" d="M205 372V422M275 372V422"/>
-              <path pathLength="1" d="M205 422C225 444 255 444 275 422"/>
-            </g>
-            <g class="head">
-              <path pathLength="1" d="M240 122C318 122 354 186 350 256C346 330 300 386 240 386C180 386 134 330 130 256C126 186 162 122 240 122Z"/>
-              <path pathLength="1" d="M132 236C124 150 188 98 252 106C318 112 358 162 350 236"/>
-              <path pathLength="1" d="M152 178C196 152 262 142 334 174"/>
-              <path pathLength="1" d="M130 256C110 250 108 286 132 292M350 256C370 250 372 286 348 292"/>
-              <path pathLength="1" d="M240 262C236 286 230 298 248 300"/>
-            </g>
-            <g class="pain">
-              <path data-morph="brows" d="M174 214L214 230M306 214L266 230"/>
-              <path data-morph="eyes" d="M178 252L212 252M268 252L302 252"/>
-              <path d="M180 246L192 252L180 258M300 246L288 252L300 258"/>
-              <path data-morph="mouth" d="M204 336Q216 322 228 336T252 336T276 332"/>
-              <path class="swell" d="M158 300C152 322 164 346 188 350" stroke-dasharray="3 7"/>
-              <path class="fx" d="M338 160Q348 178 338 190Q328 178 338 160Z"/>
-            </g>
-            <g class="hand">
-              <path d="M116 344C104 312 126 282 158 290C186 298 192 336 178 354C166 370 128 374 116 344Z"/>
-              <path d="M138 302C146 314 146 324 142 334M154 298C162 312 162 324 158 336M170 304C176 316 176 326 172 336"/>
-              <path d="M116 344C108 384 118 430 134 474M178 354C184 396 198 440 218 474"/>
-            </g>
-            <g class="fx zap">
-              <path d="M112 290L94 280L108 272L90 258"/>
-              <path d="M104 318L82 318M112 346L92 358"/>
-            </g>
-            <g class="happy">
-              <path data-morph="brows" d="M174 224Q194 210 214 224M266 224Q286 210 306 224"/>
-              <path data-morph="eyes" d="M178 254Q195 234 212 254M268 254Q285 234 302 254"/>
-              <path data-morph="mouth" d="M188 314Q240 372 292 314"/>
-              <path d="M200 322Q240 356 280 322"/>
-              <path d="M160 296h22M298 296h22" stroke-dasharray="2 7"/>
-              <g class="spark">
-                <path d="M388 150l5 14 14 5-14 5-5 14-5-14-14-5 14-5Z"/>
-                <path d="M96 196l4 10 10 4-10 4-4 10-4-10-10-4 10-4Z"/>
-                <path d="M404 300l3 8 8 3-8 3-3 8-3-8-8-3 8-3Z"/>
-              </g>
-            </g>
-          </svg>
-          <canvas class="person-canvas" id="person-canvas"></canvas>
-          <figcaption class="art-hint" data-i18n="art.hint">Toothache? Hover or tap to see how we help.</figcaption>
+        <figure class="stage-art" aria-hidden="true">
+          <svg class="tooth-fallback" viewBox="0 0 200 240" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M100 20C70 8 32 22 30 66C29 96 46 112 50 150C54 188 58 222 74 222C90 222 88 170 100 170C112 170 110 222 126 222C142 222 146 188 150 150C154 112 171 96 170 66C168 22 130 8 100 20Z"/></svg>
+          <canvas class="stage-canvas" id="stage-canvas"></canvas>
+          <figcaption class="art-hint" data-i18n="art.hint">Plaque on the tooth? Hover or tap it. Drag to spin.</figcaption>
         </figure>
       </div>
 

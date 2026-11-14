@@ -21,4 +21,4 @@
 13. **Docs style:** short, plain sentences.
 14. **The site is a dental centre first.** Copy speaks as a clinic, not as an AI product. The headline and sub-copy are about dental care. Booking lives in the buttons, not in the headline. The voice agent is how booking happens, not the message.
 15. **No claims we have not measured.** No speed promises ("in a minute"), counts or guarantees in copy unless they are true and checked. Highlight what the patient gets (care, an easy appointment), not how fast our tech is.
-16. **Seeds and migrations are safe to run twice.** Demo data must not duplicate on a second run, and a test proves it.
+16. **Seeds are safe to run twice.** Demo data must not duplicate on a second run, and a test proves it. Schema changes are numbered migrations, applied once and tracked by `wrangler d1 migrations apply`.

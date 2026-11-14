@@ -1,187 +1,222 @@
 import * as THREE from 'three';
-import { Line2 } from 'three/addons/lines/Line2.js';
-import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
-import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
-import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
-import { classify, clamp01, damp, easeOutBack, lerpFlat, revealCount, smoothstep, toSegments } from './hero-math.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
+import { clamp01, crownPoint, damp, easeOutBack, smoothstep } from './hero-math.js';
 
-const MORPH_SAMPLES = 48;
-const COLORS = { mint: 0xd9f7f0, coral: 0xff8a66, teal: 0x2dd4bf };
-/** Depth of each layer. The rig turns toward the pointer, so these gaps become real parallax. */
-const DEPTH = { body: -0.5, head: 0, morph: 0.12, pain: 0.12, happy: 0.12, blush: 0.1, hand: 0.55, fx: 0.7, spark: 0 };
-/** [colour, draw-on delay in seconds] per layer. */
-const STYLE = {
-  body: [COLORS.mint, 0],
-  head: [COLORS.mint, 0.25],
-  morph: [COLORS.mint, 0.7],
-  pain: [COLORS.mint, 0.9],
-  hand: [COLORS.mint, 1.1],
-  fx: [COLORS.coral, 1.3],
-  happy: [COLORS.mint, 0],
-  blush: [COLORS.coral, 0],
-  spark: [COLORS.teal, 0],
-};
+const TEAL = 0x2dd4bf;
+const CORAL = 0xff8a66;
+const TAU = Math.PI * 2;
+/** Where plaque sits on the crown, as directions from its centre. */
+const PLAQUE = [
+  [0.1, 0.35, 0.93], [-0.7, 0.45, 0.55], [0.75, 0.3, 0.6], [0, 0.85, 0.5],
+  [0.3, -0.3, 0.9], [-0.6, -0.2, -0.77], [0.8, 0.2, -0.57], [-0.2, 0.5, -0.84],
+].map((d) => new THREE.Vector3(...d).normalize());
 
-const world = (p, z = 0) => [(p.x - 240) / 100, (260 - p.y) / 100, z];
-
-function ancestry(node) {
-  const names = [];
-  for (let el = node; el && el.nodeType === 1 && el.nodeName.toLowerCase() !== 'svg'; el = el.parentNode) {
-    names.push(...(el.getAttribute('class') ?? '').split(/\s+/).filter(Boolean));
-  }
-  return names;
-}
-
-/** Reads every sub-path of the inline SVG, so the page has one drawing and this scene only animates it. */
-function readDrawing(svg) {
-  const { paths } = new SVGLoader().parse(svg.outerHTML);
-  const items = [];
-  for (const path of paths) {
-    const node = path.userData.node;
-    const morph = node.getAttribute('data-morph');
-    const dashed = node.hasAttribute('stroke-dasharray');
-    const classes = ancestry(node);
-    const base = classify(classes, { morph });
-    const layer = base === 'happy' && dashed ? 'blush' : base;
-    const mood = classes.includes('happy') ? 'happy' : 'pain';
-    path.subPaths.forEach((sub, index) => {
-      const points = morph ? sub.getSpacedPoints(MORPH_SAMPLES) : sub.getPoints(12);
-      items.push({ layer, morph, mood, dashed, index, points });
-    });
-  }
-  return items;
-}
-
-function glowTexture() {
+function softTexture(draw) {
   const c = document.createElement('canvas');
   c.width = c.height = 128;
   const ctx = c.getContext('2d');
+  draw(ctx);
+  return new THREE.CanvasTexture(c);
+}
+const glowTexture = () => softTexture((ctx) => {
   const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
   g.addColorStop(0, 'rgba(255,255,255,1)');
   g.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, 128, 128);
-  return new THREE.CanvasTexture(c);
+});
+const starTexture = () => softTexture((ctx) => {
+  const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(0.25, 'rgba(255,255,255,0.5)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(64, 0); ctx.quadraticCurveTo(64, 64, 128, 64); ctx.quadraticCurveTo(64, 64, 64, 128);
+  ctx.quadraticCurveTo(64, 64, 0, 64); ctx.quadraticCurveTo(64, 64, 64, 0);
+  ctx.fill();
+});
+
+/** A molar: a displaced sphere for the crown plus two tapered roots. Centred on its own middle. */
+function buildTooth(material) {
+  const crownGeometry = new THREE.SphereGeometry(1, 72, 54);
+  crownGeometry.deleteAttribute('uv');
+  crownGeometry.deleteAttribute('normal');
+  const merged = mergeVertices(crownGeometry, 1e-4);
+  const p = merged.attributes.position;
+  for (let i = 0; i < p.count; i++) p.setXYZ(i, ...crownPoint(p.getX(i), p.getY(i), p.getZ(i)));
+  merged.computeVertexNormals();
+
+  const body = new THREE.Group();
+  body.position.y = 0.62;
+  const crown = new THREE.Mesh(merged, material);
+  body.add(crown);
+
+  const profile = [[0.0, 0.25], [0.36, 0.2], [0.34, -0.3], [0.26, -0.8], [0.15, -1.3], [0.06, -1.62], [0, -1.7]].map(([r, y]) => new THREE.Vector2(r, y));
+  const rootGeometry = new THREE.LatheGeometry(profile, 32);
+  for (const side of [-1, 1]) {
+    const root = new THREE.Mesh(rootGeometry, material);
+    root.position.set(side * 0.44, -0.5, 0);
+    root.rotation.z = side * 0.12;
+    root.scale.z = 0.85;
+    body.add(root);
+  }
+
+  const plaqueMaterial = new THREE.MeshStandardMaterial({ color: CORAL, roughness: 0.55, emissive: 0x7a2a12, emissiveIntensity: 0.6 });
+  const spots = PLAQUE.map((dir, i) => {
+    const spot = new THREE.Group();
+    const [x, y, z] = crownPoint(dir.x, dir.y, dir.z);
+    spot.position.set(x, y, z).addScaledVector(dir, 0.02);
+    spot.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
+    const blob = new THREE.Mesh(new THREE.SphereGeometry(0.15 + (i % 3) * 0.035, 20, 14), plaqueMaterial);
+    blob.scale.set(1, 1, 0.5);
+    spot.add(blob);
+    for (const [ox, oy, r] of [[0.15, 0.06, 0.06], [-0.1, -0.12, 0.05]]) {
+      const bit = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 10), plaqueMaterial);
+      bit.position.set(ox, oy, 0.02);
+      bit.scale.z = 0.6;
+      spot.add(bit);
+    }
+    body.add(spot);
+    return spot;
+  });
+  return { body, spots };
+}
+
+function buildBrush() {
+  const brush = new THREE.Group();
+  const handle = new THREE.MeshStandardMaterial({ color: TEAL, roughness: 0.35, metalness: 0.1 });
+  const white = new THREE.MeshStandardMaterial({ color: 0xf2fffc, roughness: 0.5 });
+  const stem = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 1.4, 6, 12), handle);
+  stem.position.y = 1.2;
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.56, 0.1), handle);
+  head.position.y = 0.28;
+  brush.add(stem, head);
+  const bristle = new THREE.CylinderGeometry(0.028, 0.028, 0.2, 8);
+  for (let x = -1; x <= 1; x++) {
+    for (let row = 0; row < 6; row++) {
+      const b = new THREE.Mesh(bristle, white);
+      b.rotation.x = Math.PI / 2;
+      b.position.set(x * 0.08, 0.06 + row * 0.09, -0.15);
+      brush.add(b);
+    }
+  }
+  return brush;
 }
 
 /**
- * The hero scene: the line-drawn person as 3D lines. `target()` returns 1 when the person should be happy
- * (hover, tap, or a call in progress) and 0 when they have toothache. Returns {destroy}, or null if WebGL is unavailable.
+ * The hero scene: a glossy 3D molar with plaque. Hover or tap it and a toothbrush scrubs the plaque away
+ * and the tooth sparkles; drag to spin it. `active()` returns true while a call is in progress, which keeps the tooth clean.
+ * Returns {destroy}, or null if WebGL is unavailable.
  */
-export function startHero(canvas, svg, target) {
+export function startHero(canvas, active) {
   let renderer;
-  let drawing;
   try {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    drawing = readDrawing(svg);
   } catch {
     return null;
   }
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const calm = reduced ? 0 : 1;
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 60);
-  const rig = new THREE.Group();
-  const headPivot = new THREE.Group();
-  const head = new THREE.Group();
-  const handGroup = new THREE.Group();
-  headPivot.position.set(0, -1.15, 0);
-  head.position.set(0, 1.15, 0);
-  headPivot.add(head);
-  head.add(handGroup);
-  rig.add(headPivot);
-  scene.add(rig);
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 60);
+  camera.position.z = 9;
 
-  /* ----- materials, one per layer (and dashed variant), so a layer fades as one ----- */
-  const materials = new Map();
-  const material = (layer, dashed) => {
-    const key = dashed ? `${layer}-dashed` : layer;
-    if (!materials.has(key)) {
-      materials.set(key, new LineMaterial({ color: STYLE[layer][0], linewidth: 3, transparent: true, depthWrite: false, dashed, dashSize: 0.03, gapSize: 0.07 }));
-    }
-    return materials.get(key);
-  };
+  const key = new THREE.DirectionalLight(0xffffff, 2.2);
+  key.position.set(3, 4, 5);
+  const rim = new THREE.DirectionalLight(TEAL, 3);
+  rim.position.set(-4, 2, -3);
+  const warm = new THREE.PointLight(CORAL, 18, 9);
+  warm.position.set(2.2, -1.8, 3);
+  scene.add(key, rim, warm, new THREE.AmbientLight(0x88ffee, 0.25));
 
-  /* ----- build the lines ----- */
-  const reveals = []; // lines that draw on at the start
-  const morphs = new Map(); // "brows" -> { pain: [flat…], happy: [flat…] } per sub-path index
-  const sparkles = [];
+  /* ----- the tooth ----- */
+  const placement = new THREE.Group(); // where it sits in the hero and how big it is
+  const tilt = new THREE.Group(); // leans toward the pointer
+  const spin = new THREE.Group(); // turns when dragged
+  const toothMaterial = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.08, emissive: TEAL, emissiveIntensity: 0, envMapIntensity: 0.9 });
+  const { body, spots } = buildTooth(toothMaterial);
+  spin.add(body);
+  tilt.add(spin);
+  placement.add(tilt);
+  scene.add(placement);
+  const stained = new THREE.Color(0xf1e4c6);
+  const white = new THREE.Color(0xffffff);
+  const coralColor = new THREE.Color(CORAL);
+  const tealColor = new THREE.Color(TEAL);
 
-  const flat = (points, z) => points.flatMap((p) => world(p, z));
-  const makeLine = (positions, layer, dashed) => {
-    const geometry = new LineGeometry();
-    geometry.setPositions(positions);
-    const line = new Line2(geometry, material(layer, dashed));
-    line.frustumCulled = false;
-    if (dashed) line.computeLineDistances();
-    return line;
-  };
+  /* ----- toothbrush ----- */
+  const brush = buildBrush();
+  placement.add(brush);
 
-  let order = 0;
-  for (const item of drawing) {
-    const { layer, morph, mood: drawnMood, dashed, index, points } = item;
-    if (morph) {
-      const entry = morphs.get(`${morph}:${index}`) ?? {};
-      entry[drawnMood] = flat(points, DEPTH.morph);
-      morphs.set(`${morph}:${index}`, entry);
-      continue;
-    }
-    if (layer === 'spark') {
-      const c = points.reduce((a, p) => ({ x: a.x + p.x / points.length, y: a.y + p.y / points.length }), { x: 0, y: 0 });
-      const group = new THREE.Group();
-      const [cx, cy] = world(c);
-      group.position.set(cx, cy, 0.9 + sparkles.length * 0.25);
-      group.add(makeLine(points.flatMap((p) => [(p.x - c.x) / 100, (c.y - p.y) / 100, 0]), 'spark', false));
-      rig.add(group);
-      sparkles.push({ group, seed: sparkles.length * 1.7 });
-      continue;
-    }
-    const line = makeLine(flat(points, DEPTH[layer]), layer, dashed);
-    const parent = layer === 'body' ? rig : layer === 'hand' ? handGroup : head;
-    parent.add(line);
-    const segments = points.length - 1;
-    line.geometry.instanceCount = 0;
-    reveals.push({ line, segments, delay: STYLE[layer][1] + order++ * 0.035 });
-  }
-  const morphLines = [];
-  for (const entry of morphs.values()) {
-    if (!entry.pain || !entry.happy) continue;
-    const line = makeLine(entry.pain, 'morph', false);
-    const segments = entry.pain.length / 3 - 1;
-    line.geometry.instanceCount = 0;
-    head.add(line);
-    reveals.push({ line, segments, delay: STYLE.morph[1] + order++ * 0.05 });
-    morphLines.push({ line, pain: new Float32Array(entry.pain), happy: new Float32Array(entry.happy), tmp: new Float32Array(entry.pain.length) });
-  }
+  /* ----- glow, orbit rings and sparkles ----- */
+  const glowMap = glowTexture();
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowMap, transparent: true, depthWrite: false, opacity: 0.3 }));
+  glow.scale.set(7, 7, 1);
+  glow.position.z = -1.6;
+  placement.add(glow);
 
-  /* ----- background glow and drifting motes ----- */
-  const painGlow = new THREE.Color(0xff8a66);
-  const happyGlow = new THREE.Color(COLORS.teal);
-  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), transparent: true, depthWrite: false, opacity: 0.3 }));
-  glow.scale.set(6.2, 6.2, 1);
-  glow.position.z = -2;
-  scene.add(glow);
-  const MOTES = 70;
+  const rings = [
+    { radius: 2.15, tilt: [1.15, 0.2], speed: 0.45, gem: TEAL, size: 0.1 },
+    { radius: 2.5, tilt: [-0.55, 1.0], speed: -0.3, gem: 0xd9f7f0, size: 0.075 },
+  ].map((r, i) => {
+    const group = new THREE.Group();
+    group.rotation.set(r.tilt[0], r.tilt[1], 0);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(r.radius, 0.007, 8, 200), new THREE.MeshBasicMaterial({ color: TEAL, transparent: true, opacity: 0.4 }));
+    const pivot = new THREE.Group();
+    const gem = new THREE.Mesh(new THREE.OctahedronGeometry(r.size), new THREE.MeshBasicMaterial({ color: r.gem }));
+    gem.position.x = r.radius;
+    pivot.add(gem);
+    pivot.rotation.z = i * 2;
+    group.add(ring, pivot);
+    placement.add(group);
+    return { group, pivot, gem, ...r };
+  });
+
+  const starMap = starTexture();
+  const stars = Array.from({ length: 7 }, (_, i) => {
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: starMap, color: i % 2 ? 0xffffff : 0x9ff5e6, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+    const a = (i / 7) * TAU + 0.4;
+    sprite.position.set(Math.cos(a) * (1.45 + (i % 3) * 0.2), Math.sin(a) * 1.5, 0.9 + (i % 2) * 0.4);
+    sprite.visible = false;
+    placement.add(sprite);
+    return { sprite, size: 0.5 + (i % 3) * 0.22, seed: i * 1.9 };
+  });
+
+  /* ----- drifting motes across the whole hero ----- */
+  const MOTES = 120;
   const motePositions = new Float32Array(MOTES * 3);
-  for (let i = 0; i < MOTES; i++) motePositions.set([(Math.random() - 0.5) * 5.6, (Math.random() - 0.5) * 6, -1 + Math.random() * 2.5], i * 3);
+  for (let i = 0; i < MOTES; i++) motePositions.set([(Math.random() - 0.5) * 13, (Math.random() - 0.5) * 6.6, -3 + Math.random() * 5], i * 3);
   const moteGeometry = new THREE.BufferGeometry();
   moteGeometry.setAttribute('position', new THREE.BufferAttribute(motePositions, 3));
-  const moteMaterial = new THREE.PointsMaterial({ color: COLORS.teal, size: 0.05, transparent: true, opacity: 0.35, depthWrite: false, blending: THREE.AdditiveBlending });
+  const moteMaterial = new THREE.PointsMaterial({ map: glowMap, color: TEAL, size: 0.16, transparent: true, opacity: 0.4, depthWrite: false, blending: THREE.AdditiveBlending });
   scene.add(new THREE.Points(moteGeometry, moteMaterial));
 
-  /* ----- size ----- */
+  /* ----- layout: tooth on the right on wide screens, on top on phones ----- */
+  const place = { x: 0, y: 0, scale: 1 };
   const resize = () => {
     const { clientWidth: w, clientHeight: h } = canvas.parentElement;
     if (!w || !h) return;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
-    const half = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-    camera.position.set(0, 0, Math.max(2.9 / half, 2.55 / (half * camera.aspect)));
     camera.updateProjectionMatrix();
-    for (const m of materials.values()) {
-      m.linewidth = w < 320 ? 2.2 : 3;
-      m.resolution.set(w, h);
+    const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z;
+    const halfW = halfH * camera.aspect;
+    if (w > 700) {
+      place.x = halfW * 0.5;
+      place.y = 0;
+      place.scale = Math.min((halfH * 2 * 0.6) / 3.1, (halfW * 0.92) / 5);
+    } else {
+      place.x = 0;
+      place.y = halfH * 0.5;
+      place.scale = Math.min((halfH * 2 * 0.3) / 3.1, (halfW * 2 * 0.86) / 5);
     }
   };
   const observer = new ResizeObserver(resize);
@@ -190,20 +225,60 @@ export function startHero(canvas, svg, target) {
 
   /* ----- input ----- */
   const pointer = { x: 0, y: 0 };
-  const onPointer = (e) => {
+  const ray = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+  const onTooth = (e) => {
+    const r = canvas.getBoundingClientRect();
+    ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    return ray.intersectObject(body, true).length > 0;
+  };
+  let hover = false;
+  let pinned = false;
+  let drag = null;
+  let spinVelocity = 0;
+  const onMove = (e) => {
     const r = canvas.getBoundingClientRect();
     pointer.x = Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width - 0.5) * 2));
     pointer.y = Math.max(-1, Math.min(1, ((e.clientY - r.top) / r.height - 0.5) * 2));
+    if (drag) {
+      const dx = e.clientX - drag.x;
+      drag.x = e.clientX;
+      drag.moved += Math.abs(dx);
+      spin.rotation.y += dx * 0.012;
+      spinVelocity = THREE.MathUtils.clamp(dx * 0.012 * 60, -8, 8);
+    } else if (e.pointerType === 'mouse' && e.target === canvas) {
+      hover = onTooth(e);
+      canvas.style.cursor = hover ? 'pointer' : 'grab';
+    }
   };
-  addEventListener('pointermove', onPointer, { passive: true });
+  const onDown = (e) => {
+    drag = { x: e.clientX, moved: 0 };
+    canvas.setPointerCapture(e.pointerId);
+    canvas.style.cursor = 'grabbing';
+  };
+  const onUp = (e) => {
+    if (drag && drag.moved < 6 && onTooth(e)) pinned = !pinned; // a tap, not a drag
+    drag = null;
+    canvas.style.cursor = hover ? 'pointer' : 'grab';
+  };
+  const onLeave = () => (hover = false);
+  addEventListener('pointermove', onMove, { passive: true });
+  canvas.addEventListener('pointerdown', onDown);
+  canvas.addEventListener('pointerup', onUp);
+  canvas.addEventListener('pointercancel', onUp);
+  canvas.addEventListener('pointerleave', onLeave);
+  canvas.style.cursor = 'grab';
 
   let visible = true;
   const io = new IntersectionObserver(([entry]) => (visible = entry.isIntersecting));
   io.observe(canvas);
 
   /* ----- the loop ----- */
-  const tmpSegments = (line) => line.geometry.attributes.instanceStart.data;
-  let mood = 0;
+  const restPose = { p: new THREE.Vector3(1.75, -1.35, 0.6), r: -0.3 };
+  let mood = 0; // 0 plaque, 1 clean (what the visitor asked for)
+  let clean = 0; // how much plaque has actually gone (lags behind so the brush has time to scrub)
+  let brushIn = 0;
   let intro = reduced ? 10 : 0;
   let last = performance.now();
   let raf;
@@ -216,59 +291,73 @@ export function startHero(canvas, svg, target) {
     const t = now / 1000;
     intro += dt;
 
-    mood = reduced ? target() : damp(mood, target(), target() ? 5 : 4, dt);
+    const want = hover || pinned || active() ? 1 : 0;
+    mood = reduced ? want : damp(mood, want, 5, dt);
+    clean = reduced ? want : damp(clean, want, want ? 1.4 : 6, dt);
     const s = smoothstep(mood);
-    const calm = reduced ? 0 : 1;
 
-    // draw-on at the start
-    for (const r of reveals) r.line.geometry.instanceCount = revealCount(smoothstep((intro - r.delay) / 1.1), r.segments);
+    // layout and entrance
+    const grow = easeOutBack(intro / 1.3);
+    placement.position.set(place.x, place.y + Math.sin(t * 0.9) * 0.07 * calm, 0);
+    placement.scale.setScalar(place.scale * grow);
 
-    // expression morph: brows, eyes and mouth glide between the two drawings
-    for (const m of morphLines) {
-      const data = tmpSegments(m.line);
-      toSegments(lerpFlat(m.pain, m.happy, s, m.tmp), data.array);
-      data.needsUpdate = true;
+    // tooth: leans toward the pointer, idles with a slow turn, and faces front while being cleaned
+    tilt.rotation.x = damp(tilt.rotation.x, pointer.y * 0.25 * calm, 4, dt);
+    tilt.rotation.y = damp(tilt.rotation.y, pointer.x * 0.3 * calm, 4, dt);
+    if (!drag) {
+      const idle = (s < 0.5 ? 0.35 : 0) * calm;
+      spinVelocity = damp(spinVelocity, idle, 2.5, dt);
+      spin.rotation.y += spinVelocity * dt;
+      if (s > 0.01) spin.rotation.y = damp(spin.rotation.y, Math.round(spin.rotation.y / TAU) * TAU, 1.6 * s, dt);
     }
+    toothMaterial.color.copy(stained).lerp(white, smoothstep(clean));
+    toothMaterial.emissiveIntensity = 0.1 * Math.sin(Math.PI * clamp01(clean)) + 0.05 * s;
 
-    // layers cross-fade with the mood
-    const fade = (key, value) => materials.has(key) && (materials.get(key).opacity = value);
-    fade('pain', 1 - s);
-    fade('pain-dashed', 1 - s);
-    fade('happy', s);
-    fade('happy-dashed', s);
-    fade('blush', s);
-    fade('blush-dashed', s);
-    fade('hand', clamp01(1 - s * 1.4));
-    fade('fx', (1 - s) * (calm ? 0.6 + 0.4 * Math.sin(t * 14) ** 2 : 1));
-    fade('spark', s);
-    handGroup.position.set(-0.7 * s, -1.5 * s, 0);
-    handGroup.rotation.z = -0.35 * s;
+    // plaque shrinks away one spot after another, and wobbles while it is there
+    spots.forEach((spot, i) => {
+      const local = clamp01((clean - (i / spots.length) * 0.5) / 0.5);
+      const size = 1 - smoothstep(local);
+      spot.visible = size > 0.01;
+      spot.scale.setScalar(Math.max(0.0001, size * (1 + 0.06 * Math.sin(t * 3 + i) * calm)));
+    });
 
-    // sparkles pop in with a little overshoot, then float and turn
-    for (const sp of sparkles) {
-      const grow = easeOutBack((s - 0.25) / 0.75);
-      sp.group.visible = s > 0.02;
-      sp.group.scale.setScalar(Math.max(0.0001, grow));
-      sp.group.rotation.z = t * 0.5 * calm + sp.seed;
-      sp.group.position.y += Math.sin(t * 1.4 + sp.seed) * 0.0012 * calm;
+    // toothbrush slides in, scrubs the front of the tooth, then leaves when the plaque is gone
+    brushIn = damp(brushIn, want && clean < 0.96 ? 1 : 0, 3.2, dt);
+    const b = smoothstep(brushIn);
+    const scrub = Math.sin(t * 9) * 0.5 * calm;
+    brush.visible = true;
+    brush.position.set(
+      THREE.MathUtils.lerp(restPose.p.x, scrub, b),
+      THREE.MathUtils.lerp(restPose.p.y + Math.sin(t * 1.1) * 0.06 * calm, 0.3 + Math.sin(t * 2.3) * 0.4 * calm, b),
+      THREE.MathUtils.lerp(restPose.p.z, 1.2, b),
+    );
+    brush.rotation.set(0, THREE.MathUtils.lerp(0.4, 0, b), THREE.MathUtils.lerp(restPose.r, -0.65, b));
+    brush.scale.setScalar(THREE.MathUtils.lerp(0.75, 1, b));
+
+    // rings turn, gems orbit, stars pop in once the tooth is clean
+    for (const r of rings) {
+      r.group.rotation.z += dt * 0.08 * calm;
+      r.pivot.rotation.z += dt * r.speed * calm;
+      r.gem.rotation.y += dt * 2 * calm;
     }
-
-    // body language: parallax toward the pointer, a nod, a tremble while it hurts, a gentle float
-    rig.rotation.y = damp(rig.rotation.y, pointer.x * 0.3 * calm, 4, dt);
-    rig.rotation.x = damp(rig.rotation.x, pointer.y * 0.1 * calm, 4, dt);
-    rig.position.y = Math.sin(t * 0.9) * 0.05 * calm;
-    headPivot.rotation.y = damp(headPivot.rotation.y, pointer.x * 0.12 * calm, 5, dt);
-    headPivot.rotation.z = (1 - s) * 0.06 + Math.sin(t * 38) * 0.004 * (1 - s) * calm;
+    const pop = clamp01((clean - 0.55) / 0.45);
+    for (const st of stars) {
+      const sz = easeOutBack(pop - ((st.seed % 3) * 0.08)) * st.size * (0.85 + 0.15 * Math.sin(t * 3 + st.seed) * calm);
+      st.sprite.visible = sz > 0.01;
+      st.sprite.scale.setScalar(Math.max(0.0001, sz));
+      st.sprite.material.rotation = t * 0.4 * calm + st.seed;
+    }
 
     // mood colours the room
-    glow.material.color.copy(painGlow).lerp(happyGlow, s);
-    glow.material.opacity = 0.26 + 0.16 * s;
-    moteMaterial.opacity = 0.25 + 0.4 * s;
+    glow.material.color.copy(coralColor).lerp(tealColor, s);
+    glow.material.opacity = 0.28 + 0.2 * s;
+    warm.intensity = 18 * (1 - s);
+    moteMaterial.opacity = 0.3 + 0.35 * s;
     if (calm) {
       const p = moteGeometry.attributes.position;
       for (let i = 0; i < MOTES; i++) {
-        let y = p.getY(i) + dt * (0.08 + 0.18 * s);
-        if (y > 3) y = -3;
+        let y = p.getY(i) + dt * (0.1 + 0.25 * s);
+        if (y > 3.3) y = -3.3;
         p.setY(i, y);
       }
       p.needsUpdate = true;
@@ -281,7 +370,7 @@ export function startHero(canvas, svg, target) {
   return {
     destroy() {
       cancelAnimationFrame(raf);
-      removeEventListener('pointermove', onPointer);
+      removeEventListener('pointermove', onMove);
       observer.disconnect();
       io.disconnect();
       renderer.dispose();
