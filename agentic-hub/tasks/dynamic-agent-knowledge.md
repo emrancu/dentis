@@ -79,13 +79,13 @@ None.
   - files: `src/application/agent/*`, `src/application/knowledge.js`, `src/application/clinic.js`, `src/application/call-records.js`, `src/composition.js`, `test/application/*`, `test/support/in-memory.js`
   - done when: tests prove an edited prompt reaches the next session, the locked rules cannot be removed, the cap behaviour, `get_skill` success and failure, and that disabled or FAQ entries stay off the website
 
-- [~] 5. HTTP routes
+- [x] 5. HTTP routes
   - parallel: no (after 3, 4)
   - what: `GET` and `PUT /api/admin/agent`, `POST /api/admin/agent/preview`, skills endpoints with the new fields and `title_index_cap`, validation errors as 400.
   - files: `src/interface/http/admin-routes.js`, `test/interface/http-api.test.js`
   - done when: route tests cover auth, CSRF header, save, reset, preview of unsaved text, and an edit visible in the next `POST /api/session`
 
-- [ ] 6. Admin UI
+- [~] 6. Admin UI
   - parallel: no (after 5)
   - what: **Agent prompt** page, and the Skills page with kind filter, Type, Keywords and the "N of 40 titles" counter with a warning at the cap. Add the nav link.
   - files: `public/admin/admin.js`, `public/admin/admin.css`

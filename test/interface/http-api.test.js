@@ -285,4 +285,103 @@ describe('admin API', () => {
   it('404 for an unknown call', async () => {
     assert.equal((await request('GET', '/api/admin/calls/nope', { headers: h })).status, 404);
   });
+
+  it('skills carry a kind and keywords, report the title cap, and refuse duplicate titles', async () => {
+    const created = await request('POST', '/api/admin/skills', { body: { title: 'Where to park', description: 'Parking info', content: 'Behind the building.', kind: 'faq', keywords: 'parking, গাড়ি' }, headers: h });
+    assert.equal(created.status, 201);
+    const skill = await created.json();
+    assert.deepEqual([skill.kind, skill.keywords], ['faq', 'parking, গাড়ি']);
+
+    const list = await (await request('GET', '/api/admin/skills', { headers: h })).json();
+    assert.equal(list.title_index_cap, 40);
+    assert.ok(list.items.every((i) => ['service', 'faq', 'policy'].includes(i.kind) && typeof i.keywords === 'string'));
+
+    const dup = await request('POST', '/api/admin/skills', { body: { title: ' where TO park ', description: 'again' }, headers: h });
+    assert.equal(dup.status, 409);
+    assert.equal((await dup.json()).error.code, 'skill_title_taken');
+
+    const badKind = await request('POST', '/api/admin/skills', { body: { title: 'Odd one', description: 'x1', kind: 'blog' }, headers: h });
+    assert.equal(badKind.status, 400);
+    assert.equal((await badKind.json()).error.code, 'skill_kind_invalid');
+  });
+
+  it('the public site shows services only, so a new FAQ does not appear on the website', async () => {
+    await request('POST', '/api/admin/skills', { body: { title: 'Where to park', description: 'Parking info', kind: 'faq' }, headers: h });
+    const site = await (await request('GET', '/api/public/site')).json();
+    assert.ok(!site.skills.some((k) => k.title === 'Where to park'));
+    assert.equal(site.skills.length, 2);
+  });
+
+  it('an FAQ added in admin is answered by the agent through get_skill on the next call', async () => {
+    await request('POST', '/api/admin/skills', { body: { title: 'Where to park', description: 'Parking info', content: 'Behind the building.', kind: 'faq' }, headers: h });
+    await request('POST', '/api/session');
+    assert.match(world.ports.gateway.sessions.at(-1).instructions, /- Where to park/);
+    const answer = await (await request('POST', '/api/agent/tools/get_skill', { body: { call_id: 'call-1', args: { title: 'Where to park' } } })).json();
+    assert.deepEqual([answer.ok, answer.skill.content], [true, 'Behind the building.']);
+  });
+});
+
+describe('admin agent prompt', () => {
+  let h;
+  beforeEach(async () => {
+    h = asAdmin(await login());
+  });
+
+  it('requires a login, like every admin route', async () => {
+    assert.equal((await request('GET', '/api/admin/agent')).status, 401);
+    assert.equal((await request('PUT', '/api/admin/agent', { body: {} })).status, 401);
+    assert.equal((await request('POST', '/api/admin/agent/preview', { body: {} })).status, 401);
+  });
+
+  it('shows the default text with its defaults', async () => {
+    const r = await (await request('GET', '/api/admin/agent', { headers: h })).json();
+    assert.deepEqual(Object.keys(r).sort(), ['default_greeting', 'default_instructions', 'greeting', 'instructions']);
+    assert.equal(r.instructions, r.default_instructions);
+    assert.match(r.instructions, /\{clinic\}/);
+  });
+
+  it('saves the text, and the next call uses it while keeping the locked rules', async () => {
+    const saved = await request('PUT', '/api/admin/agent', { body: { instructions: 'You are Nila at {clinic}.', greeting: 'Salam, Nila here.' }, headers: h });
+    assert.equal(saved.status, 200);
+    assert.equal((await saved.json()).instructions, 'You are Nila at {clinic}.');
+    await request('POST', '/api/session');
+    const prompt = world.ports.gateway.sessions.at(-1).instructions;
+    assert.ok(prompt.startsWith('You are Nila at Dentis Dental Care.'));
+    assert.match(prompt, /Greet: "Salam, Nila here\."/);
+    assert.match(prompt, /Never give medical advice/);
+  });
+
+  it('blank text resets to the default', async () => {
+    await request('PUT', '/api/admin/agent', { body: { instructions: 'Custom', greeting: 'Custom' }, headers: h });
+    const r = await (await request('PUT', '/api/admin/agent', { body: { instructions: '', greeting: '' }, headers: h })).json();
+    assert.equal(r.instructions, r.default_instructions);
+    assert.equal(r.greeting, r.default_greeting);
+  });
+
+  it('rejects over-long text with 400 and a code, and keeps the old text', async () => {
+    const long = await request('PUT', '/api/admin/agent', { body: { instructions: 'x'.repeat(4001), greeting: '' }, headers: h });
+    assert.equal(long.status, 400);
+    assert.equal((await long.json()).error.code, 'instructions_too_long');
+    const greet = await request('PUT', '/api/admin/agent', { body: { instructions: '', greeting: 'y'.repeat(301) }, headers: h });
+    assert.equal((await greet.json()).error.code, 'greeting_too_long');
+    assert.equal((await (await request('GET', '/api/admin/agent', { headers: h })).json()).instructions.length > 0, true);
+  });
+
+  it('previews unsaved text without saving it', async () => {
+    const r = await request('POST', '/api/admin/agent/preview', { body: { instructions: 'Preview for {clinic}', greeting: 'Preview hello' }, headers: h });
+    assert.equal(r.status, 200);
+    const { prompt } = await r.json();
+    assert.ok(prompt.startsWith('Preview for Dentis Dental Care'));
+    assert.match(prompt, /Greet: "Preview hello"/);
+    assert.match(prompt, /# Rules that always apply/);
+    const current = await (await request('GET', '/api/admin/agent', { headers: h })).json();
+    assert.equal(current.instructions, current.default_instructions);
+  });
+
+  it('needs the X-Requested-With header to save, like other admin writes', async () => {
+    const cookie = h.Cookie;
+    const res = await request('PUT', '/api/admin/agent', { body: { instructions: 'x', greeting: 'y' }, headers: { Cookie: cookie } });
+    assert.equal(res.status, 401);
+    assert.equal((await res.json()).error.code, 'csrf_rejected');
+  });
 });
