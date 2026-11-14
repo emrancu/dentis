@@ -45,7 +45,7 @@ Admin routes need the cookie `dentis_admin` (HttpOnly, SameSite=Strict, `Secure`
 | `POST /api/admin/skills` | `{ title, description, content?, kind?, keywords?, enabled? }`. `kind` is `service` (default), `faq` or `policy`. `keywords` up to 300 characters. 409 `skill_title_taken` when another skill has the same title (case-insensitive) | 201 skill |
 | `PUT /api/admin/skills/:id` | same as POST | skill |
 | `DELETE /api/admin/skills/:id` | | 204 |
-| `GET /api/admin/agent` | | `{ instructions, greeting, default_instructions, default_greeting }`. `instructions` and `greeting` are the text the agent really uses: the saved text, or the default when nothing is saved |
+| `GET /api/admin/agent` | | `{ instructions, greeting, default_instructions, default_greeting }`. `instructions` and `greeting` are the text the agent really uses: the saved text, or the default when nothing is saved. `{clinic}` is left in so staff edit the template |
 | `PUT /api/admin/agent` | `{ instructions, greeting }`. An empty or blank string means "use the default". `{clinic}` is replaced with the clinic name. Limits: instructions 4000 characters, greeting 300. 400 `instructions_too_long` or `greeting_too_long` | same shape as GET |
 | `POST /api/admin/agent/preview` | `{ instructions?, greeting? }` (unsaved text, blank means default). Saves nothing | `{ prompt }`: the full prompt a new call would get, with the locked rules, today's date, clinic, doctors and knowledge titles |
 | `GET /api/admin/doctors` | | `{ items: [doctor] }` |

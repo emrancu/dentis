@@ -103,11 +103,35 @@ None.
   - files: `README.md`, `CLAUDE.md` if conventions changed
   - done when: README matches what was built
 
-- [~] 9. Premortem & spec re-evaluation
+- [x] 9. Premortem & spec re-evaluation
   - parallel: no (after all above)
-  - premortem: <to fill when this subtask runs: imagine staff edited the prompt and the agent got worse or unsafe, an FAQ answer is wrong or missing, or a skill edit does not reach the call>
-  - spec changes: <what changed in spec and contracts>
+  - premortem: see the table below
+  - spec changes: see the list below
   - done when: premortem filled in and spec and contracts match what was built
+
+### Premortem
+Imagine staff edited the prompt and the agent got worse or unsafe, an FAQ answer was wrong or missing, or an edit did not reach the call.
+
+| Likely cause | Covered by |
+|---|---|
+| Staff write a persona that tells the agent to ignore safety or invent prices | The locked sections come after the persona and a closing line says they win. A test feeds a hostile persona and checks the rules are still there and last. **Not verified with the live model**: whether it obeys the closing rule over the persona is unmeasured. |
+| The agent quotes an old fee after an admin edit | The prompt and the skill reads come straight from D1 per call, no cache or index. Tests prove an edit is seen by the next session and by `get_skill`. A call already in progress keeps its old prompt, by design. |
+| The agent cannot find an FAQ | Titles in the prompt plus `get_skill`, `lookup_skill` as fallback, keywords, and Bangla word-ending matching. The eval: expected entry in the top 3 for 32 of 32 phrasings, first for 29 of 32. **Only the demo data and my own phrasings.** Real callers and real speech-to-text errors are untested. One miss needed a keyword added to the entry, which is the intended admin fix. |
+| Too many entries, so the agent stops seeing titles | Admin shows "N of 40" with an amber and red warning. Past 40 the list is dropped and the agent searches only (weaker, covered by tests). AI Search stays deferred. The cap of 40 is unmeasured. |
+| An FAQ or policy leaks onto the public website | The public site returns `service` entries only. Tested in the use case, the route and a live request. |
+| Two entries with the same title make `get_skill` ambiguous | Create and update refuse a duplicate title (case-insensitive) with 409. |
+| Saving the default text bakes the clinic name in and blocks future default improvements | `get` returns the template with `{clinic}` kept. Text identical to the default is stored as empty. Both tested. |
+| The new columns break an existing database | Migrations are tracked by `wrangler d1 migrations apply`. The ALTERs run once, the seed statements are guarded. Applied twice on a real local D1 with no second run. **Not run on a remote D1.** |
+| A longer prompt adds latency or cost | Titles only, never details, capped at 40. **Latency and token cost were not measured.** |
+| A live call behaves differently from the tests | Still true from `dentis-platform`: no live voice call has been made, so `get_skill` and the new prompt are untested with the real model. |
+
+### Spec changes
+- **Migrations:** the spec said one `0004` file adds the columns. Built as two tracked migrations: `0003_skill_kind_keywords.sql` (the two ALTERs) and `0004_knowledge_seed.sql` (keywords and demo FAQ and policy entries, safe to run twice). The optional sample calls moved from `migrations/` to `seed/`. `db:init:*` now run `wrangler d1 migrations apply`. Reason: an ALTER cannot be re-run, so tracking is the way to keep principle 16 true.
+- **Principle 16** reworded to match: seeds are safe to run twice, schema changes are tracked migrations applied once.
+- **Matching:** `rankSkills` also matches Bangla words that carry an ending (the query word starts with a field word), and ignores a small set of filler words. Not in the original spec. Added because the eval showed two real misses.
+- **Prompt API:** `GET /api/admin/agent` returns the template with `{clinic}` left in, not the resolved text. Contract line clarified.
+- **Seed keyword:** the children FAQ gained the keyword phrase "বাচ্চাদের দাঁত" to fix the last eval miss.
+- The three defaults (locked rules, no website FAQ, AI Search deferred) were used as written. The owner asked "which three", was told, and did not object.
 
 ## Feature pull requests
 - [ ] Pull request opened after the premortem
