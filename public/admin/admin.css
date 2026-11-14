@@ -128,3 +128,29 @@ dialog h2 { font-size: 1.35rem; }
   .two, .detail, .form-grid { grid-template-columns: 1fr; }
   .bubble { max-width: 94%; }
 }
+
+/* agent prompt and knowledge */
+.counter { margin-left: 8px; font-weight: 400; color: var(--muted); }
+.counter.over { color: var(--bad); font-weight: 600; }
+.hint { margin: 0; font-size: 13px; color: var(--muted); }
+.hint code, .locked code { background: #eef2f3; border-radius: 6px; padding: 1px 6px; }
+.locked { margin: 0; padding-left: 18px; display: grid; gap: 8px; }
+textarea[name='instructions'] { min-height: 280px; line-height: 1.55; }
+.prompt-pre { margin: 14px 0 0; max-height: 55vh; overflow: auto; white-space: pre-wrap; background: #0b1f2a; color: #d9f7f0; border-radius: 12px; padding: 16px; font-size: 13px; line-height: 1.6; font-family: ui-monospace, Menlo, monospace; }
+dialog:has(.prompt-pre) { width: min(760px, calc(100vw - 24px)); }
+.meter { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-bottom: 14px; padding: 12px 16px; border-radius: 12px; background: var(--mint-l); border: 1px solid #bfeae0; }
+.meter span { color: var(--muted); font-size: 13.5px; }
+.meter.near { background: var(--warn-bg); border-color: #f6d98a; }
+.meter.over { background: var(--bad-bg); border-color: #f5b5b5; }
+.meter.over span { color: var(--bad); }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.tab { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 7px 14px; cursor: pointer; font-weight: 500; }
+.tab span { color: var(--muted); font-weight: 400; margin-left: 4px; }
+.tab[aria-pressed='true'] { background: var(--teal); border-color: var(--teal); color: #fff; }
+.tab[aria-pressed='true'] span { color: #d9f7f0; }
+.chip.kind-service { background: var(--mint); color: var(--teal-d); }
+.chip.kind-faq { background: var(--info-bg); color: var(--info); }
+.chip.kind-policy { background: var(--warn-bg); color: var(--warn); }
+.keywords { margin: 0; font-size: 12.5px; color: var(--muted); }
+.keywords::before { content: 'Keywords: '; font-weight: 600; }
+@media (max-width: 900px) { textarea[name='instructions'] { min-height: 200px; } }

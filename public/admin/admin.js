@@ -10,7 +10,8 @@ const NAV = [
   ['appointments', 'Appointments'],
   ['follow-ups', 'Follow-ups'],
   ['patients', 'Patients'],
-  ['skills', 'Agent skills'],
+  ['agent', 'Agent prompt'],
+  ['skills', 'Agent knowledge'],
   ['doctors', 'Doctors'],
   ['clinic', 'Clinic profile'],
   ['data', 'How data is stored'],
@@ -115,6 +116,7 @@ const views = {
   appointments: appointmentsView,
   'follow-ups': followUpsView,
   patients: patientsView,
+  agent: agentView,
   skills: skillsView,
   doctors: doctorsView,
   clinic: clinicView,
@@ -263,27 +265,121 @@ async function patientsView(view) {
   await load();
 }
 
+/* ---------- agent prompt ---------- */
+const MAX_INSTRUCTIONS = 4000;
+const MAX_GREETING = 300;
+
+async function agentView(view) {
+  const a = await api('GET', '/agent');
+  view.innerHTML = `${head('Agent prompt', 'How the voice agent sounds. Saved text is used from the next call.')}
+    <div class="grid two">
+      <form class="card stack" id="agent-form">
+        <label class="field"><span>Instructions: persona, tone and language <small class="counter" id="count-instructions"></small></span>
+          <textarea name="instructions" rows="14" class="bn" spellcheck="false">${esc(a.instructions)}</textarea></label>
+        <label class="field"><span>Greeting <small class="counter" id="count-greeting"></small></span>
+          <textarea name="greeting" rows="3" class="bn" spellcheck="false">${esc(a.greeting)}</textarea></label>
+        <p class="hint">Write <code>{clinic}</code> where the clinic name should go.</p>
+        <p class="error-text" id="agent-error" role="alert"></p>
+        <div class="toolbar" style="margin:0">
+          <button class="btn btn-primary" type="submit">Save changes</button>
+          <button class="btn" type="button" id="preview">Show final prompt</button>
+          <button class="btn btn-danger" type="button" id="reset">Reset to default</button>
+        </div>
+      </form>
+      <section class="card"><h2>Always applied by the system</h2>
+        <p class="muted" style="margin-top:0">These parts stay in code, come after your text, and win over it. They cannot be edited or removed here.</p>
+        <ul class="locked">
+          <li>Today's date and time</li>
+          <li>The call flow: name, phone read back digit by digit, reason, time, confirm before booking</li>
+          <li>Facts only from the clinic's tools: never invent prices, hours or slots</li>
+          <li>Safety: no medical advice, emergencies go to a doctor or hospital</li>
+          <li>Clinic hours, doctors and the knowledge topic titles</li>
+        </ul>
+      </section>
+    </div>`;
+  const form = view.querySelector('#agent-form');
+  const field = (name) => form.elements[name];
+  const count = (name, max, el) => {
+    const n = field(name).value.length;
+    el.textContent = `${n} / ${max}`;
+    el.classList.toggle('over', n > max);
+  };
+  const update = () => {
+    count('instructions', MAX_INSTRUCTIONS, view.querySelector('#count-instructions'));
+    count('greeting', MAX_GREETING, view.querySelector('#count-greeting'));
+  };
+  form.addEventListener('input', update);
+  update();
+  const body = () => ({ instructions: field('instructions').value, greeting: field('greeting').value });
+  const errorEl = view.querySelector('#agent-error');
+
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    errorEl.textContent = '';
+    try {
+      await api('PUT', '/agent', body());
+      toast('Saved. The next call uses this.');
+    } catch (error) {
+      if (error.status !== 401) errorEl.textContent = error.message;
+    }
+  };
+  view.querySelector('#reset').onclick = guard(async () => {
+    if (!confirm('Reset the instructions and the greeting to the built-in defaults?')) return;
+    await api('PUT', '/agent', { instructions: '', greeting: '' });
+    toast('Reset to default');
+    route();
+  });
+  view.querySelector('#preview').onclick = guard(async () => {
+    errorEl.textContent = '';
+    try {
+      const { prompt } = await api('POST', '/agent/preview', body());
+      const dlg = document.createElement('dialog');
+      dlg.innerHTML = `<form method="dialog"><h2>Final prompt</h2><p class="muted" style="margin:0">What a new call would be given, with today's date, your clinic, doctors and knowledge titles.</p><pre class="prompt-pre bn">${esc(prompt)}</pre><div class="dialog-actions"><button class="btn btn-primary">Close</button></div></form>`;
+      document.body.append(dlg);
+      dlg.onclose = () => dlg.remove();
+      dlg.showModal();
+    } catch (error) {
+      if (error.status !== 401) errorEl.textContent = error.message;
+    }
+  });
+}
+
 /* ---------- skills ---------- */
+const KINDS = [['service', 'Service', 'Services'], ['faq', 'FAQ', 'FAQs'], ['policy', 'Policy', 'Policies']];
+const kindLabel = (kind) => KINDS.find(([k]) => k === kind)?.[1] ?? kind;
+let skillFilter = 'all';
+
 async function skillsView(view) {
-  const { items } = await api('GET', '/skills');
-  view.innerHTML = `${head('Agent skills', 'Everything here is knowledge the voice agent can look up during a call. Enabled skills also appear on the website.', '<button class="btn btn-primary" id="add">+ Add skill</button>')}
-    ${items.length ? `<div class="skills">${items.map((s) => `
-      <article class="card skill ${s.enabled ? '' : 'off'}"><h3 class="bn">${esc(s.title)}</h3><p class="muted bn" style="margin:0">${esc(s.description)}</p>${s.content ? `<div class="content bn">${esc(s.content)}</div>` : ''}
+  const { items, title_index_cap: cap } = await api('GET', '/skills');
+  const enabled = items.filter((s) => s.enabled).length;
+  const over = enabled > cap;
+  const shown = skillFilter === 'all' ? items : items.filter((s) => s.kind === skillFilter);
+  view.innerHTML = `${head('Agent knowledge', 'Everything here is knowledge the voice agent can look up during a call. Services also appear on the website.', '<button class="btn btn-primary" id="add">+ Add entry</button>')}
+    <div class="meter ${over ? 'over' : enabled >= cap * 0.9 ? 'near' : ''}" role="status">
+      <strong>${enabled} of ${cap}</strong> titles in the agent's index
+      <span>${over ? 'Over the limit: the agent no longer sees the list and has to search. Disable or merge some entries.' : enabled >= cap * 0.9 ? 'Close to the limit.' : 'The agent sees every enabled title and fetches the details when needed.'}</span>
+    </div>
+    <div class="tabs" role="group" aria-label="Filter by type">
+      ${[['all', 'All', items.length], ...KINDS.map(([k, , plural]) => [k, plural, items.filter((s) => s.kind === k).length])].map(([k, label, n]) => `<button type="button" class="tab" data-filter="${k}" aria-pressed="${skillFilter === k}">${esc(label)} <span>${n}</span></button>`).join('')}
+    </div>
+    ${shown.length ? `<div class="skills">${shown.map((s) => `
+      <article class="card skill ${s.enabled ? '' : 'off'}"><div><span class="chip kind-${esc(s.kind)}">${esc(kindLabel(s.kind))}</span></div><h3 class="bn">${esc(s.title)}</h3><p class="muted bn" style="margin:0">${esc(s.description)}</p>${s.content ? `<div class="content bn">${esc(s.content)}</div>` : ''}${s.keywords ? `<p class="keywords bn">${esc(s.keywords)}</p>` : ''}
         <div class="actions"><label class="switch"><input type="checkbox" data-toggle="${s.id}" ${s.enabled ? 'checked' : ''}> ${s.enabled ? 'Enabled' : 'Disabled'}</label><span style="flex:1"></span><button class="btn btn-small" data-edit="${s.id}">Edit</button><button class="btn btn-small btn-danger" data-del="${s.id}">Delete</button></div>
-      </article>`).join('')}</div>` : empty('No skills yet. Add the first one so the agent can answer questions.')}`;
+      </article>`).join('')}</div>` : empty(items.length ? 'Nothing of this type yet.' : 'No entries yet. Add the first one so the agent can answer questions.')}`;
   const byId = new Map(items.map((s) => [String(s.id), s]));
   view.querySelector('#add').onclick = () => skillDialog(null);
+  view.querySelectorAll('[data-filter]').forEach((b) => (b.onclick = () => ((skillFilter = b.dataset.filter), route())));
   view.querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => skillDialog(byId.get(b.dataset.edit))));
   view.querySelectorAll('[data-toggle]').forEach((c) => (c.onchange = guard(async () => {
     const s = byId.get(c.dataset.toggle);
     await api('PUT', `/skills/${s.id}`, { ...s, enabled: c.checked });
-    toast(c.checked ? 'Skill enabled' : 'Skill disabled');
+    toast(c.checked ? 'Entry enabled' : 'Entry disabled');
     route();
   })));
   view.querySelectorAll('[data-del]').forEach((b) => (b.onclick = guard(async () => {
     if (!confirm(`Delete “${byId.get(b.dataset.del).title}”? The agent will stop knowing it.`)) return;
     await api('DELETE', `/skills/${b.dataset.del}`);
-    toast('Skill deleted');
+    toast('Entry deleted');
     route();
   })));
 }
@@ -310,12 +406,14 @@ function dialog(html, onSubmit) {
 }
 
 function skillDialog(skill) {
-  dialog(`<h2>${skill ? 'Edit skill' : 'Add skill'}</h2>
-    <label class="field"><span>Title (what the agent searches by)</span><input type="text" name="title" value="${esc(skill?.title ?? '')}" maxlength="80" required class="bn"></label>
-    <label class="field"><span>Short description (shown on the website)</span><input type="text" name="description" value="${esc(skill?.description ?? '')}" maxlength="400" required class="bn"></label>
+  dialog(`<h2>${skill ? 'Edit entry' : 'Add entry'}</h2>
+    <label class="field"><span>Type</span><select name="kind">${KINDS.map(([k, label]) => `<option value="${k}" ${(skill?.kind ?? 'service') === k ? 'selected' : ''}>${label}${k === 'service' ? ' (shown on the website)' : ' (agent only)'}</option>`).join('')}</select></label>
+    <label class="field"><span>Title: what the agent looks up. English with a short Bangla hint works best.</span><input type="text" name="title" value="${esc(skill?.title ?? '')}" maxlength="80" required class="bn"></label>
+    <label class="field"><span>Short description (shown on the website for services)</span><input type="text" name="description" value="${esc(skill?.description ?? '')}" maxlength="400" required class="bn"></label>
     <label class="field"><span>Details the agent will say: prices, steps, rules</span><textarea name="content" maxlength="4000" class="bn">${esc(skill?.content ?? '')}</textarea></label>
+    <label class="field"><span>Keywords: other words callers use, Bangla and English, separated by commas</span><input type="text" name="keywords" value="${esc(skill?.keywords ?? '')}" maxlength="300" class="bn" placeholder="wisdom, দাঁত তোলা, আক্কেল দাঁত"></label>
     <label class="switch"><input type="checkbox" name="enabled" ${skill?.enabled ?? true ? 'checked' : ''}> Enabled</label>`, (f) => {
-    const body = { title: f.get('title'), description: f.get('description'), content: f.get('content'), enabled: f.get('enabled') === 'on' };
+    const body = { title: f.get('title'), description: f.get('description'), content: f.get('content'), kind: f.get('kind'), keywords: f.get('keywords'), enabled: f.get('enabled') === 'on' };
     return skill ? api('PUT', `/skills/${skill.id}`, body) : api('POST', '/skills', body);
   });
 }
@@ -390,9 +488,9 @@ function dataView(view) {
     ['patients', 'The person behind the calls, unique by phone.', 'id, full_name, phone (unique), created_at'],
     ['appointments', 'Bookings. One active booking per doctor and slot (unique index).', 'patient_id, call_id, doctor_id → doctors,\nslot, service, status'],
     ['callbacks', 'Requests for a human to call back.', 'call_id → calls, name, phone, reason,\npreferred_time, status'],
-    ['skills', 'Agent knowledge you manage here.', 'title, description, content, enabled'],
+    ['skills', 'Agent knowledge you manage here: services, FAQs and policies.', 'title, description, content, kind, keywords, enabled'],
     ['doctors', 'Who can be booked and when.', 'name_en, name_bn, specialty, days, start_time,\nend_time, active'],
-    ['settings', 'Clinic profile as key/value.', 'key, value'],
+    ['settings', 'Clinic profile and agent prompt as key/value.', 'key, value'],
   ];
   view.innerHTML = `${head('How data is stored', 'The path from a live call into this portal')}
     <div class="grid two">

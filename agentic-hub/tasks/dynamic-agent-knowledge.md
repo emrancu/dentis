@@ -85,13 +85,13 @@ None.
   - files: `src/interface/http/admin-routes.js`, `test/interface/http-api.test.js`
   - done when: route tests cover auth, CSRF header, save, reset, preview of unsaved text, and an edit visible in the next `POST /api/session`
 
-- [~] 6. Admin UI
+- [x] 6. Admin UI
   - parallel: no (after 5)
   - what: **Agent prompt** page, and the Skills page with kind filter, Type, Keywords and the "N of 40 titles" counter with a warning at the cap. Add the nav link.
   - files: `public/admin/admin.js`, `public/admin/admin.css`
   - done when: a screenshot check at desktop and phone width shows both pages with their empty, saved, error and over-cap states, and a manual run edits the prompt and a skill against `wrangler dev`
 
-- [ ] 7. Retrieval eval
+- [~] 7. Retrieval eval
   - parallel: no (after 3, 4)
   - what: about 30 Bangla and English questions mapped to expected skills, run through the real seed and ranking.
   - files: `test/application/retrieval-eval.test.js`
