@@ -5,7 +5,7 @@
 - Contracts: [http-api](../contracts/http-api.md), [agent-tools](../contracts/agent-tools.md), [data-model](../contracts/data-model.md)
 - PR plan: one for all
 - Branch: `feature/dynamic-agent-knowledge` (the folder is not a git repo yet, so create the repo or the branch before `/task-loop`)
-- Pull request: none yet
+- Pull request: https://github.com/emrancu/dentis/pull/1
 
 ## Goal
 Staff edit, in `/admin`, how the voice agent speaks and what it knows, and the next call uses it with no deploy.
@@ -134,4 +134,4 @@ Imagine staff edited the prompt and the agent got worse or unsafe, an FAQ answer
 - The three defaults (locked rules, no website FAQ, AI Search deferred) were used as written. The owner asked "which three", was told, and did not object.
 
 ## Feature pull requests
-- [ ] Pull request opened after the premortem
+- [!] Pull request opened after the premortem: https://github.com/emrancu/dentis/pull/1 (waiting on merge)
