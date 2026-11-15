@@ -97,3 +97,62 @@ describe('slide-knob button styles', () => {
     assert.match(read('js/knob-button.js'), /ResizeObserver/);
   });
 });
+
+describe('slide-knob buttons in the page', () => {
+  const html = read('index.html');
+  const buttons = [...html.matchAll(/<(button|a)\b([^>]*?\bclass="[^"]*\bkb\b[^"]*"[^>]*)>(.*?)<\/\1>/gs)].map((m) => ({ tag: m[1], classes: /class="([^"]*)"/.exec(m[2])[1], attrs: m[2], inner: m[3] }));
+  const ARROW_PATH = 'M0 0h2v2H0zM2 2h2v2H2zM4 4h2v2H4zM2 6h2v2H2zM0 8h2v2H0z';
+
+  it('every call-to-action button is a slide-knob button', () => {
+    assert.equal(buttons.length, 8);
+    const where = (re) => buttons.filter((b) => re.test(b.attrs + b.classes));
+    assert.equal(where(/id="book-btn"/).length, 1, 'hero booking button');
+    assert.equal(where(/href="#services"/).length, 1, 'hero secondary link');
+    assert.equal(where(/btn-book/).length, 1, 'header booking button');
+    assert.equal(where(/id="visit-tel"/).length, 1, 'visit phone link');
+    assert.equal(where(/id="fab-call"/).length, 1, 'floating button');
+    assert.equal(where(/data-restart/).length, 2, 'call panel retry and call again');
+    assert.equal(where(/data-start-booking/).length, 3, 'hero, header and visit booking');
+  });
+
+  it('each one has the knob, the arrow and one label, in that order', () => {
+    for (const b of buttons) {
+      assert.match(b.inner, /^<span class="kb__knob" aria-hidden="true">.*?<\/span><span class="kb__label" data-i18n="[A-Za-z.]+">[^<]+<\/span>$/s, b.classes + b.attrs);
+      assert.equal(b.inner.split('class="kb__label"').length, 2, 'exactly one label');
+    }
+  });
+
+  it('the arrow is the fixed pixel chevron on every button, never another icon', () => {
+    const arrows = [...html.matchAll(/<svg class="kb__arrow"([^>]*)><path([^>]*)\/><\/svg>/g)];
+    assert.equal(arrows.length, buttons.length);
+    for (const a of arrows) {
+      assert.match(a[1], /viewBox="0 0 6 10" width="9" height="15" aria-hidden="true"/);
+      assert.ok(a[2].includes('fill="currentColor"') && a[2].includes(`d="${ARROW_PATH}"`));
+    }
+  });
+
+  it('the chevron really is five squares on a 3 by 5 grid, drawn from the specified points', () => {
+    const squares = [...ARROW_PATH.matchAll(/M(\d+) (\d+)h2v2H\d+z/g)].map((m) => [Number(m[1]), Number(m[2])]);
+    assert.deepEqual(squares, [[0, 0], [2, 2], [4, 4], [2, 6], [0, 8]]); // (0,0)(1,1)(2,2)(1,3)(0,4) at 2 units per cell
+  });
+
+  it('the floating button also carries a phone icon, shown only in the phone-sized circle', () => {
+    const fab = buttons.find((b) => /id="fab-call"/.test(b.attrs));
+    assert.match(fab.inner, /<svg class="kb__phone"/);
+    assert.match(fab.attrs, /aria-label=/);
+  });
+
+  it('utility controls keep their own style: language toggle, menu, mute, end call, close and the hero tabs', () => {
+    for (const id of ['lang-btn', 'menu-btn', 'mute-btn', 'end-btn']) assert.match(html, new RegExp(`id="${id}"[^>]*>`));
+    for (const id of ['lang-btn', 'menu-btn', 'mute-btn', 'end-btn']) assert.doesNotMatch(new RegExp(`<[^>]*id="${id}"[^>]*>`).exec(html)[0], /\bkb\b/);
+    assert.match(html, /class="tx-tab"/);
+  });
+
+  it('the labels still come from the dictionary, so both languages work', async () => {
+    const { STRINGS } = await import('../../public/js/i18n.js');
+    for (const b of buttons) {
+      const key = /data-i18n="([^"]+)"/.exec(b.inner)[1];
+      assert.ok(STRINGS.en[key] && STRINGS.bn[key], key);
+    }
+  });
+});

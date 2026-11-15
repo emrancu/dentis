@@ -226,7 +226,8 @@ describe('layout rules that protect the review findings', () => {
 
   it('touch targets are at least 44px for the header, navigation, footer links and inline links', () => {
     for (const rule of [/\.nav a \{ min-height: 44px/, /\.brand \{ min-height: 44px/, /\.footer-links a \{[^}]*min-height: 44px/, /\.facts a, \.footer-contact a \{[^}]*min-height: 44px/, /\.menu-btn \{ display: none; width: 44px; height: 44px/]) assert.match(css, rule);
-    assert.match(css, /\.btn-book \{[^}]*min-height: 44px/);
+    assert.match(css, /\.kb--sm \{ --kb-h: 44px;/); // the header, floating and panel buttons
+    assert.match(css, /\.kb \{[^}]*--kb-h: 52px/);
     assert.match(css, /\.lang-btn \{[^}]*min-height: 44px/);
   });
 

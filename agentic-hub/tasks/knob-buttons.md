@@ -37,20 +37,35 @@ None.
   - what: `.kb` styles, `knob-button.js` (pure travel function + runtime measuring), unit tests
   - files: `public/css/site.css`, `public/js/knob-button.js`, `public/js/main.js`, `test/frontend`
   - done when: tests cover the arrow signature, timing, transform-only, reduced motion and the travel maths
-- [~] 2. Apply it to every call-to-action button
+- [x] 2. Apply it to every call-to-action button
   - parallel: no (after 1)
   - what: replace the old button markup and styles
   - files: `public/index.html`, `public/css/site.css`
   - done when: no old button class is left and the static Bangla text still equals the dictionary
-- [ ] 3. Verify in a real browser
+- [x] 3. Verify in a real browser
   - parallel: no (after 2)
   - what: hover each button and measure where the knob and label end up, in both languages, on desktop and phone
   - done when: measured positions match the spec within a pixel and nothing overflows
-- [ ] 4. Premortem & spec re-evaluation
+- [x] 4. Premortem & spec re-evaluation
   - parallel: no (after all above)
-  - premortem: <to fill>
-  - spec changes: <to fill>
+  - premortem: see below
+  - spec changes: see below
   - done when: premortem filled in and the spec matches what was built
+
+### Premortem
+| Likely cause | Covered by |
+|---|---|
+| The knob does not reach the end because the width changed (language switch, font load, button shown later) | The travel is measured at runtime and re-measured by a `ResizeObserver` and when fonts are ready. Measured in a real browser in both languages and with 3 different label widths: the knob ends 5px from the edge (4px on the small variant) within a pixel. |
+| JavaScript fails | The buttons still work. The knob just stays at the start and nothing slides. |
+| Touch screens have no hover, or hover sticks after a tap | The button action is unaffected. On phones the floating button is a plain circle and does not slide. |
+| Reduced-motion users | Transitions are off (tested). |
+| A full-width button on a phone stretches the shell | The knob travels the full width and the label lands 28px from the left. Rest geometry measured on a 360px phone. |
+| Hover timing on real hardware | **Measured only in headless Chrome**, where the 3D hero scene runs in software and stalls frames, so the hero buttons were not timed there. The same CSS was verified on the buttons lower on the page. Real-GPU and Safari timing is untested. |
+| A keyboard user gets no effect | `:focus-visible` triggers the same slide. Covered by a test of the CSS selector, **not by a real Tab key press**. |
+
+### Spec changes
+- The floating button on phones (≤520px) shows a phone icon in a circle and does not slide, because there is no room. This is the only place the arrow is not used.
+- The call panel's "Call again" and "Try again" use the small light variant. Mute, end call, close, the language toggle, the menu and the hero tabs were left alone on purpose.
 
 ## Feature pull requests
 - [ ] Pull request opened after the premortem
