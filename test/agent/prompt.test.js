@@ -4,7 +4,7 @@ import { buildInstructions } from '../../src/agent/prompt.js';
 import { AgentPrompt } from '../../src/agent/agent-prompt.js';
 import { ClinicProfile } from '../../src/clinic/clinic-profile.js';
 import { Doctor } from '../../src/scheduling/doctor.js';
-import { Skill, TITLE_INDEX_CAP } from '../../src/knowledge/skill.js';
+import { Skill } from '../../src/knowledge/skill.js';
 
 const skill = (title, extra = {}) => new Skill({ title, description: 'About this topic', ...extra });
 const base = {
@@ -119,19 +119,14 @@ describe('knowledge titles in the prompt', () => {
     assert.doesNotMatch(t, /Hidden/);
   });
 
-  it('lists titles up to the cap', () => {
-    const t = buildInstructions({ ...base, skills: many(TITLE_INDEX_CAP) });
+  it('lists every title, however many there are, and has no search tool to point to', () => {
+    const t = buildInstructions({ ...base, skills: many(120) });
     assert.match(t, /- Topic 000/);
-    assert.match(t, new RegExp(`- Topic ${String(TITLE_INDEX_CAP - 1).padStart(3, '0')}`));
-  });
-
-  it('past the cap drops the list and tells the agent to search', () => {
-    const t = buildInstructions({ ...base, skills: many(TITLE_INDEX_CAP + 1) });
-    assert.doesNotMatch(t, /- Topic 000/);
-    assert.match(t, /too many topics to list here\. Use lookup_skill/);
+    assert.match(t, /- Topic 119/);
+    assert.doesNotMatch(t, /lookup_skill|too many topics/);
   });
 
   it('says so when there are no topics yet', () => {
-    assert.match(buildInstructions({ ...base, skills: [] }), /\(none yet\) Use lookup_skill/);
+    assert.match(buildInstructions({ ...base, skills: [] }), /\(none yet\).*hand over to a human/);
   });
 });

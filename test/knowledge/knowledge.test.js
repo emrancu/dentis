@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
-import { TITLE_INDEX_CAP } from '../../src/knowledge/skill.js';
 import { buildWorld, startCall } from '../support/fixtures.js';
 
 let world;
@@ -26,7 +25,7 @@ describe('get_skill', () => {
   it('fails with a code and guidance for an unknown title', async () => {
     const r = await run('get_skill', { title: 'Nope' });
     assert.deepEqual([r.ok, r.error], [false, 'skill_not_found']);
-    assert.match(r.message, /lookup_skill/);
+    assert.match(r.message, /hand over to a human/);
     assert.equal((await run('get_skill')).ok, false);
   });
 
@@ -48,12 +47,10 @@ describe('get_skill', () => {
 });
 
 describe('Bangla text', () => {
-  it('an entry written in Bangla is found and returned as written', async () => {
+  it('an entry written in Bangla is returned as written', async () => {
     await s.skillCatalog.update(1, { title: 'স্কেলিং ও পলিশিং', description: 'দাঁত পরিষ্কার', content: 'খরচ ১৫০০ টাকা।' });
     const got = (await run('get_skill', { title: 'স্কেলিং ও পলিশিং' })).skill;
     assert.deepEqual(got, { title: 'স্কেলিং ও পলিশিং', description: 'দাঁত পরিষ্কার', content: 'খরচ ১৫০০ টাকা।' });
-    const found = (await run('lookup_skill', { query: 'স্কেলিং' })).skills[0];
-    assert.equal(found.title, 'স্কেলিং ও পলিশিং');
   });
 
   it('the public site carries the Bangla specialty of doctors and the Bangla clinic fields', async () => {
@@ -99,19 +96,18 @@ describe('what the website and the agent see', () => {
     assert.deepEqual(Object.keys(site).sort(), ['clinic', 'doctors']);
   });
 
-  it('the agent still sees FAQs and policies in list_skills and in the prompt', async () => {
+  it('the agent sees FAQs and policies in the prompt and can fetch them', async () => {
     await add({ title: 'Where to park', kind: 'faq' });
-    assert.ok((await run('list_skills')).skills.some((k) => k.title === 'Where to park'));
+    assert.equal((await run('get_skill', { title: 'Where to park' })).ok, true);
     await startCall(world, '2.2.2.2');
     assert.match(world.ports.gateway.sessions.at(-1).instructions, /- Where to park/);
   });
 
-  it('past the cap a new session carries no title list but still has the search instruction', async () => {
-    for (let i = 0; i < TITLE_INDEX_CAP; i++) await add({ title: `Extra topic ${String(i).padStart(2, '0')}` });
+  it('every enabled title is in the prompt however many there are', async () => {
+    for (let i = 0; i < 60; i++) await add({ title: `Extra topic ${String(i).padStart(2, '0')}` });
     await startCall(world, '3.3.3.3');
     const prompt = world.ports.gateway.sessions.at(-1).instructions;
-    assert.doesNotMatch(prompt, /- Extra topic 00/);
-    assert.match(prompt, /too many topics to list here/);
-    assert.equal((await run('lookup_skill', { query: 'extra topic 07' })).found, true);
+    assert.match(prompt, /- Extra topic 00/);
+    assert.match(prompt, /- Extra topic 59/);
   });
 });

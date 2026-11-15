@@ -66,27 +66,15 @@ describe('ToolExecutor results', () => {
     assert.deepEqual(r.doctors.map((d) => d.name_en), ['Dr. Nusrat Jahan']);
   });
 
-  it('list_skills shows enabled skills without their details', async () => {
-    const r = await run('list_skills');
-    assert.deepEqual(r.skills.map((s) => s.title), ['Scaling and polishing', 'Root canal treatment']);
-    assert.equal('content' in r.skills[0], false);
-  });
-
-  it('lookup_skill returns details for the best match and found:false otherwise', async () => {
-    const hit = await run('lookup_skill', { query: 'root canal fee' });
-    assert.equal(hit.found, true);
-    assert.equal(hit.skills[0].content, 'Fee: 6000 to 12000 taka.');
-    const miss = await run('lookup_skill', { query: 'helicopter rides' });
-    assert.deepEqual([miss.ok, miss.found, miss.skills], [true, false, []]);
-  });
-
-  it('lookup_skill never leaks a disabled skill', async () => {
-    assert.equal((await run('lookup_skill', { query: 'secret draft hidden' })).found, false);
+  it('the search and list tools no longer exist', async () => {
+    assert.deepEqual(exec.toolNames.filter((n) => /skill/.test(n)), ['get_skill']);
+    await assert.rejects(run('lookup_skill', { query: 'root canal' }), (e) => e.code === 'unknown_tool');
+    await assert.rejects(run('list_skills'), (e) => e.code === 'unknown_tool');
   });
 
   it('a skill edited in admin is what the agent says next', async () => {
     await world.services.skillCatalog.update(1, { title: 'Scaling and polishing', description: 'Cleaning', content: 'Fee: 1800 taka.' });
-    assert.equal((await run('lookup_skill', { query: 'scaling' })).skills[0].content, 'Fee: 1800 taka.');
+    assert.equal((await run('get_skill', { title: 'Scaling and polishing' })).skill.content, 'Fee: 1800 taka.');
   });
 
   it('check_availability, book_appointment and save_patient_details work through the tool names and snake_case args', async () => {
@@ -139,7 +127,7 @@ describe('ToolExecutor results', () => {
   it('missing or odd arguments never crash the executor', async () => {
     assert.equal((await run('book_appointment')).ok, false);
     assert.equal((await exec.execute('check_availability', null, callId)).ok, false);
-    assert.equal((await run('lookup_skill', { query: undefined })).found, false);
+    assert.equal((await run('get_skill', { title: undefined })).ok, false);
   });
 });
 

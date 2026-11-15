@@ -188,8 +188,8 @@ describe('admin API', () => {
     await request('POST', '/api/session');
     const { instructions } = world.ports.gateway.sessions.at(-1);
     assert.match(instructions, /- Braces/);
-    const lookup = await (await request('POST', '/api/agent/tools/lookup_skill', { body: { call_id: 'call-1', args: { query: 'braces' } } })).json();
-    assert.equal(lookup.skills[0].content, 'From 40000 taka');
+    const fetched = await (await request('POST', '/api/agent/tools/get_skill', { body: { call_id: 'call-1', args: { title: 'Braces' } } })).json();
+    assert.equal(fetched.skill.content, 'From 40000 taka');
 
     assert.equal((await request('DELETE', `/api/admin/skills/${skill.id}`, { headers: h })).status, 204);
     assert.equal((await request('DELETE', `/api/admin/skills/${skill.id}`, { headers: h })).status, 404);
@@ -256,7 +256,7 @@ describe('admin API', () => {
     assert.equal((await request('GET', '/api/admin/calls/nope', { headers: h })).status, 404);
   });
 
-  it('skills carry a kind, report the title cap, and refuse duplicate titles', async () => {
+  it('skills carry a kind and refuse duplicate titles', async () => {
     const created = await request('POST', '/api/admin/skills', { body: { title: 'Where to park', description: 'Parking info', content: 'Behind the building.', kind: 'faq' }, headers: h });
     assert.equal(created.status, 201);
     const skill = await created.json();
@@ -264,7 +264,7 @@ describe('admin API', () => {
     assert.equal('keywords' in skill, false);
 
     const list = await (await request('GET', '/api/admin/skills', { headers: h })).json();
-    assert.equal(list.title_index_cap, 40);
+    assert.equal('title_index_cap' in list, false);
     assert.ok(list.items.every((i) => ['service', 'faq', 'policy'].includes(i.kind)));
 
     const dup = await request('POST', '/api/admin/skills', { body: { title: ' where TO park ', description: 'again' }, headers: h });

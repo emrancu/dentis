@@ -1,5 +1,5 @@
 import { ConflictError, NotFoundError } from '../shared/errors.js';
-import { Skill, rankSkills, sameTitle } from './skill.js';
+import { Skill, sameTitle } from './skill.js';
 
 /** What the voice agent reads: enabled skills only. */
 export class AgentKnowledge {
@@ -7,20 +7,11 @@ export class AgentKnowledge {
     this.skills = skills;
   }
 
-  async list() {
-    return (await this.skills.list()).filter((s) => s.enabled).map((s) => ({ title: s.title, description: s.description }));
-  }
-
   /** One enabled skill by exact title (the agent copies it from the list in its prompt). */
   async get({ title }) {
     const skill = (await this.skills.list()).find((s) => s.enabled && sameTitle(s.title, title));
-    if (!skill) throw new NotFoundError('skill_not_found', 'No topic with that title. Use lookup_skill with the caller\'s own words.');
+    if (!skill) throw new NotFoundError('skill_not_found', 'No topic with that title. Pick a title from the list in the prompt. If none fits, hand over to a human.');
     return { found: true, skill: { title: skill.title, description: skill.description, content: skill.content } };
-  }
-
-  async lookup({ query }) {
-    const found = rankSkills(await this.skills.list(), query);
-    return { found: found.length > 0, skills: found.map((s) => ({ title: s.title, description: s.description, content: s.content })) };
   }
 }
 

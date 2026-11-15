@@ -1,14 +1,13 @@
 import { AgentPrompt } from './agent-prompt.js';
-import { titleIndex } from '../knowledge/skill.js';
+import { enabledTitles } from '../knowledge/skill.js';
 import { WEEKDAYS_BN, WEEKDAYS_EN } from '../shared/time.js';
 
 const dayNames = (days) => days.map((d) => WEEKDAYS_EN[d].slice(0, 3)).join(', ');
 
 function knowledgeSection(skills) {
-  const { overCap, titles } = titleIndex(skills);
-  if (overCap) return 'There are too many topics to list here. Use lookup_skill with the caller\'s own words (Bangla or English).';
-  if (!titles.length) return '(none yet) Use lookup_skill if the caller asks about a service, fee or policy.';
-  return `${titles.map((t) => `- ${t}`).join('\n')}\n\nDecide from these titles which topics the question needs. Often it is one, sometimes two to four. Fetch only those, with get_skill using the exact title, once per topic. If none fits, use lookup_skill with the caller's words.`;
+  const titles = enabledTitles(skills);
+  if (!titles.length) return '(none yet) If the caller asks about a service, fee or policy, say you do not have that information and hand over to a human.';
+  return `${titles.map((t) => `- ${t}`).join('\n')}\n\nDecide from these titles which topics the question needs. Often it is one, sometimes two to four. Fetch only those, with get_skill using the exact title, once per topic. If none fits, say you do not have that information and hand over to a human.`;
 }
 
 /**
@@ -37,7 +36,7 @@ ${intent === 'booking' ? `# This call\nThe caller pressed "Book an appointment" 
 # Facts: always use tools
 - Opening hours, address, directions and phone: get_clinic_info.
 - Doctors: list_doctors.
-- Services, fees, policies and FAQs: the knowledge topics below, through get_skill or lookup_skill.
+- Services, fees, policies and FAQs: the knowledge topics below, through get_skill.
 - Never invent a price, hour, doctor, service or slot. If the tools have no answer, hand over to a human as described below.
 
 # When you cannot handle it: pass to a human

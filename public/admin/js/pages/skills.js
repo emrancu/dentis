@@ -7,14 +7,13 @@ const kindLabel = (kind) => KINDS.find(([k]) => k === kind)?.[1] ?? kind;
 let skillFilter = 'all';
 
 export async function skillsView(view) {
-  const { items, title_index_cap: cap } = await api('GET', '/skills');
+  const { items } = await api('GET', '/skills');
   const enabled = items.filter((s) => s.enabled).length;
-  const over = enabled > cap;
   const shown = skillFilter === 'all' ? items : items.filter((s) => s.kind === skillFilter);
   view.innerHTML = `${head('Agent knowledge', 'Everything here is knowledge the voice agent can look up during a call.', '<button class="btn btn-primary" id="add">+ Add entry</button>')}
-    <div class="meter ${over ? 'over' : enabled >= cap * 0.9 ? 'near' : ''}" role="status">
-      <strong>${enabled} of ${cap}</strong> titles in the agent's index
-      <span>${over ? 'Over the limit: the agent no longer sees the list and has to search. Disable or merge some entries.' : enabled >= cap * 0.9 ? 'Close to the limit.' : 'The agent sees every enabled title and fetches the details when needed.'}</span>
+    <div class="meter" role="status">
+      <strong>${enabled} of ${items.length}</strong> entries are enabled
+      <span>The agent sees the title of every enabled entry and fetches the details of the ones a question needs.</span>
     </div>
     <div class="tabs" role="group" aria-label="Filter by type">
       ${[['all', 'All', items.length], ...KINDS.map(([k, , plural]) => [k, plural, items.filter((s) => s.kind === k).length])].map(([k, label, n]) => `<button type="button" class="tab" data-filter="${k}" aria-pressed="${skillFilter === k}">${esc(label)} <span>${n}</span></button>`).join('')}

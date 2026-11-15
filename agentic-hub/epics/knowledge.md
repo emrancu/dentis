@@ -9,7 +9,7 @@ Staff change how the agent speaks, and keep the clinic's details and FAQs up to 
 - **Editable agent instructions** in admin: persona and tone, greeting, extra rules. The booking flow, tool rules, truthfulness and safety rules stay in code and are always appended after the editable text. Admin can preview the final prompt and reset to the default.
 - **Clinic details:** the existing clinic profile. Extra facts (parking, payment methods, emergency advice) are FAQ entries, not new columns.
 - **FAQ knowledge base:** skills get a `kind` (`service`, `faq`, `policy`) for the agent only. The website's Services section is fixed copy in `public/website/js/services.js`, not read from the database.
-- **Retrieval by the model first:** only skill titles go in the prompt, up to a cap (proposed 40), so the agent can fetch one by exact title (`get_skill`). `lookup_skill` stays as the search fallback and the only path past the cap. Admin shows "N of 40 titles in the agent's index".
+- **Retrieval by the model first:** every enabled skill title goes in the prompt, with no cap, and the agent decides which entries a question needs and fetches each by exact title (`get_skill`). There is no search tool. If no title fits, the agent says so and hands over to a human.
 - **Later, only if needed:** Cloudflare AI Search behind a `KnowledgeSearch` port (see the open item in decisions).
 
 ## Acceptance

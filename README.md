@@ -23,7 +23,7 @@ Everything the agent says and knows is edited in `/admin`, with no deploy. The n
 
 - **Agent prompt:** edit the persona and tone (`Instructions`) and the `Greeting`. Write `{clinic}` where the clinic name goes. **Show final prompt** previews the whole prompt for unsaved text, and **Reset to default** restores the built-in text. The booking steps, tool rules, "facts only from tools" and safety rules are **locked in code**. They always come after your text and win over it, so they cannot be edited away.
 - **Agent knowledge:** each entry has a type (**Service**, **FAQ** or **Policy**), a title, a description, and the details the agent will say, in English or Bangla. This knowledge is for the voice agent only. The website's service list is fixed copy in `public/website/js/services.js`, so editing it needs a code change.
-- **How the agent finds an entry:** it is shown the titles of enabled entries (never the details), up to 40. It fetches one by exact title with `get_skill`, or searches with `lookup_skill` by the caller's own words. Past 40 entries the list is left out and the agent only searches. The page shows "N of 40 titles in the agent's index".
+- **How the agent finds an entry:** it is shown the titles of every enabled entry (never the details) and decides which ones a question needs, usually one and sometimes up to four. It fetches each by exact title with `get_skill`. There is no search and no limit on titles. If no title fits, it says so and hands over to a human.
 
 ## How a call works
 
@@ -35,7 +35,7 @@ Browser ──POST /api/session {intent}──▶ StartCall: new call row, promp
    └─ hang up ──POST /api/calls/:id/finish──▶ transcript saved, status derived
 ```
 
-**Agent tools** (see [contract](agentic-hub/contracts/agent-tools.md)): `get_clinic_info`, `list_doctors`, `list_skills`, `get_skill`, `lookup_skill`, `check_availability`, `book_appointment`, `reschedule_appointment`, `cancel_appointment`, `save_patient_details`, `request_human_callback`, `get_current_datetime`, `end_call`. Facts such as fees, hours and slots come only from these tools. Editing a skill in `/admin` changes the next call, with no deploy.
+**Agent tools** (see [contract](agentic-hub/contracts/agent-tools.md)): `get_clinic_info`, `list_doctors`, `get_skill`, `check_availability`, `book_appointment`, `reschedule_appointment`, `cancel_appointment`, `save_patient_details`, `request_human_callback`, `get_current_datetime`, `end_call`. Facts such as fees, hours and slots come only from these tools. Editing a skill in `/admin` changes the next call, with no deploy.
 
 **Data model** ([contract](agentic-hub/contracts/data-model.md)): `calls`, `call_extractions`, `transcript_turns`, `patients`, `appointments`, `callbacks`, `skills`, `doctors`, `settings`. Validation lives in the domain: Bangladeshi mobile numbers (Bangla digits and `+880` accepted), real future dates within 60 days, doctor hours, one active booking per doctor and slot (also a unique index). After a call a small model adds an English summary and translation and fills gaps in the extraction. It never overrides what the tools captured.
 
