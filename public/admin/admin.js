@@ -227,9 +227,21 @@ async function appointmentsView(view) {
           .join('')}</tbody></table></div>`
       : `<div class="table-wrap">${empty('No appointments yet. Make a call from the website.')}</div>`
   }`;
+  const byId = new Map(items.map((a) => [String(a.id), a]));
   view.querySelectorAll('[data-act]').forEach((b) => (b.onclick = guard(async () => {
+    const a = byId.get(b.dataset.id);
+    const done = b.dataset.act === 'completed';
+    const who = `${a.patient_name} on ${formatSlot(a.slot)}`;
+    const ok = await confirmDialog({
+      title: done ? 'Mark this appointment as done?' : 'Cancel this appointment?',
+      text: done ? `${who} will be marked as completed.` : `${who} will be cancelled and the slot becomes free again. This cannot be undone.`,
+      confirm: done ? 'Mark done' : 'Cancel appointment',
+      cancel: done ? 'Not yet' : 'Keep it',
+      danger: !done,
+    });
+    if (!ok) return;
     await api('PATCH', `/appointments/${b.dataset.id}`, { status: b.dataset.act });
-    toast('Appointment updated');
+    toast(done ? 'Marked as done' : 'Appointment cancelled');
     route();
   })));
 }
@@ -381,6 +393,24 @@ async function skillsView(view) {
     toast('Entry deleted');
     route();
   })));
+}
+
+/** A small yes/no modal. Resolves true on confirm, false on cancel, Escape or backdrop click. */
+function confirmDialog({ title, text, confirm: confirmLabel, cancel: cancelLabel = 'Cancel', danger = false }) {
+  return new Promise((resolve) => {
+    const dlg = document.createElement('dialog');
+    dlg.className = 'confirm';
+    dlg.setAttribute('aria-labelledby', 'confirm-title');
+    dlg.innerHTML = `<form method="dialog"><h2 id="confirm-title">${esc(title)}</h2><p class="muted" style="margin:0">${esc(text)}</p><div class="dialog-actions"><button type="button" class="btn" data-no>${esc(cancelLabel)}</button><button type="button" class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-yes>${esc(confirmLabel)}</button></div></form>`;
+    document.body.append(dlg);
+    let answer = false;
+    dlg.querySelector('[data-no]').onclick = () => dlg.close();
+    dlg.querySelector('[data-yes]').onclick = () => ((answer = true), dlg.close());
+    dlg.onclick = (e) => { if (e.target === dlg) dlg.close(); };
+    dlg.onclose = () => { dlg.remove(); resolve(answer); };
+    dlg.showModal();
+    dlg.querySelector('[data-no]').focus();
+  });
 }
 
 function dialog(html, onSubmit) {

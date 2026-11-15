@@ -137,6 +137,7 @@ dialog h2 { font-size: 1.35rem; }
 .locked { margin: 0; padding-left: 18px; display: grid; gap: 8px; }
 textarea[name='instructions'] { min-height: 280px; line-height: 1.55; }
 .prompt-pre { margin: 14px 0 0; max-height: 55vh; overflow: auto; white-space: pre-wrap; background: #0b1f2a; color: #d9f7f0; border-radius: 12px; padding: 16px; font-size: 13px; line-height: 1.6; font-family: ui-monospace, Menlo, monospace; }
+dialog.confirm { width: min(420px, calc(100vw - 24px)); }
 dialog:has(.prompt-pre) { width: min(760px, calc(100vw - 24px)); }
 .meter { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-bottom: 14px; padding: 12px 16px; border-radius: 12px; background: var(--mint-l); border: 1px solid #bfeae0; }
 .meter span { color: var(--muted); font-size: 13.5px; }
