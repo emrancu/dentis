@@ -5,7 +5,7 @@
 - Contracts: [http-api](../contracts/http-api.md), [agent-tools](../contracts/agent-tools.md), [data-model](../contracts/data-model.md)
 - PR plan: one for all
 - Branch: `feature/website-polish`
-- Pull request: none yet
+- Pull request: https://github.com/emrancu/dentis/pull/2
 
 ## Goal
 The website reads as one finished product in **Bangla (the default)** and in **English**: no mixed-language strings, one time and number style, one label per thing, readable Bangla typography, and shareable per-language links. It comes from a website design review (24 findings) of commit `279461b` and the hero redesign `5fe3323`.
@@ -123,4 +123,4 @@ Imagine the site went live and visitors or staff still found it inconsistent, sl
 - **Finding 24:** the staff-portal link left the public footer. The "demo clinic with sample data" line stays on purpose and is one dictionary key.
 
 ## Feature pull requests
-- [ ] Pull request opened after the premortem
+- [!] Pull request opened after the premortem: https://github.com/emrancu/dentis/pull/2 (waiting on merge)
