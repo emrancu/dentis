@@ -31,7 +31,7 @@
 ## Assumed
 | Topic | Default |
 |---|---|
-| Voice settings | Model `gpt-realtime`, voice `marin`, caller transcription `gpt-4o-transcribe` with language `bn`, semantic VAD. |
+| Voice settings | Model `gpt-realtime-mini` (the low-cost model; switch to `gpt-realtime` for higher quality), voice `marin`, caller transcription `gpt-4o-mini-transcribe` with language `bn`, semantic VAD. |
 | Post-call analysis | A small chat model writes an English summary, an English translation of each turn, and fills gaps in the extraction. It never overrides data the tools captured. |
 | Clinic week | Doctors work Saturday to Thursday by default. Friday is off. Each doctor has their own days and hours. |
 | Booking | Slot length 30 minutes (setting), at least 30 minutes ahead, at most 60 days ahead. |

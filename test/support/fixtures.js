@@ -21,7 +21,7 @@ export class FakeGateway {
   async createClientSecret(session) {
     if (this.fail) throw new Error('gateway down');
     this.sessions.push(session);
-    return { value: 'ek_test', model: 'gpt-realtime' };
+    return { value: 'ek_test', model: 'gpt-realtime-mini' };
   }
 }
 

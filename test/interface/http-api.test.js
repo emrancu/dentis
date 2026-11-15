@@ -39,7 +39,7 @@ describe('public API', () => {
   it('POST /api/session starts a call and returns only the short-lived key', async () => {
     const res = await request('POST', '/api/session', { headers: { 'CF-Connecting-IP': '203.0.113.5' } });
     assert.equal(res.status, 201);
-    assert.deepEqual(await res.json(), { call_id: 'call-1', client_secret: 'ek_test', model: 'gpt-realtime', max_seconds: 300 });
+    assert.deepEqual(await res.json(), { call_id: 'call-1', client_secret: 'ek_test', model: 'gpt-realtime-mini', max_seconds: 300 });
   });
 
   it('POST /api/session takes an optional intent in a JSON body, and an empty body still works', async () => {

@@ -31,7 +31,7 @@ Everything the agent says and knows is edited in `/admin`, with no deploy. The n
 ```
 Browser ──POST /api/session {intent}──▶ StartCall: new call row, prompt built from clinic + doctors + skill titles,
    │                                  short-lived OpenAI key returned
-   ├─ WebRTC audio + data channel ──▶ OpenAI Realtime (gpt-realtime, Bangla)
+   ├─ WebRTC audio + data channel ──▶ OpenAI Realtime (gpt-realtime-mini, Bangla)
    ├─ model function call ──POST /api/agent/tools/:name──▶ ToolExecutor ─▶ use cases ─▶ D1
    ├─ hang up ──POST /api/calls/:id/finish──▶ transcript saved, status derived ─▶ background analysis
    └─ PUT /api/calls/:id/recording ─▶ R2

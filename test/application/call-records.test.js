@@ -17,7 +17,7 @@ beforeEach(async () => {
 describe('StartCall', () => {
   it('creates an in-progress call and returns the short-lived key', async () => {
     const r = await s.startCall.execute({ ip: '1.2.3.4' });
-    assert.deepEqual([r.callId, r.clientSecret, r.model, r.maxSeconds], ['call-1', 'ek_test', 'gpt-realtime', MAX_CALL_SECONDS]);
+    assert.deepEqual([r.callId, r.clientSecret, r.model, r.maxSeconds], ['call-1', 'ek_test', 'gpt-realtime-mini', MAX_CALL_SECONDS]);
     const call = await world.ports.calls.findById('call-1');
     assert.equal(call.status, 'in_progress');
     assert.match(call.ipHash, /^[0-9a-f]{64}$/);
