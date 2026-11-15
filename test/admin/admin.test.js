@@ -161,18 +161,18 @@ describe('UpdateAppointmentStatus and ResolveCallback', () => {
 
 describe('SkillCatalog', () => {
   it('creates, updates, disables and deletes', async () => {
-    const created = await s.skillCatalog.create({ title: 'Braces', description: 'Straighten teeth', content: 'From 35000 taka' });
+    const created = await s.skillCatalog.create({ title: 'Braces', content: 'From 35000 taka' });
     assert.ok(created.id);
     assert.equal(created.updatedAt, world.clock.now().toISOString());
-    await s.skillCatalog.update(created.id, { title: 'Braces', description: 'Straighten teeth', content: 'From 40000 taka', enabled: false });
+    await s.skillCatalog.update(created.id, { title: 'Braces', content: 'From 40000 taka', enabled: false });
     assert.equal((await world.ports.skills.findById(created.id)).content, 'From 40000 taka');
     await s.skillCatalog.remove(created.id);
     assert.equal(await world.ports.skills.findById(created.id), null);
   });
 
   it('validates input and reports unknown ids', async () => {
-    await assert.rejects(s.skillCatalog.create({ title: '', description: 'x' }), code('skill_title_invalid'));
-    await assert.rejects(s.skillCatalog.update(999, { title: 'Ok title', description: 'ok' }), code('skill_not_found'));
+    await assert.rejects(s.skillCatalog.create({ title: '' }), code('skill_title_invalid'));
+    await assert.rejects(s.skillCatalog.update(999, { title: 'Ok title' }), code('skill_not_found'));
     await assert.rejects(s.skillCatalog.remove(999), code('skill_not_found'));
   });
 });

@@ -7,7 +7,7 @@ let s;
 let callId;
 const code = (c) => (e) => e.code === c;
 const run = (name, args = {}) => s.toolExecutor.execute(name, args, callId);
-const add = (input) => s.skillCatalog.create({ description: 'About it', ...input });
+const add = (input) => s.skillCatalog.create({ content: 'Details.', ...input });
 
 beforeEach(async () => {
   world = await buildWorld();
@@ -19,7 +19,7 @@ describe('get_skill', () => {
   it('returns the full details for an exact title, ignoring case and extra spaces', async () => {
     const r = await run('get_skill', { title: '  root CANAL treatment ' });
     assert.equal(r.ok, true);
-    assert.deepEqual(r.skill, { title: 'Root canal treatment', description: 'Saves an infected tooth.', content: 'Fee: 6000 to 12000 taka.' });
+    assert.deepEqual(r.skill, { title: 'Root canal treatment', content: 'Fee: 6000 to 12000 taka.' });
   });
 
   it('fails with a code and guidance for an unknown title', async () => {
@@ -34,23 +34,23 @@ describe('get_skill', () => {
   });
 
   it('works for FAQs and policies as well as services', async () => {
-    await add({ title: 'Where to park', kind: 'faq', content: 'Behind the building.' });
-    await add({ title: 'Cancellation policy', kind: 'policy', content: '4 hours notice.' });
+    await add({ title: 'Where to park', content: 'Behind the building.' });
+    await add({ title: 'Cancellation policy', content: '4 hours notice.' });
     assert.equal((await run('get_skill', { title: 'where to park' })).skill.content, 'Behind the building.');
     assert.equal((await run('get_skill', { title: 'Cancellation policy' })).skill.content, '4 hours notice.');
   });
 
   it('shows an edit made in admin on the very next call', async () => {
-    await s.skillCatalog.update(1, { title: 'Scaling and polishing', description: 'Cleaning', content: 'Fee: 1800 taka.' });
+    await s.skillCatalog.update(1, { title: 'Scaling and polishing', content: 'Fee: 1800 taka.' });
     assert.equal((await run('get_skill', { title: 'Scaling and polishing' })).skill.content, 'Fee: 1800 taka.');
   });
 });
 
 describe('Bangla text', () => {
   it('an entry written in Bangla is returned as written', async () => {
-    await s.skillCatalog.update(1, { title: 'স্কেলিং ও পলিশিং', description: 'দাঁত পরিষ্কার', content: 'খরচ ১৫০০ টাকা।' });
+    await s.skillCatalog.update(1, { title: 'স্কেলিং ও পলিশিং', content: 'খরচ ১৫০০ টাকা।' });
     const got = (await run('get_skill', { title: 'স্কেলিং ও পলিশিং' })).skill;
-    assert.deepEqual(got, { title: 'স্কেলিং ও পলিশিং', description: 'দাঁত পরিষ্কার', content: 'খরচ ১৫০০ টাকা।' });
+    assert.deepEqual(got, { title: 'স্কেলিং ও পলিশিং', content: 'খরচ ১৫০০ টাকা।' });
   });
 
   it('the public site carries the Bangla specialty of doctors and the Bangla clinic fields', async () => {
@@ -62,25 +62,19 @@ describe('Bangla text', () => {
   });
 });
 
-describe('SkillCatalog kind and titles', () => {
-  it('stores the kind, defaulting to a service', async () => {
-    const a = await add({ title: 'Plain skill' });
-    const b = await add({ title: 'Parking', kind: 'faq' });
-    assert.deepEqual([a.kind, b.kind], ['service', 'faq']);
-  });
-
-  it('rejects an unknown kind', async () => {
-    await assert.rejects(add({ title: 'Bad kind', kind: 'blog' }), code('skill_kind_invalid'));
+describe('SkillCatalog titles and details', () => {
+  it('needs details: an entry with only a title is refused', async () => {
+    await assert.rejects(s.skillCatalog.create({ title: 'Only a title' }), code('skill_content_required'));
   });
 
   it('refuses a duplicate title, ignoring case, on create and on update', async () => {
     await assert.rejects(add({ title: ' scaling AND polishing ' }), code('skill_title_taken'));
-    await assert.rejects(s.skillCatalog.update(2, { title: 'Scaling and polishing', description: 'x1' }), code('skill_title_taken'));
+    await assert.rejects(s.skillCatalog.update(2, { title: 'Scaling and polishing', content: 'x1' }), code('skill_title_taken'));
   });
 
   it('lets a skill keep its own title when it is edited', async () => {
-    const updated = await s.skillCatalog.update(1, { title: 'Scaling and polishing', description: 'New text', kind: 'faq' });
-    assert.equal(updated.kind, 'faq');
+    const updated = await s.skillCatalog.update(1, { title: 'Scaling and polishing', content: 'New details.' });
+    assert.equal(updated.content, 'New details.');
   });
 
   it('allows a title again after the other skill was deleted', async () => {
@@ -91,13 +85,13 @@ describe('SkillCatalog kind and titles', () => {
 
 describe('what the website and the agent see', () => {
   it('the public site carries no agent knowledge at all', async () => {
-    await add({ title: 'Where to park', kind: 'faq' });
+    await add({ title: 'Where to park' });
     const site = await s.getPublicSite.execute();
     assert.deepEqual(Object.keys(site).sort(), ['clinic', 'doctors']);
   });
 
-  it('the agent sees FAQs and policies in the prompt and can fetch them', async () => {
-    await add({ title: 'Where to park', kind: 'faq' });
+  it('the agent sees every entry in the prompt and can fetch it', async () => {
+    await add({ title: 'Where to park' });
     assert.equal((await run('get_skill', { title: 'Where to park' })).ok, true);
     await startCall(world, '2.2.2.2');
     assert.match(world.ports.gateway.sessions.at(-1).instructions, /- Where to park/);

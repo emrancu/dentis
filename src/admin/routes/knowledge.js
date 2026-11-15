@@ -3,7 +3,7 @@ import { json, noContent, readJson } from '../../shared/http.js';
 
 const admin = { admin: true };
 const id = (params) => Number(params.id);
-const skillInput = (b) => ({ title: b.title, description: b.description, content: b.content, kind: b.kind, enabled: b.enabled });
+const skillInput = (b) => ({ title: b.title, content: b.content, enabled: b.enabled });
 
 /** Agent knowledge: the entries the voice agent can look up. */
 export function registerKnowledgeRoutes(router, s) {

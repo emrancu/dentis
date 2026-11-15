@@ -1,6 +1,6 @@
 import { UnauthorizedError } from '../shared/errors.js';
 
-export const COOKIE = 'dentis_admin';
+const COOKIE = 'dentis_admin';
 
 const cookieValue = (request, name) => request.headers.get('Cookie')?.split(/;\s*/).find((c) => c.startsWith(`${name}=`))?.slice(name.length + 1);
 

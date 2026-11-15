@@ -10,7 +10,7 @@ A dental centre website: the hero's main action is **Book an appointment** (book
 ## The website: Bangla first, complete in both languages
 
 - **Bangla is the default.** English is one tap away, remembered, and a link can carry it: `/?lang=en` or `/?lang=bn` wins over the saved choice. The static HTML is Bangla, so there is no flash of English.
-- **Nothing mixes languages.** Every display field has a Bangla twin (skill title and description, doctor specialty, clinic address, hours, directions). English fields hold English only, Bangla fields Bangla only. The site shows the visitor's language and falls back to the other only when a field is empty. Admin marks services that have no Bangla text.
+- **Nothing mixes languages.** Every display field has a Bangla twin (doctor specialty, clinic address, hours, directions). English fields hold English only, Bangla fields Bangla only. The site shows the visitor's language and falls back to the other only when a field is empty. Admin marks services that have no Bangla text.
 - **One style per language.** Times are 12-hour: `10:00 am` in English and `সকাল ১০:০০` in Bangla, with Bangla digits. Working days read `Sat–Thu` / `শনি–বৃহ`. The phone number is a tappable `tel:` link.
 - **Names are consistent.** The navigation label is the section label, every booking button says the same, and the hero treatment cards use exactly the Services names (a test enforces it).
 - **The floating button is "Talk to us" / "কথা বলুন"**: a voice call in the browser. The clinic's phone number is a separate link.
@@ -22,7 +22,7 @@ A dental centre website: the hero's main action is **Book an appointment** (book
 Everything the agent says and knows is edited in `/admin`, with no deploy. The next call uses it.
 
 - **Agent prompt:** edit the persona and tone (`Instructions`) and the `Greeting`. Write `{clinic}` where the clinic name goes. **Show final prompt** previews the whole prompt for unsaved text, and **Reset to default** restores the built-in text. The booking steps, tool rules, "facts only from tools" and safety rules are **locked in code**. They always come after your text and win over it, so they cannot be edited away.
-- **Agent knowledge:** each entry has a type (**Service**, **FAQ** or **Policy**), a title, a description, and the details the agent will say, in English or Bangla. This knowledge is for the voice agent only. The website's service list is fixed copy in `public/website/js/services.js`, so editing it needs a code change.
+- **Agent knowledge:** each entry is a title and the details the agent will say, in English or Bangla. One plain form. This knowledge is for the voice agent only. The website's service list is fixed copy in `public/website/js/services.js`, so editing it needs a code change.
 - **How the agent finds an entry:** it is shown the titles of every enabled entry (never the details) and decides which ones a question needs, usually one and sometimes up to four. It fetches each by exact title with `get_skill`. There is no search and no limit on titles. If no title fits, it says so and hands over to a human.
 
 ## How a call works
@@ -80,7 +80,7 @@ public/website/      the website's css/ and js/ (Three.js hero, voice call clien
 public/admin/        the staff portal: index.html, admin.css, js/ (main, api, ui, shell, login) and js/pages/ (one file per page)
 public/shared/       util.js, used by both
 public/fonts, vendor self-hosted fonts and Three.js
-migrations/          numbered, tracked migrations (schema, demo clinic, skill kinds, knowledge, Bangla twin fields)
+migrations/          numbered, tracked migrations (schema, demo clinic and knowledge, later clean-ups)
 seed/                optional sample calls, not a migration
 test/                mirrors src/, plus frontend and architecture tests
 agentic-hub/         requirements, principles, epics, contracts, task commands

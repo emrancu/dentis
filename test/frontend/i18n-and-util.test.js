@@ -4,8 +4,6 @@ import { describe, it } from 'node:test';
 import { DEFAULT_LANG, STRINGS, daysLabel, t } from '../../public/website/js/i18n.js';
 import { esc, formatClock, formatClockRange, formatDateTime, formatDuration, formatSlot, formatTime, localDigits, pick, statusLabel, telHref } from '../../public/shared/util.js';
 import { SERVICES } from '../../public/website/js/services.js';
-import { D1SkillRepository } from '../../src/knowledge/store.js';
-import { createD1 } from '../support/sqlite-d1.js';
 
 const read = (path) => readFileSync(new URL(`../../public/${path}`, import.meta.url), 'utf8');
 const html = () => read('index.html');
@@ -144,17 +142,12 @@ describe('consistent names and one message per place', () => {
     assert.doesNotMatch(html().split('<footer')[1], /\/admin/);
   });
 
-  it('the hero treatment cards use exactly the names and texts of the Services data, in both languages', async () => {
-    const services = (await new D1SkillRepository(createD1({ seed: true })).list()).filter((s) => s.kind === 'service');
-    const byTitle = new Map(services.map((s) => [s.title, s]));
+  it('the hero treatment cards use exactly the names and texts of the Services list, in both languages', () => {
     const pairs = { checkup: 'Check-up and consultation', whitening: 'Teeth whitening', braces: 'Braces and aligners', implant: 'Dental implants' };
     for (const [key, title] of Object.entries(pairs)) {
-      const svc = byTitle.get(title);
-      assert.ok(svc, `no service "${title}" in the seed`);
-      assert.equal(STRINGS.en[`tx.${key}.name`], svc.title);
-      assert.equal(STRINGS.en[`tx.${key}.text`], svc.description);
       const site = SERVICES.find((x) => x.en[0] === title);
       assert.ok(site, `no "${title}" in the website Services list`);
+      assert.deepEqual([STRINGS.en[`tx.${key}.name`], STRINGS.en[`tx.${key}.text`]], site.en);
       assert.deepEqual([STRINGS.bn[`tx.${key}.name`], STRINGS.bn[`tx.${key}.text`]], site.bn);
     }
   });

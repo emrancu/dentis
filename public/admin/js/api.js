@@ -2,7 +2,7 @@
 let onUnauthorized = () => {};
 export const setUnauthorizedHandler = (fn) => (onUnauthorized = fn);
 
-export class ApiError extends Error {
+class ApiError extends Error {
   constructor(status, error) {
     super(error?.message ?? 'Something went wrong.');
     this.status = status;

@@ -146,9 +146,6 @@ dialog:has(.prompt-pre) { width: min(760px, calc(100vw - 24px)); }
 .tab span { color: var(--muted); font-weight: 400; margin-left: 4px; }
 .tab[aria-pressed='true'] { background: var(--teal); border-color: var(--teal); color: #fff; }
 .tab[aria-pressed='true'] span { color: #d9f7f0; }
-.chip.kind-service { background: var(--mint); color: var(--teal-d); }
-.chip.kind-faq { background: var(--info-bg); color: var(--info); }
-.chip.kind-policy { background: var(--warn-bg); color: var(--warn); }
 @media (max-width: 900px) { textarea[name='instructions'] { min-height: 200px; } }
 .chip.warn-bn { background: var(--warn-bg); color: var(--warn); }
 

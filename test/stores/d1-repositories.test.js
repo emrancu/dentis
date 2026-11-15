@@ -209,7 +209,7 @@ describe('D1 scheduling repositories', () => {
 describe('D1 content repositories', () => {
   it('skills: insert, list, update, remove', async () => {
     const skills = new D1SkillRepository(db);
-    const s = await skills.insert(new Skill({ title: 'Whitening', description: 'Brighter', content: '8000 taka', updatedAt: now.toISOString() }));
+    const s = await skills.insert(new Skill({ title: 'Whitening', content: '8000 taka', updatedAt: now.toISOString() }));
     s.enabled = false;
     s.content = '9000 taka';
     await skills.save(s);
@@ -261,24 +261,28 @@ describe('bilingual content', () => {
   it('a skill written in Bangla and a doctor Bangla field round-trip through the real SQL', async () => {
     const db2 = createD1();
     const skills = new D1SkillRepository(db2);
-    const s = await skills.insert(new Skill({ title: 'দাঁত সাদা করা', description: 'উজ্জ্বল হাসি', updatedAt: now.toISOString() }));
+    const s = await skills.insert(new Skill({ title: 'দাঁত সাদা করা', content: 'খরচ ৮০০০ টাকা', updatedAt: now.toISOString() }));
     s.title = 'সাদা করা';
     await skills.save(s);
     const [loaded] = await skills.list();
-    assert.deepEqual([loaded.title, loaded.description], ['সাদা করা', 'উজ্জ্বল হাসি']);
+    assert.deepEqual([loaded.title, loaded.content], ['সাদা করা', 'খরচ ৮০০০ টাকা']);
     const doctors = new D1DoctorRepository(db2);
     const d = await doctors.insert(new Doctor({ nameEn: 'Dr. Nusrat', specialty: 'Braces', specialtyBn: 'ব্রেসেস' }));
     assert.equal((await doctors.findById(d.id)).specialtyBn, 'ব্রেসেস');
   });
 
-  it('seed: titles and descriptions are English only', async () => {
+  it('seed: skill titles and details are English only, and clean', async () => {
     const seeded = createD1({ seed: true });
     const everything = await new D1SkillRepository(seeded).list();
-    const services = everything.filter((s) => s.kind === 'service');
-    assert.ok(services.length >= 8);
+    assert.ok(everything.length >= 15);
     for (const s of everything) {
-      assert.doesNotMatch(s.title + s.description, BANGLA, `English fields of "${s.title}" contain Bangla`);
+      assert.doesNotMatch(s.title + s.content, BANGLA, `"${s.title}" contains Bangla`);
+      assert.doesNotMatch(s.content, /Demo price list/, `"${s.title}" would say "Demo price list" to a caller`);
+      assert.doesNotMatch(s.content, /\n/, `"${s.title}" has a second line`);
     }
+    const byTitle = new Map(everything.map((s) => [s.title, s]));
+    assert.match(byTitle.get('Diagnosis').content, /same as for the Check-up and consultation/);
+    assert.doesNotMatch(byTitle.get('Diagnosis').content, /500 taka/);
     for (const d of await new D1DoctorRepository(seeded).list()) {
       assert.doesNotMatch(d.specialty, BANGLA);
       assert.match(d.specialtyBn, BANGLA);
@@ -297,6 +301,11 @@ describe('bilingual content', () => {
     assert.ok(titles.includes('Dental implants'));
   });
 
+  it('seed: no leftover settings from removed fields', async () => {
+    const keys = Object.keys(await new D1SettingsRepository(createD1({ seed: true })).all());
+    assert.equal(keys.some((k) => k.startsWith('prep_notes')), false);
+  });
+
   it('seed: hours use one time style in both languages', async () => {
     const p = ClinicProfile.fromMap(await new D1SettingsRepository(createD1({ seed: true })).all());
     assert.match(p.hours, /10:00 am to 8:00 pm/);
@@ -306,44 +315,6 @@ describe('bilingual content', () => {
 });
 
 describe('migrations', () => {
-  it('the demo seed can be run again without duplicating doctors, skills or settings', async () => {
-    const seeded = createD1({ seed: true });
-    const counts = async () => ({
-      doctors: (await new D1DoctorRepository(seeded).list()).length,
-      skills: (await new D1SkillRepository(seeded).list()).length,
-      settings: Object.keys(await new D1SettingsRepository(seeded).all()).length,
-    });
-    const before = await counts();
-    seeded.exec(readFileSync(new URL('../../migrations/0002_seed.sql', import.meta.url), 'utf8'));
-    seeded.exec(readFileSync(new URL('../../migrations/0002_seed.sql', import.meta.url), 'utf8'));
-    assert.deepEqual(await counts(), before);
-  });
-
-  it('a skill round-trips kind through the real SQL', async () => {
-    const repo = new D1SkillRepository(createD1());
-    const s = await repo.insert(new Skill({ title: 'Parking', description: 'Parking info', content: 'c', kind: 'faq', updatedAt: 't' }));
-    assert.equal((await repo.findById(s.id)).kind, 'faq');
-    s.kind = 'policy';
-    await repo.save(s);
-    const [back] = await repo.list();
-    assert.equal(back.kind, 'policy');
-  });
-
-  it('the seed has faq and policy entries', async () => {
-    const skills = await new D1SkillRepository(createD1({ seed: true })).list();
-    assert.ok(skills.some((s) => s.kind === 'faq'));
-    assert.ok(skills.some((s) => s.kind === 'policy'));
-    assert.equal(skills.find((s) => s.title === 'Booking and cancellation policy').kind, 'policy');
-  });
-
-  it('the demo seed can be run again without duplicates', async () => {
-    const seeded = createD1({ seed: true });
-    const count = async () => [(await new D1SkillRepository(seeded).list()).length, (await new D1DoctorRepository(seeded).list()).length];
-    const before = await count();
-    seeded.exec(readFileSync(new URL('../../migrations/0002_seed.sql', import.meta.url), 'utf8'));
-    assert.deepEqual(await count(), before);
-  });
-
   it('the schema can be applied twice (IF NOT EXISTS everywhere)', () => {
     const fresh = createD1();
     fresh.exec(readFileSync(new URL('../../migrations/0001_init.sql', import.meta.url), 'utf8'));

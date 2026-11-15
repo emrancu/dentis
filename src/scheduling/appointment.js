@@ -1,7 +1,7 @@
 import { ConflictError } from '../shared/errors.js';
 import { Slot } from './slot.js';
 
-export const AppointmentStatus = Object.freeze({ BOOKED: 'booked', CANCELLED: 'cancelled', COMPLETED: 'completed' });
+const AppointmentStatus = Object.freeze({ BOOKED: 'booked', CANCELLED: 'cancelled', COMPLETED: 'completed' });
 
 function requireActive(appointment) {
   if (!appointment.isActive) throw new ConflictError('appointment_not_active', `This appointment is already ${appointment.status}.`);

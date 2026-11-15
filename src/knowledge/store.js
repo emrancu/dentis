@@ -1,6 +1,6 @@
 import { Skill } from './skill.js';
 
-const toSkill = (r) => new Skill({ id: r.id, title: r.title, description: r.description, content: r.content, kind: r.kind, enabled: Boolean(r.enabled), updatedAt: r.updated_at });
+const toSkill = (r) => new Skill({ id: r.id, title: r.title, content: r.content, enabled: Boolean(r.enabled), updatedAt: r.updated_at });
 
 export class D1SkillRepository {
   constructor(db) {
@@ -19,8 +19,8 @@ export class D1SkillRepository {
 
   async insert(s) {
     const { meta } = await this.db
-      .prepare('INSERT INTO skills (title, description, content, kind, enabled, updated_at) VALUES (?, ?, ?, ?, ?, ?)')
-      .bind(s.title, s.description, s.content, s.kind, s.enabled ? 1 : 0, s.updatedAt)
+      .prepare('INSERT INTO skills (title, content, enabled, updated_at) VALUES (?, ?, ?, ?)')
+      .bind(s.title, s.content, s.enabled ? 1 : 0, s.updatedAt)
       .run();
     s.id = meta.last_row_id;
     return s;
@@ -28,8 +28,8 @@ export class D1SkillRepository {
 
   async save(s) {
     await this.db
-      .prepare('UPDATE skills SET title = ?, description = ?, content = ?, kind = ?, enabled = ?, updated_at = ? WHERE id = ?')
-      .bind(s.title, s.description, s.content, s.kind, s.enabled ? 1 : 0, s.updatedAt, s.id)
+      .prepare('UPDATE skills SET title = ?, content = ?, enabled = ?, updated_at = ? WHERE id = ?')
+      .bind(s.title, s.content, s.enabled ? 1 : 0, s.updatedAt, s.id)
       .run();
   }
 

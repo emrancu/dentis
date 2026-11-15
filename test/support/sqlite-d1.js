@@ -6,7 +6,7 @@ import { DatabaseSync } from 'node:sqlite';
  * D1 repositories run in tests. Implements only what the repositories use.
  */
 /** Migrations that only change the schema. The others add demo data. */
-const SCHEMA_ONLY = ['0001_init.sql', '0003_skill_kind_keywords.sql', '0005_bilingual_columns.sql', '0008_callback_urgent.sql'];
+const SCHEMA_ONLY = ['0001_init.sql', '0003_skill_kind_keywords.sql', '0005_bilingual_columns.sql', '0008_callback_urgent.sql', '0009_skills_single_language.sql', '0010_drop_skill_keywords.sql', '0011_knowledge_title_and_details.sql'];
 
 export function createD1({ seed = false } = {}) {
   const db = new DatabaseSync(':memory:');

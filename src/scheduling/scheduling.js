@@ -7,7 +7,7 @@ import { findOpenings } from './availability.js';
 import { ClinicProfile } from '../clinic/clinic-profile.js';
 import { Outcome } from '../calls/call.js';
 
-export const MAX_ADVANCE_DAYS = 60;
+const MAX_ADVANCE_DAYS = 60;
 const MAX_SLOTS_OFFERED = 8;
 const MAX_ALTERNATIVES = 5;
 

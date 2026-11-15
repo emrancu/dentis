@@ -44,9 +44,9 @@ export async function buildWorld({ now = NOW } = {}) {
   };
   await ports.doctors.insert(new Doctor({ nameEn: 'Dr. Nusrat Jahan', nameBn: 'ডা. নুসরাত জাহান', specialty: 'General dentistry', days: [6, 0, 1, 2, 3, 4], startTime: '10:00', endTime: '17:00' }));
   await ports.doctors.insert(new Doctor({ nameEn: 'Dr. Tanvir Rahman', nameBn: 'ডা. তানভীর রহমান', specialty: 'Root canal', days: [6, 1, 3], startTime: '14:00', endTime: '20:00' }));
-  await ports.skills.insert(new Skill({ title: 'Scaling and polishing', description: 'Professional teeth cleaning. দাঁত স্কেলিং।', content: 'Fee: 1500 taka.' }));
-  await ports.skills.insert(new Skill({ title: 'Root canal treatment', description: 'Saves an infected tooth.', content: 'Fee: 6000 to 12000 taka.' }));
-  await ports.skills.insert(new Skill({ title: 'Secret draft', description: 'Not ready yet.', content: 'hidden', enabled: false }));
+  await ports.skills.insert(new Skill({ title: 'Scaling and polishing', content: 'Fee: 1500 taka.' }));
+  await ports.skills.insert(new Skill({ title: 'Root canal treatment', content: 'Fee: 6000 to 12000 taka.' }));
+  await ports.skills.insert(new Skill({ title: 'Secret draft', content: 'hidden', enabled: false }));
   await ports.settings.setMany({ name_en: 'Dentis Dental Care', hours: 'Sat-Thu 10am-8pm', address: 'Dhanmondi, Dhaka' });
   return { ports, services: buildServices(ports), clock: ports.clock };
 }

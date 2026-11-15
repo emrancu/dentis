@@ -6,7 +6,7 @@ import { ClinicProfile } from '../../src/clinic/clinic-profile.js';
 import { Doctor } from '../../src/scheduling/doctor.js';
 import { Skill } from '../../src/knowledge/skill.js';
 
-const skill = (title, extra = {}) => new Skill({ title, description: 'About this topic', ...extra });
+const skill = (title, extra = {}) => new Skill({ title, content: 'Details.', ...extra });
 const base = {
   profile: new ClinicProfile({ nameEn: 'Dentis Dental Care', nameBn: 'ডেন্টিস ডেন্টাল কেয়ার', hours: 'Sat-Thu 10-8' }),
   doctors: [new Doctor({ id: 1, nameEn: 'Dr. Nusrat Jahan', nameBn: 'ডা. নুসরাত জাহান', specialty: 'General', days: [6, 0], startTime: '10:00', endTime: '17:00' })],
@@ -113,8 +113,8 @@ describe('knowledge titles in the prompt', () => {
     assert.match(t, /Often it is one, sometimes two to four/);
   });
 
-  it('lists every kind of enabled skill, sorted, and skips disabled ones', () => {
-    const t = buildInstructions({ ...base, skills: [skill('Zeta FAQ', { kind: 'faq' }), skill('Alpha policy', { kind: 'policy' }), skill('Hidden', { enabled: false })] });
+  it('lists every enabled title, sorted, and skips disabled ones', () => {
+    const t = buildInstructions({ ...base, skills: [skill('Zeta FAQ'), skill('Alpha policy'), skill('Hidden', { enabled: false })] });
     assert.ok(t.indexOf('- Alpha policy') < t.indexOf('- Zeta FAQ'));
     assert.doesNotMatch(t, /Hidden/);
   });

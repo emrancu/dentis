@@ -1,33 +1,25 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { SKILL_KINDS, Skill, enabledTitles, sameTitle } from '../../src/knowledge/skill.js';
+import { Skill, enabledTitles, sameTitle } from '../../src/knowledge/skill.js';
 
-const skill = (title, description, content = '', enabled = true, extra = {}) => new Skill({ id: title, title, description, content, enabled, ...extra });
+const skill = (title, content = 'Details.', enabled = true) => new Skill({ id: title, title, content, enabled });
 
 describe('Skill', () => {
-  it('trims and defaults', () => {
-    const s = new Skill({ title: '  Whitening ', description: ' Brighter smile ' });
-    assert.equal(s.title, 'Whitening');
-    assert.equal(s.enabled, true);
-    assert.equal(s.content, '');
+  it('trims and defaults to enabled', () => {
+    const s = new Skill({ title: '  Whitening ', content: ' 8000 taka ' });
+    assert.deepEqual([s.title, s.content, s.enabled], ['Whitening', '8000 taka', true]);
   });
 
-  it('validates title, description and content length', () => {
-    assert.throws(() => skill('x', 'ok'), (e) => e.code === 'skill_title_invalid');
-    assert.throws(() => skill('Title', ''), (e) => e.code === 'skill_description_invalid');
-    assert.throws(() => skill('Title', 'ok', 'x'.repeat(4001)), (e) => e.code === 'skill_content_too_long');
-  });
-});
-
-describe('Skill kind', () => {
-  it('defaults to a service', () => {
-    const s = new Skill({ title: 'Whitening', description: 'Brighter' });
-    assert.equal(s.kind, 'service');
+  it('is just a title and its details: no description, type or Bangla twins', () => {
+    const s = new Skill({ title: 'দাঁত তোলা', content: 'সাধারণ দাঁত তোলা ১০০০ টাকা।', kind: 'faq', description: 'x' });
+    assert.deepEqual(Object.keys(s).sort(), ['content', 'enabled', 'id', 'title', 'updatedAt']);
   });
 
-  it('accepts every kind and rejects others', () => {
-    for (const kind of SKILL_KINDS) assert.equal(skill('Title', 'ok', '', true, { kind }).kind, kind);
-    assert.throws(() => skill('Title', 'ok', '', true, { kind: 'blog' }), (e) => e.code === 'skill_kind_invalid');
+  it('validates the title and the details', () => {
+    assert.throws(() => skill('x'), (e) => e.code === 'skill_title_invalid');
+    assert.throws(() => skill('Title', ''), (e) => e.code === 'skill_content_required');
+    assert.throws(() => skill('Title', '   '), (e) => e.code === 'skill_content_required');
+    assert.throws(() => skill('Title', 'x'.repeat(4001)), (e) => e.code === 'skill_content_too_long');
   });
 
   it('compares titles ignoring case and spaces', () => {
@@ -37,24 +29,17 @@ describe('Skill kind', () => {
   });
 });
 
-describe('Skill in either language', () => {
-  it('has no separate Bangla fields', () => {
-    const s = new Skill({ title: 'দাঁত তোলা', description: 'ক্ষতিগ্রস্ত দাঁত অপসারণ' });
-    assert.equal('titleBn' in s || 'descriptionBn' in s, false);
-  });
-});
-
 describe('enabledTitles', () => {
   it('lists every enabled title, sorted, and skips disabled ones', () => {
-    assert.deepEqual(enabledTitles([skill('Zeta', 'ok'), skill('Alpha', 'ok'), skill('Hidden', 'ok', '', false)]), ['Alpha', 'Zeta']);
+    assert.deepEqual(enabledTitles([skill('Zeta'), skill('Alpha'), skill('Hidden', 'x1', false)]), ['Alpha', 'Zeta']);
   });
 
   it('has no cap: the agent is shown all of them', () => {
-    const many = Array.from({ length: 150 }, (_, i) => skill(`Skill ${String(i).padStart(3, '0')}`, 'ok'));
+    const many = Array.from({ length: 150 }, (_, i) => skill(`Skill ${String(i).padStart(3, '0')}`));
     assert.equal(enabledTitles(many).length, 150);
   });
 
   it('works with Bangla titles', () => {
-    assert.deepEqual(enabledTitles([skill('ফিলিং', 'ok')]), ['ফিলিং']);
+    assert.deepEqual(enabledTitles([skill('ফিলিং')]), ['ফিলিং']);
   });
 });

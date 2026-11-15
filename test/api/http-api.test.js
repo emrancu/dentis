@@ -154,7 +154,7 @@ describe('admin authentication', () => {
 
   it('requires the X-Requested-With header on state-changing calls', async () => {
     const cookie = await login();
-    const res = await request('POST', '/api/admin/skills', { body: { title: 'Braces', description: 'Straighten' }, headers: { Cookie: cookie } });
+    const res = await request('POST', '/api/admin/skills', { body: { title: 'Braces', content: 'x1' }, headers: { Cookie: cookie } });
     assert.equal(res.status, 401);
     assert.equal((await res.json()).error.code, 'csrf_rejected');
   });
@@ -174,7 +174,7 @@ describe('admin API', () => {
   });
 
   it('skills CRUD, and the next call uses the edit', async () => {
-    const created = await request('POST', '/api/admin/skills', { body: { title: 'Braces', description: 'Straighten teeth', content: 'From 35000 taka' }, headers: h });
+    const created = await request('POST', '/api/admin/skills', { body: { title: 'Braces', content: 'From 35000 taka' }, headers: h });
     assert.equal(created.status, 201);
     const skill = await created.json();
     assert.deepEqual([skill.title, skill.enabled], ['Braces', true]);
@@ -182,7 +182,7 @@ describe('admin API', () => {
     const list = await (await request('GET', '/api/admin/skills', { headers: h })).json();
     assert.equal(list.items.length, 4);
 
-    const updated = await request('PUT', `/api/admin/skills/${skill.id}`, { body: { title: 'Braces', description: 'Straighten teeth', content: 'From 40000 taka' }, headers: h });
+    const updated = await request('PUT', `/api/admin/skills/${skill.id}`, { body: { title: 'Braces', content: 'From 40000 taka' }, headers: h });
     assert.equal((await updated.json()).content, 'From 40000 taka');
 
     await request('POST', '/api/session');
@@ -196,7 +196,7 @@ describe('admin API', () => {
   });
 
   it('answers 400 for an invalid skill', async () => {
-    const res = await request('POST', '/api/admin/skills', { body: { title: '', description: 'x' }, headers: h });
+    const res = await request('POST', '/api/admin/skills', { body: { title: '' }, headers: h });
     assert.equal(res.status, 400);
     assert.equal((await res.json()).error.code, 'skill_title_invalid');
   });
@@ -256,28 +256,26 @@ describe('admin API', () => {
     assert.equal((await request('GET', '/api/admin/calls/nope', { headers: h })).status, 404);
   });
 
-  it('skills carry a kind and refuse duplicate titles', async () => {
-    const created = await request('POST', '/api/admin/skills', { body: { title: 'Where to park', description: 'Parking info', content: 'Behind the building.', kind: 'faq' }, headers: h });
+  it('a skill is a title and its details, and duplicate titles are refused', async () => {
+    const created = await request('POST', '/api/admin/skills', { body: { title: 'Where to park', content: 'Behind the building.' }, headers: h });
     assert.equal(created.status, 201);
     const skill = await created.json();
-    assert.equal(skill.kind, 'faq');
-    assert.equal('keywords' in skill, false);
+    assert.deepEqual(Object.keys(skill).sort(), ['content', 'enabled', 'id', 'title', 'updated_at']);
 
     const list = await (await request('GET', '/api/admin/skills', { headers: h })).json();
     assert.equal('title_index_cap' in list, false);
-    assert.ok(list.items.every((i) => ['service', 'faq', 'policy'].includes(i.kind)));
 
-    const dup = await request('POST', '/api/admin/skills', { body: { title: ' where TO park ', description: 'again' }, headers: h });
+    const dup = await request('POST', '/api/admin/skills', { body: { title: ' where TO park ', content: 'again' }, headers: h });
     assert.equal(dup.status, 409);
     assert.equal((await dup.json()).error.code, 'skill_title_taken');
 
-    const badKind = await request('POST', '/api/admin/skills', { body: { title: 'Odd one', description: 'x1', kind: 'blog' }, headers: h });
-    assert.equal(badKind.status, 400);
-    assert.equal((await badKind.json()).error.code, 'skill_kind_invalid');
+    const noDetails = await request('POST', '/api/admin/skills', { body: { title: 'Odd one' }, headers: h });
+    assert.equal(noDetails.status, 400);
+    assert.equal((await noDetails.json()).error.code, 'skill_content_required');
   });
 
   it('an FAQ added in admin is answered by the agent through get_skill on the next call', async () => {
-    await request('POST', '/api/admin/skills', { body: { title: 'Where to park', description: 'Parking info', content: 'Behind the building.', kind: 'faq' }, headers: h });
+    await request('POST', '/api/admin/skills', { body: { title: 'Where to park', content: 'Behind the building.' }, headers: h });
     await request('POST', '/api/session');
     assert.match(world.ports.gateway.sessions.at(-1).instructions, /- Where to park/);
     const answer = await (await request('POST', '/api/agent/tools/get_skill', { body: { call_id: 'call-1', args: { title: 'Where to park' } } })).json();
@@ -373,8 +371,7 @@ describe('admin agent prompt', () => {
   });
 
   it('agent knowledge is one plain form: Bangla text goes in the same fields', async () => {
-    const skill = await (await request('POST', '/api/admin/skills', { body: { title: 'ইমপ্ল্যান্ট', description: 'হারানো দাঁতের বিকল্প', content: 'খরচ ৬০০০০ টাকা', kind: 'service' }, headers: h })).json();
-    assert.deepEqual([skill.title, skill.description], ['ইমপ্ল্যান্ট', 'হারানো দাঁতের বিকল্প']);
-    assert.equal('title_bn' in skill || 'description_bn' in skill, false);
+    const skill = await (await request('POST', '/api/admin/skills', { body: { title: 'ইমপ্ল্যান্ট', content: 'খরচ ৬০০০০ টাকা' }, headers: h })).json();
+    assert.deepEqual([skill.title, skill.content], ['ইমপ্ল্যান্ট', 'খরচ ৬০০০০ টাকা']);
   });
 });

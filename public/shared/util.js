@@ -38,7 +38,7 @@ export function formatSlot(slot) {
   return `${day}, ${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'am' : 'pm'}`;
 }
 
-export const STATUS_LABELS = {
+const STATUS_LABELS = {
   in_progress: 'In progress',
   booked: 'Booked',
   rescheduled: 'Rescheduled',

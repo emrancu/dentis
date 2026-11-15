@@ -73,7 +73,7 @@ describe('ToolExecutor results', () => {
   });
 
   it('a skill edited in admin is what the agent says next', async () => {
-    await world.services.skillCatalog.update(1, { title: 'Scaling and polishing', description: 'Cleaning', content: 'Fee: 1800 taka.' });
+    await world.services.skillCatalog.update(1, { title: 'Scaling and polishing', content: 'Fee: 1800 taka.' });
     assert.equal((await run('get_skill', { title: 'Scaling and polishing' })).skill.content, 'Fee: 1800 taka.');
   });
 

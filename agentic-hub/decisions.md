@@ -10,11 +10,11 @@
 | Code style | Domain-driven layers, YAGNI, tests under `test/` (see principles). |
 | Admin | At `/admin`, login with one access key. |
 | Voice | **OpenAI Realtime API** over WebRTC from the browser. The Worker mints a short-lived client secret, so the API key stays on the server. |
-| Agent knowledge | Skills (title, description, details) managed in admin and read by the agent through tools. |
+| Agent knowledge | Skills (a title and its details) managed in admin and read by the agent through `get_skill`. No description, no type, no keywords. |
 | Site focus | A dental centre website first. The main action is **Book an appointment** (voice booking in Bangla). A floating **Call Dentis** button sits at the bottom right. The hero shows a round 3D stage on the right that cycles through four dental treatments. |
 | Agent prompt | Admin edits the persona, tone and language text the greeting and the closing line. Booking flow, tool rules, truthfulness and safety stay in code and are appended after the editable text, with a closing line that says they win. Admin gets a preview of the final prompt and a reset to default. No version history. |
-| Knowledge base | Skills with a `kind` (`service`, `faq`, `policy`), no keywords: the model picks by title and description. Every enabled title goes in the prompt, never the details, with no cap. The agent decides from the titles which entries a question needs and fetches each with `get_skill` by exact title. There is no search tool: if no title fits, the agent says so and hands over to a human. Titles should be English with a short Bangla hint, because Bangla costs more tokens. |
-| Website content | The Services section shows `service` entries only. FAQs are not on the website yet. |
+| Knowledge base | Skills are a title and details: the model picks by title. Every enabled title goes in the prompt, never the details, with no cap. The agent decides from the titles which entries a question needs and fetches each with `get_skill` by exact title. There is no search tool: if no title fits, the agent says so and hands over to a human. Titles should be English with a short Bangla hint, because Bangla costs more tokens. |
+| Website content | The Services section is fixed copy in `public/website/js/services.js`. Agent knowledge is not shown on the website. |
 | Migrations | Numbered files in `migrations/`, applied once and tracked by `wrangler d1 migrations apply`. Demo seeds are also safe to run twice. Optional sample calls live in `seed/`. |
 | Default language | **Bangla.** English is one tap away and remembered. `?lang=` in the link wins over the saved choice. The static HTML is Bangla so there is no flash of English. |
 | Bilingual content | Each display field has a Bangla twin (see the data model). Fields never mix languages. The exception is Agent knowledge (`skills`): it is for the agent only, so it has no Bangla twins and staff write it in English or Bangla. |

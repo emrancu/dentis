@@ -1,20 +1,17 @@
 import { ValidationError } from '../shared/errors.js';
 
-export const SKILL_KINDS = Object.freeze(['service', 'faq', 'policy']);
-
 /**
- * Entity: a piece of dental-clinic knowledge the voice agent can fetch by tool call
- * (a service, a price note, a policy, an FAQ…). The voice agent knows every enabled entry. None of it is shown on the website.
+ * Entity: a piece of dental-clinic knowledge (a service, a price, a policy, an FAQ…): a title and its details.
+ * The agent sees every enabled title and fetches the details of the ones a question needs. None of it is shown on the website.
  */
 export class Skill {
-  constructor({ id = null, title, description, content = '', kind = 'service', enabled = true, updatedAt = null }) {
+  constructor({ id = null, title, content, enabled = true, updatedAt = null }) {
     const t = String(title ?? '').trim();
-    const d = String(description ?? '').trim();
+    const c = String(content ?? '').trim();
     if (t.length < 2 || t.length > 80) throw new ValidationError('skill_title_invalid', 'Title must be 2–80 characters.');
-    if (d.length < 2 || d.length > 400) throw new ValidationError('skill_description_invalid', 'Description must be 2–400 characters.');
-    if (String(content).length > 4000) throw new ValidationError('skill_content_too_long', 'Details must be at most 4000 characters.');
-    if (!SKILL_KINDS.includes(kind)) throw new ValidationError('skill_kind_invalid', `Type must be one of: ${SKILL_KINDS.join(', ')}.`);
-    Object.assign(this, { id, title: t, description: d, content: String(content).trim(), kind, enabled: Boolean(enabled), updatedAt });
+    if (!c) throw new ValidationError('skill_content_required', 'Write the details the agent should say.');
+    if (c.length > 4000) throw new ValidationError('skill_content_too_long', 'Details must be at most 4000 characters.');
+    Object.assign(this, { id, title: t, content: c, enabled: Boolean(enabled), updatedAt });
   }
 }
 

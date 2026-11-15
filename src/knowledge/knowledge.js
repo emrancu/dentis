@@ -11,7 +11,7 @@ export class AgentKnowledge {
   async get({ title }) {
     const skill = (await this.skills.list()).find((s) => s.enabled && sameTitle(s.title, title));
     if (!skill) throw new NotFoundError('skill_not_found', 'No topic with that title. Pick a title from the list in the prompt. If none fits, hand over to a human.');
-    return { found: true, skill: { title: skill.title, description: skill.description, content: skill.content } };
+    return { found: true, skill: { title: skill.title, content: skill.content } };
   }
 }
 

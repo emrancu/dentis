@@ -5,7 +5,7 @@ Times are ISO 8601 UTC unless named `slot` (clinic-local `YYYY-MM-DDTHH:MM`).
 | Table | Columns | Purpose |
 |---|---|---|
 | `settings` | `key` PK, `value` | Clinic profile and agent prompt as key/value |
-| `skills` | `id` PK, `title`, `description`, `content`, `kind`, `enabled`, `updated_at` | Agent knowledge, for the agent only. Staff write it in English or Bangla, one plain form with no language fields |
+| `skills` | `id` PK, `title`, `content`, `enabled`, `updated_at` | Agent knowledge, for the agent only. Staff write it in English or Bangla, one plain form with no language fields |
 | `doctors` | `id` PK, `name_en`, `name_bn`, `specialty`, `specialty_bn`, `days` (JSON array 0=Sun…6=Sat), `start_time`, `end_time`, `active` | Who can be booked |
 | `patients` | `id` PK, `full_name`, `phone` UNIQUE, `created_at` | The person behind calls |
 | `calls` | `id` PK (uuid), `started_at`, `ended_at`, `duration_s`, `status`, `patient_id` FK, `summary`, `ip_hash` | One record per call |
@@ -23,7 +23,6 @@ Times are ISO 8601 UTC unless named `slot` (clinic-local `YYYY-MM-DDTHH:MM`).
 - `patients.phone` is unique and normalised to `01XXXXXXXXX`.
 - `callbacks.status`: `open` or `resolved`.
 - No audio is stored. `calls.recording_key` is an unused column left from the old recording feature; nothing reads or writes it.
-- `skills.kind`: `service`, `faq` or `policy`. All are agent only. Default `service`.
 - `skills.title` is unique ignoring case (checked by the application).
 - `settings` keys for the agent: `agent_instructions` (up to 4000 characters) `agent_greeting` (up to 300) and `agent_closing` (up to 300). An empty value means "use the default text in code".
 - Schema changes are numbered files in `migrations/`, applied once and tracked with `wrangler d1 migrations apply`. The optional sample calls live in `seed/` and are not a migration.
