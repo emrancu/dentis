@@ -22,7 +22,7 @@ A dental centre website: the hero's main action is **Book an appointment** (book
 Everything the agent says and knows is edited in `/admin`, with no deploy. The next call uses it.
 
 - **Agent prompt:** edit the persona and tone (`Instructions`) and the `Greeting`. Write `{clinic}` where the clinic name goes. **Show final prompt** previews the whole prompt for unsaved text, and **Reset to default** restores the built-in text. The booking steps, tool rules, "facts only from tools" and safety rules are **locked in code**. They always come after your text and win over it, so they cannot be edited away.
-- **Agent knowledge:** each entry has a type (**Service**, **FAQ** or **Policy**), a title, a description, and the details the agent will say, in English or Bangla. This knowledge is for the voice agent only. The website's service list is fixed copy in `public/js/services.js`, so editing it needs a code change.
+- **Agent knowledge:** each entry has a type (**Service**, **FAQ** or **Policy**), a title, a description, and the details the agent will say, in English or Bangla. This knowledge is for the voice agent only. The website's service list is fixed copy in `public/website/js/services.js`, so editing it needs a code change.
 - **How the agent finds an entry:** it is shown the titles of enabled entries (never the details), up to 40. It fetches one by exact title with `get_skill`, or searches with `lookup_skill` by the caller's own words. Past 40 entries the list is left out and the agent only searches. The page shows "N of 40 titles in the agent's index".
 
 ## How a call works
@@ -75,7 +75,11 @@ src/admin/           staff portal API (routes/ per area), login guard, dashboard
 src/website/         public site data, the voice call API, the SEO home page
 src/shared/          errors, time, router and response helpers
 src/composition.js   the only place that wires stores to use cases
-public/              landing page (Three.js hero) and /admin SPA, plain ES modules; fonts/ and vendor/ are self-hosted
+public/index.html    the website page, served at /
+public/website/      the website's css/ and js/ (Three.js hero, voice call client)
+public/admin/        the staff portal: index.html, admin.css, js/ (main, api, ui, shell, login) and js/pages/ (one file per page)
+public/shared/       util.js, used by both
+public/fonts, vendor self-hosted fonts and Three.js
 migrations/          numbered, tracked migrations (schema, demo clinic, skill kinds, knowledge, Bangla twin fields)
 seed/                optional sample calls, not a migration
 test/                mirrors src/, plus frontend and architecture tests

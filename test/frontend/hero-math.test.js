@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { clamp01, crownPoint, damp, easeOutBack, smoothstep } from '../../public/js/hero-math.js';
+import { clamp01, crownPoint, damp, easeOutBack, smoothstep } from '../../public/website/js/hero-math.js';
 
 const close = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} !~ ${b}`);
 

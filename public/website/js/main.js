@@ -3,7 +3,7 @@ import { initKnobButtons } from './knob-button.js';
 import { initMagnetic } from './magnetic.js';
 import { DEFAULT_LANG, LANGUAGES, daysLabel, t } from './i18n.js';
 import { SERVICES } from './services.js';
-import { esc, formatClockRange, localDigits, pick, telHref } from './util.js';
+import { esc, formatClockRange, localDigits, pick, telHref } from '../../shared/util.js';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];

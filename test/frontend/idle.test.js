@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { closingOnlyMessage, interruptMessages, nudgeMessage } from '../../public/js/call-messages.js';
-import { IDLE, IdleWatch } from '../../public/js/idle.js';
+import { closingOnlyMessage, interruptMessages, nudgeMessage } from '../../public/website/js/call-messages.js';
+import { IDLE, IdleWatch } from '../../public/website/js/idle.js';
 
 describe('IdleWatch', () => {
   it('nudges once after 25 seconds of silence and hangs up at 50', () => {

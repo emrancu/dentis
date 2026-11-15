@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { errorKindOf, greetingMessage, closingMessages, toolCallFrom, toolOutputMessages } from '../../public/js/call-messages.js';
-import { TranscriptBuilder } from '../../public/js/transcript.js';
+import { errorKindOf, greetingMessage, closingMessages, toolCallFrom, toolOutputMessages } from '../../public/website/js/call-messages.js';
+import { TranscriptBuilder } from '../../public/website/js/transcript.js';
 
 const clock = (() => { let n = 0; return () => `2026-11-14T04:00:${String(n++).padStart(2, '0')}.000Z`; })();
 const item = (id, role, type = 'message') => ({ type: 'conversation.item.added', item: { id, role, type } });

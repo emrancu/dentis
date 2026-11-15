@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { DEFAULT_LANG, STRINGS, daysLabel, t } from '../../public/js/i18n.js';
-import { esc, formatClock, formatClockRange, formatDateTime, formatDuration, formatSlot, formatTime, localDigits, pick, statusLabel, telHref } from '../../public/js/util.js';
-import { SERVICES } from '../../public/js/services.js';
+import { DEFAULT_LANG, STRINGS, daysLabel, t } from '../../public/website/js/i18n.js';
+import { esc, formatClock, formatClockRange, formatDateTime, formatDuration, formatSlot, formatTime, localDigits, pick, statusLabel, telHref } from '../../public/shared/util.js';
+import { SERVICES } from '../../public/website/js/services.js';
 import { D1SkillRepository } from '../../src/knowledge/store.js';
 import { createD1 } from '../support/sqlite-d1.js';
 
@@ -160,7 +160,7 @@ describe('consistent names and one message per place', () => {
   });
 
   it('every dictionary key is used by the page (no dead copy)', () => {
-    const source = html() + read('js/main.js');
+    const source = html() + read('website/js/main.js');
     const dynamic = /^(error\.|call\.|tx\.)/;
     const unused = Object.keys(STRINGS.en).filter((k) => !dynamic.test(k) && !source.includes(`"${k}"`) && !source.includes(`'${k}'`));
     assert.deepEqual(unused, []);
@@ -172,7 +172,7 @@ describe('Bangla is the default language', () => {
 
   it('the default is Bangla, and a visitor choice (not the browser language) is the only thing that overrides it', () => {
     assert.equal(DEFAULT_LANG, 'bn');
-    const main = read('js/main.js');
+    const main = read('website/js/main.js');
     assert.match(main, /return DEFAULT_LANG;/);
     assert.doesNotMatch(main, /navigator\.language/);
   });
@@ -205,8 +205,8 @@ describe('Bangla is the default language', () => {
 });
 
 describe('layout rules that protect the review findings', () => {
-  const css = read('css/site.css');
-  const main = read('js/main.js');
+  const css = read('website/css/site.css');
+  const main = read('website/js/main.js');
 
   it('the header booking button stays hidden until the hero button scrolls away', () => {
     assert.match(css, /\.btn-book \{ opacity: 0; visibility: hidden;/);
@@ -223,7 +223,7 @@ describe('layout rules that protect the review findings', () => {
     assert.match(main, /onReady: \(\) => document\.body\.classList\.add\('has-3d'\)/);
     assert.doesNotMatch(main, /if \(hero\) document\.body\.classList\.add\('has-3d'\)/);
     assert.match(css, /\.has-3d \.tooth-fallback \{ opacity: 0; \}/);
-    assert.match(read('js/hero3d.js'), /onReady\(\)/);
+    assert.match(read('website/js/hero3d.js'), /onReady\(\)/);
   });
 
   it('touch targets are at least 44px for the header, navigation, footer links and inline links', () => {
@@ -265,18 +265,18 @@ describe('static pages', () => {
     assert.match(page, /"three": "\/vendor\/three\/three\.module\.min\.js"/);
     assert.match(page, /"three\/addons\/": "\/vendor\/three\/addons\/"/);
     for (const file of ['three.module.min.js', 'addons/environments/RoomEnvironment.js', 'addons/utils/BufferGeometryUtils.js', 'LICENSE']) assert.ok(existsSync(new URL(`../../public/vendor/three/${file}`, import.meta.url)), file);
-    for (const css of ['css/site.css', 'css/fonts.css']) assert.deepEqual(read(css).match(/https?:\/\/[^"'\s)]+/g) ?? [], [], css);
+    for (const css of ['website/css/site.css', 'website/css/fonts.css']) assert.deepEqual(read(css).match(/https?:\/\/[^"'\s)]+/g) ?? [], [], css);
   });
 
   it('every font file the stylesheet names exists, with a unicode-range so a subset is only fetched when needed', () => {
-    const fonts = read('css/fonts.css');
+    const fonts = read('website/css/fonts.css');
     const files = [...fonts.matchAll(/url\(\/fonts\/([^)]+)\)/g)].map((m) => m[1]);
     assert.ok(files.length >= 14);
     for (const f of files) assert.ok(existsSync(new URL(`../../public/fonts/${f}`, import.meta.url)), f);
     assert.equal(fonts.split('@font-face').length - 1, fonts.split('unicode-range').length - 1);
     for (const family of ['Inter', 'Fraunces', 'Hind Siliguri', 'Noto Serif Bengali']) assert.match(fonts, new RegExp(`font-family: '${family}'`));
     assert.match(fonts, /font-display: swap/);
-    assert.match(read('index.html'), /<link rel="stylesheet" href="\/css\/fonts\.css">/);
+    assert.match(read('index.html'), /<link rel="stylesheet" href="\/website\/css\/fonts\.css">/);
   });
 
   it('the two Bangla fonts used above the fold are preloaded', () => {
@@ -285,7 +285,7 @@ describe('static pages', () => {
   });
 
   it('a link can carry its language: ?lang= wins over the saved choice and the address bar follows the toggle', () => {
-    const main = read('js/main.js');
+    const main = read('website/js/main.js');
     assert.match(main, /new URLSearchParams\(location\.search\)\.get\('lang'\)/);
     assert.match(main, /history\.replaceState\(null, '', `\?lang=\$\{lang\}\$\{location\.hash\}`\)/);
     assert.ok(main.indexOf("get('lang')") < main.indexOf("localStorage.getItem('dentis-lang')"), 'the link must be checked before the saved choice');
@@ -293,7 +293,7 @@ describe('static pages', () => {
 
   it('the admin page is not indexable and the SPA entry exists', () => {
     assert.match(read('admin/index.html'), /name="robots" content="noindex"/);
-    assert.ok(readdirSync(new URL('../../public/admin', import.meta.url)).includes('admin.js'));
+    assert.ok(readdirSync(new URL('../../public/admin', import.meta.url)).includes('js'));
   });
 
   it('the logo files are valid SVG with the Dentis name', () => {

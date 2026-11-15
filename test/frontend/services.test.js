@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { SERVICES } from '../../public/js/services.js';
+import { SERVICES } from '../../public/website/js/services.js';
 
 describe('website services', () => {
   it('every service has an English and a Bangla title and text', () => {
@@ -19,7 +19,7 @@ describe('website services', () => {
   });
 
   it('the page renders them without calling the API', () => {
-    const main = readFileSync(new URL('../../public/js/main.js', import.meta.url), 'utf8');
+    const main = readFileSync(new URL('../../public/website/js/main.js', import.meta.url), 'utf8');
     assert.match(main, /function renderServices\(\)/);
     assert.ok(!/site\.skills|skills\.map|data\.skills/.test(main));
   });

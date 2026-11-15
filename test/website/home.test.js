@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { beforeEach, describe, it } from 'node:test';
-import { STRINGS } from '../../public/js/i18n.js';
+import { STRINGS } from '../../public/website/js/i18n.js';
 import { createApp } from '../../src/app.js';
 import { dentistJsonLd, homeMeta, pickLang, renderHome } from '../../src/website/home.js';
 import { buildWorld } from '../support/fixtures.js';

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { MAGNETIC, REST, SQUASH, cardTransform, clamp, clampVector, contentTransform, isInside, isNear, lightSize, magneticPose } from '../../public/js/magnetic.js';
+import { MAGNETIC, REST, SQUASH, cardTransform, clamp, clampVector, contentTransform, isInside, isNear, lightSize, magneticPose } from '../../public/website/js/magnetic.js';
 
 const card = { left: 100, top: 100, right: 420, bottom: 300, width: 320, height: 200 }; // centre (260, 200)
 const close = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} !~ ${b}`);
@@ -138,7 +138,7 @@ describe('the transforms and the squash', () => {
 });
 
 describe('the controller', () => {
-  const source = readFileSync(new URL('../../public/js/magnetic.js', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../../public/website/js/magnetic.js', import.meta.url), 'utf8');
 
   it('is off for reduced motion, and ignores touch', () => {
     assert.match(source, /matchMedia\('\(prefers-reduced-motion: reduce\)'\)\.matches\) return null/);
@@ -156,15 +156,15 @@ describe('the controller', () => {
   });
 
   it('is started by the page', () => {
-    const main = readFileSync(new URL('../../public/js/main.js', import.meta.url), 'utf8');
+    const main = readFileSync(new URL('../../public/website/js/main.js', import.meta.url), 'utf8');
     assert.match(main, /import \{ initMagnetic \} from '\.\/magnetic\.js'/);
     assert.match(main, /initMagnetic\(\)/);
   });
 });
 
 describe('the service cards in the page', () => {
-  const css = readFileSync(new URL('../../public/css/site.css', import.meta.url), 'utf8');
-  const main = readFileSync(new URL('../../public/js/main.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../../public/website/css/site.css', import.meta.url), 'utf8');
+  const main = readFileSync(new URL('../../public/website/js/main.js', import.meta.url), 'utf8');
   const rule = (selector) => new RegExp(`^${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\{([^}]*)\\}`, 'm').exec(css)?.[1] ?? '';
 
   it('each card sits in a static wrapper and has a light layer under a content layer', () => {

@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { knobTravel, labelShift } from '../../public/js/knob-button.js';
+import { knobTravel, labelShift } from '../../public/website/js/knob-button.js';
 
 const read = (path) => readFileSync(new URL(`../../public/${path}`, import.meta.url), 'utf8');
-const css = read('css/site.css');
+const css = read('website/css/site.css');
 const rule = (selector) => new RegExp(`^${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\{([^}]*)\\}`, 'm').exec(css)?.[1] ?? '';
 
 describe('knob travel maths', () => {
@@ -113,10 +113,10 @@ describe('slide-knob button styles', () => {
   });
 
   it('the page measures the travel at runtime', () => {
-    const main = read('js/main.js');
+    const main = read('website/js/main.js');
     assert.match(main, /import \{ initKnobButtons \} from '\.\/knob-button\.js'/);
     assert.match(main, /initKnobButtons\(\)/);
-    assert.match(read('js/knob-button.js'), /ResizeObserver/);
+    assert.match(read('website/js/knob-button.js'), /ResizeObserver/);
   });
 });
 
@@ -173,7 +173,7 @@ describe('slide-knob buttons in the page', () => {
   });
 
   it('the labels still come from the dictionary, so both languages work', async () => {
-    const { STRINGS } = await import('../../public/js/i18n.js');
+    const { STRINGS } = await import('../../public/website/js/i18n.js');
     for (const b of buttons) {
       const key = /data-i18n="([^"]+)"/.exec(b.inner)[1];
       assert.ok(STRINGS.en[key] && STRINGS.bn[key], key);
