@@ -2,6 +2,7 @@ import { BanglaCall } from './voice.js';
 import { initKnobButtons } from './knob-button.js';
 import { initMagnetic } from './magnetic.js';
 import { DEFAULT_LANG, LANGUAGES, daysLabel, t } from './i18n.js';
+import { SERVICES } from './services.js';
 import { esc, formatClockRange, localDigits, pick, telHref } from './util.js';
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -32,7 +33,13 @@ function applyLanguage() {
   $('#lang-btn').lang = lang === 'bn' ? 'en' : 'bn';
   $('#mute-btn').textContent = t(lang, call.muted ? 'call.unmute' : 'call.mute');
   renderStatus();
+  renderServices();
   if (site) renderSite();
+}
+
+function renderServices() {
+  const card = ([title, text], i) => `<div class="mag-area reveal in" style="--i:${i % 6}"><article class="card mag"><span class="mag__light" aria-hidden="true"></span><div class="mag__content"><h3>${esc(title)}</h3><p>${esc(text)}</p></div></article></div>`;
+  $('#services-list').innerHTML = SERVICES.map((s, i) => card(s[lang] ?? s.en, i)).join('');
 }
 
 $('#lang-btn').addEventListener('click', () => {
@@ -48,10 +55,7 @@ $('#lang-btn').addEventListener('click', () => {
 
 /* ---------- live clinic content ---------- */
 function renderSite() {
-  const { clinic, skills, doctors } = site;
-  $('#services-list').innerHTML = skills.length
-    ? skills.map((s, i) => `<div class="mag-area reveal in" style="--i:${i % 6}"><article class="card mag"><span class="mag__light" aria-hidden="true"></span><div class="mag__content"><h3>${esc(pick(lang, s.title, s.title_bn))}</h3><p>${esc(pick(lang, s.description, s.description_bn))}</p></div></article></div>`).join('')
-    : `<p class="muted">${esc(t(lang, 'services.empty'))}</p>`;
+  const { clinic, doctors } = site;
 
   $('#doctors-list').innerHTML = doctors
     .map((d) => {
@@ -85,9 +89,7 @@ fetch('/api/public/site')
     site = data;
     renderSite();
   })
-  .catch(() => {
-    $('#services-list').innerHTML = `<p class="muted">${esc(t(lang, 'services.empty'))}</p>`;
-  });
+  .catch(() => {});
 
 /* ---------- call panel ---------- */
 const call = new BanglaCall();

@@ -27,12 +27,12 @@ beforeEach(async () => {
 });
 
 describe('public API', () => {
-  it('GET /api/public/site returns the clinic, enabled skills and doctors', async () => {
+  it('GET /api/public/site returns the clinic and doctors, and no agent knowledge', async () => {
     const res = await request('GET', '/api/public/site');
     assert.equal(res.status, 200);
     const site = await res.json();
     assert.equal(site.clinic.name_en, 'Dentis Dental Care');
-    assert.deepEqual(site.skills.map((s) => s.title), ['Scaling and polishing', 'Root canal treatment']);
+    assert.equal('skills' in site, false);
     assert.equal(site.doctors.length, 2);
   });
 
@@ -295,22 +295,6 @@ describe('admin API', () => {
     assert.equal((await badKind.json()).error.code, 'skill_kind_invalid');
   });
 
-  it('the public site shows services only, so a new FAQ does not appear on the website', async () => {
-    await request('POST', '/api/admin/skills', { body: { title: 'Where to park', description: 'Parking info', kind: 'faq' }, headers: h });
-    const site = await (await request('GET', '/api/public/site')).json();
-    assert.ok(!site.skills.some((k) => k.title === 'Where to park'));
-    assert.equal(site.skills.length, 2);
-  });
-
-  it('on_website false hides a service from the public site but the admin list still returns it', async () => {
-    const res = await request('POST', '/api/admin/skills', { body: { title: 'Normal check-up', description: 'Routine check', kind: 'service', on_website: false }, headers: h });
-    assert.equal((await res.json()).on_website, false);
-    const site = await (await request('GET', '/api/public/site')).json();
-    assert.ok(!site.skills.some((k) => k.title === 'Normal check-up'));
-    const list = await (await request('GET', '/api/admin/skills', { headers: h })).json();
-    assert.equal(list.items.find((k) => k.title === 'Normal check-up').on_website, false);
-  });
-
   it('an FAQ added in admin is answered by the agent through get_skill on the next call', async () => {
     await request('POST', '/api/admin/skills', { body: { title: 'Where to park', description: 'Parking info', content: 'Behind the building.', kind: 'faq' }, headers: h });
     await request('POST', '/api/session');
@@ -395,7 +379,6 @@ describe('admin agent prompt', () => {
     assert.deepEqual([settings.hours_bn, settings.address_bn, settings.directions_bn, settings.prep_notes_bn], ['শনি–বৃহ', 'ধানমন্ডি', 'লেকের পাশে', 'আগে আসুন']);
 
     const site = await (await request('GET', '/api/public/site')).json();
-    assert.equal(site.skills.find((k) => k.title === 'Implants').title_bn, 'ইমপ্ল্যান্ট');
     assert.equal(site.doctors.find((d) => d.id === 1).specialty_bn, 'সাধারণ সেবা');
     assert.equal(site.clinic.hours_bn, 'শনি–বৃহ');
   });

@@ -13,6 +13,9 @@ const TARGET = 0.9;
 
 const CASES = [
   // [what the caller says, expected title]
+  ['আমার দাঁতে ব্যথা কিন্তু কী সমস্যা বুঝতে পারছি না', 'Diagnosis'],
+  ['I have pain but I do not know what is wrong', 'Diagnosis'],
+  ['দাঁত শিরশির করে, ডাক্তার দেখাতে চাই', 'Diagnosis'],
   ['আমার দাঁতে গর্ত হয়েছে', 'Fillings'],
   ['I have a cavity', 'Fillings'],
   ['ফিলিং করার পর কী করব', 'Fillings'],

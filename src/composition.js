@@ -36,7 +36,7 @@ export function buildServices(ports) {
     doctorDirectory: new DoctorDirectory({ doctors, appointments }),
     clinic,
     agentSettings: new AgentSettings({ settings, doctors, skills, clock }),
-    getPublicSite: new GetPublicSite({ clinic, skills, doctors }),
+    getPublicSite: new GetPublicSite({ clinic, doctors }),
     startCall: new StartCall({ calls, doctors, skills, settings, gateway, security, clock, newId }),
     finishCall: new FinishCall({ calls, clock }),
     storeRecording: new StoreRecording({ calls, recordings }),

@@ -22,7 +22,7 @@ A dental centre website: the hero's main action is **Book an appointment** (book
 Everything the agent says and knows is edited in `/admin`, with no deploy. The next call uses it.
 
 - **Agent prompt:** edit the persona and tone (`Instructions`) and the `Greeting`. Write `{clinic}` where the clinic name goes. **Show final prompt** previews the whole prompt for unsaved text, and **Reset to default** restores the built-in text. The booking steps, tool rules, "facts only from tools" and safety rules are **locked in code**. They always come after your text and win over it, so they cannot be edited away.
-- **Agent knowledge:** each entry has a type (**Service**, **FAQ** or **Policy**), a title, a description, the details the agent will say, and keywords (other words callers use, in Bangla and English). Only **services** with **Show on the website** on appear there. A service can be known to the agent and hidden from the site.
+- **Agent knowledge:** each entry has a type (**Service**, **FAQ** or **Policy**), a title, a description, the details the agent will say, and keywords (other words callers use, in Bangla and English). This knowledge is for the voice agent only. The website's service list is fixed copy in `public/js/services.js`, so editing it needs a code change.
 - **How the agent finds an entry:** it is shown the titles of enabled entries (never the details), up to 40. It fetches one by exact title with `get_skill`, or searches with `lookup_skill` by the caller's own words. Past 40 entries the list is left out and the agent only searches. The page shows "N of 40 titles in the agent's index".
 - **Retrieval is tested:** `test/application/retrieval-eval.test.js` runs 32 Bangla and English phrasings through the real seed and ranking. The expected entry must be in the top 3 for at least 90 percent (today 32 of 32; 29 of 32 are first).
 
@@ -49,7 +49,7 @@ cp .dev.vars.example .dev.vars        # put your OPENAI_API_KEY and an ADMIN_ACC
 npm run db:init:local                 # apply migrations (tracked): schema + Dentis demo clinic + knowledge
 npm run db:samples:local              # optional: 4 invented sample calls from seed/
 npm run dev                           # http://localhost:8787  (admin: /admin)
-npm test                              # 455 tests, no setup needed
+npm test                              # 452 tests, no setup needed
 ```
 
 ## Deploy
@@ -83,7 +83,7 @@ agentic-hub/         requirements, principles, epics, contracts, task commands
 
 ## Tests
 
-`npm test` runs 455 tests with Node's built-in runner:
+`npm test` runs 452 tests with Node's built-in runner:
 
 | Folder | What it proves |
 |---|---|

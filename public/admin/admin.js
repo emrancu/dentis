@@ -342,7 +342,7 @@ async function skillsView(view) {
   const enabled = items.filter((s) => s.enabled).length;
   const over = enabled > cap;
   const shown = skillFilter === 'all' ? items : items.filter((s) => s.kind === skillFilter);
-  view.innerHTML = `${head('Agent knowledge', 'Everything here is knowledge the voice agent can look up during a call. Services also appear on the website.', '<button class="btn btn-primary" id="add">+ Add entry</button>')}
+  view.innerHTML = `${head('Agent knowledge', 'Everything here is knowledge the voice agent can look up during a call.', '<button class="btn btn-primary" id="add">+ Add entry</button>')}
     <div class="meter ${over ? 'over' : enabled >= cap * 0.9 ? 'near' : ''}" role="status">
       <strong>${enabled} of ${cap}</strong> titles in the agent's index
       <span>${over ? 'Over the limit: the agent no longer sees the list and has to search. Disable or merge some entries.' : enabled >= cap * 0.9 ? 'Close to the limit.' : 'The agent sees every enabled title and fetches the details when needed.'}</span>
@@ -351,7 +351,7 @@ async function skillsView(view) {
       ${[['all', 'All', items.length], ...KINDS.map(([k, , plural]) => [k, plural, items.filter((s) => s.kind === k).length])].map(([k, label, n]) => `<button type="button" class="tab" data-filter="${k}" aria-pressed="${skillFilter === k}">${esc(label)} <span>${n}</span></button>`).join('')}
     </div>
     ${shown.length ? `<div class="skills">${shown.map((s) => `
-      <article class="card skill ${s.enabled ? '' : 'off'}"><div><span class="chip kind-${esc(s.kind)}">${esc(kindLabel(s.kind))}</span>${s.kind === 'service' && s.enabled && !s.on_website ? ' <span class="chip">Hidden from website</span>' : ''}${s.kind === 'service' && s.enabled && s.on_website && !(s.title_bn && s.description_bn) ? ' <span class="chip warn-bn">No Bangla text for the website</span>' : ''}</div><h3>${esc(s.title)}</h3>${s.title_bn ? `<p class="muted bn" style="margin:-4px 0 0">${esc(s.title_bn)}</p>` : ''}<p class="muted" style="margin:0">${esc(s.description)}</p>${s.content ? `<div class="content bn">${esc(s.content)}</div>` : ''}${s.keywords ? `<p class="keywords bn">${esc(s.keywords)}</p>` : ''}
+      <article class="card skill ${s.enabled ? '' : 'off'}"><div><span class="chip kind-${esc(s.kind)}">${esc(kindLabel(s.kind))}</span></div><h3>${esc(s.title)}</h3>${s.title_bn ? `<p class="muted bn" style="margin:-4px 0 0">${esc(s.title_bn)}</p>` : ''}<p class="muted" style="margin:0">${esc(s.description)}</p>${s.content ? `<div class="content bn">${esc(s.content)}</div>` : ''}${s.keywords ? `<p class="keywords bn">${esc(s.keywords)}</p>` : ''}
         <div class="actions"><label class="switch"><input type="checkbox" data-toggle="${s.id}" ${s.enabled ? 'checked' : ''}> ${s.enabled ? 'Enabled' : 'Disabled'}</label><span style="flex:1"></span><button class="btn btn-small" data-edit="${s.id}">Edit</button><button class="btn btn-small btn-danger" data-del="${s.id}">Delete</button></div>
       </article>`).join('')}</div>` : empty(items.length ? 'Nothing of this type yet.' : 'No entries yet. Add the first one so the agent can answer questions.')}`;
   const byId = new Map(items.map((s) => [String(s.id), s]));
@@ -413,17 +413,16 @@ function dialog(html, onSubmit) {
 
 function skillDialog(skill) {
   dialog(`<h2>${skill ? 'Edit entry' : 'Add entry'}</h2>
-    <label class="field"><span>Type</span><select name="kind">${KINDS.map(([k, label]) => `<option value="${k}" ${(skill?.kind ?? 'service') === k ? 'selected' : ''}>${label}${k === 'service' ? ' (shown on the website)' : ' (agent only)'}</option>`).join('')}</select></label>
+    <label class="field"><span>Type</span><select name="kind">${KINDS.map(([k, label]) => `<option value="${k}" ${(skill?.kind ?? 'service') === k ? 'selected' : ''}>${label}</option>`).join('')}</select></label>
     <label class="field"><span>Title in English: what the agent looks up</span><input type="text" name="title" value="${esc(skill?.title ?? '')}" maxlength="80" required></label>
     <label class="field"><span>Description in English</span><input type="text" name="description" value="${esc(skill?.description ?? '')}" maxlength="400" required></label>
-    <label class="field"><span>Title in Bangla (shown on the website)</span><input type="text" name="title_bn" value="${esc(skill?.title_bn ?? '')}" maxlength="80" class="bn"></label>
-    <label class="field"><span>Description in Bangla (shown on the website)</span><input type="text" name="description_bn" value="${esc(skill?.description_bn ?? '')}" maxlength="400" class="bn"></label>
-    <p class="hint">Shown on the website for services. Agent-only entries (FAQ, policy) can leave these empty.</p>
+    <label class="field"><span>Title in Bangla (helps the agent match callers)</span><input type="text" name="title_bn" value="${esc(skill?.title_bn ?? '')}" maxlength="80" class="bn"></label>
+    <label class="field"><span>Description in Bangla (helps the agent match callers)</span><input type="text" name="description_bn" value="${esc(skill?.description_bn ?? '')}" maxlength="400" class="bn"></label>
+    <p class="hint">Everything here is for the voice agent only. The website lists its services separately. Bangla text is optional.</p>
     <label class="field"><span>Details the agent will say: prices, steps, rules</span><textarea name="content" maxlength="4000" class="bn">${esc(skill?.content ?? '')}</textarea></label>
     <label class="field"><span>Keywords: other words callers use, Bangla and English, separated by commas</span><input type="text" name="keywords" value="${esc(skill?.keywords ?? '')}" maxlength="300" class="bn" placeholder="wisdom, দাঁত তোলা, আক্কেল দাঁত"></label>
-    <label class="switch"><input type="checkbox" name="enabled" ${skill?.enabled ?? true ? 'checked' : ''}> Enabled: the agent can use it</label>
-    <label class="switch" data-website><input type="checkbox" name="on_website" ${skill?.on_website ?? true ? 'checked' : ''}> Show on the website (services only). Turn off for things like a normal check-up that callers ask about but you do not list.</label>`, (f) => {
-    const body = { title: f.get('title'), description: f.get('description'), title_bn: f.get('title_bn'), description_bn: f.get('description_bn'), content: f.get('content'), kind: f.get('kind'), keywords: f.get('keywords'), enabled: f.get('enabled') === 'on', on_website: f.get('on_website') === 'on' };
+    <label class="switch"><input type="checkbox" name="enabled" ${skill?.enabled ?? true ? 'checked' : ''}> Enabled</label>`, (f) => {
+    const body = { title: f.get('title'), description: f.get('description'), title_bn: f.get('title_bn'), description_bn: f.get('description_bn'), content: f.get('content'), kind: f.get('kind'), keywords: f.get('keywords'), enabled: f.get('enabled') === 'on' };
     return skill ? api('PUT', `/skills/${skill.id}`, body) : api('POST', '/skills', body);
   });
 }
@@ -501,7 +500,7 @@ function dataView(view) {
     ['patients', 'The person behind the calls, unique by phone.', 'id, full_name, phone (unique), created_at'],
     ['appointments', 'Bookings. One active booking per doctor and slot (unique index).', 'patient_id, call_id, doctor_id → doctors,\nslot, service, status'],
     ['callbacks', 'Requests for a human to call back.', 'call_id → calls, name, phone, reason,\npreferred_time, status'],
-    ['skills', 'Agent knowledge you manage here: services, FAQs and policies.', 'title, description (English), title_bn,\ndescription_bn (Bangla, shown on the website),\ncontent, kind, keywords, enabled'],
+    ['skills', 'Agent knowledge you manage here: services, FAQs and policies.', 'title, description (English), title_bn,\ndescription_bn (Bangla, optional, helps matching),\ncontent, kind, keywords, enabled'],
     ['doctors', 'Who can be booked and when.', 'name_en, name_bn, specialty, specialty_bn,\ndays, start_time, end_time, active'],
     ['settings', 'Clinic profile and agent prompt as key/value. Text fields have Bangla twins (*_bn).', 'key, value'],
   ];

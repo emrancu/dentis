@@ -226,13 +226,11 @@ describe('ClinicService and GetPublicSite', () => {
     assert.deepEqual(r.slots.slice(0, 3).map((x) => x.time), ['10:00', '11:00', '12:00']);
   });
 
-  it('public site shows enabled skills and active doctors only', async () => {
+  it('public site shows active doctors only', async () => {
     const doctor = await world.ports.doctors.findById(2);
     doctor.active = false;
     await world.ports.doctors.save(doctor);
     const site = await s.getPublicSite.execute();
-    assert.deepEqual(site.skills.map((k) => k.title), ['Scaling and polishing', 'Root canal treatment']);
-    assert.equal('content' in site.skills[0], false);
     assert.deepEqual(site.doctors.map((d) => d.name_en), ['Dr. Nusrat Jahan']);
     assert.equal(site.clinic.name_en, 'Dentis Dental Care');
   });

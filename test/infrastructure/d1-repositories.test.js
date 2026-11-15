@@ -330,15 +330,6 @@ describe('migrations', () => {
     assert.equal(back.keywords, 'park, গাড়ি');
   });
 
-  it('on_website round-trips through the real SQL and defaults to shown', async () => {
-    const repo = new D1SkillRepository(createD1());
-    const s = await repo.insert(new Skill({ title: 'Check-up', description: 'Normal check-up', updatedAt: 't' }));
-    assert.equal((await repo.findById(s.id)).onWebsite, true);
-    s.onWebsite = false;
-    await repo.save(s);
-    assert.equal((await repo.findById(s.id)).onWebsite, false);
-  });
-
   it('the seed gives every skill keywords, with faq and policy entries', async () => {
     const skills = await new D1SkillRepository(createD1({ seed: true })).list();
     assert.ok(skills.every((s) => s.keywords.length > 0));

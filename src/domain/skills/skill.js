@@ -6,10 +6,10 @@ export const TITLE_INDEX_CAP = 40;
 
 /**
  * Entity: a piece of dental-clinic knowledge the voice agent can fetch by tool call
- * (a service, a price note, a policy, an FAQ…). Only enabled `service` entries with `onWebsite` set appear on the website; the agent knows all enabled entries.
+ * (a service, a price note, a policy, an FAQ…). The voice agent knows every enabled entry. None of it is shown on the website.
  */
 export class Skill {
-  constructor({ id = null, title, description, titleBn = '', descriptionBn = '', content = '', kind = 'service', keywords = '', enabled = true, onWebsite = true, updatedAt = null }) {
+  constructor({ id = null, title, description, titleBn = '', descriptionBn = '', content = '', kind = 'service', keywords = '', enabled = true, updatedAt = null }) {
     const t = String(title ?? '').trim();
     const d = String(description ?? '').trim();
     const k = String(keywords ?? '').trim();
@@ -22,7 +22,7 @@ export class Skill {
     if (tb.length > 80) throw new ValidationError('skill_title_bn_too_long', 'The Bangla title must be at most 80 characters.');
     if (db.length > 400) throw new ValidationError('skill_description_bn_too_long', 'The Bangla description must be at most 400 characters.');
     if (k.length > 300) throw new ValidationError('skill_keywords_too_long', 'Keywords must be at most 300 characters.');
-    Object.assign(this, { id, title: t, description: d, titleBn: tb, descriptionBn: db, content: String(content).trim(), kind, keywords: k, enabled: Boolean(enabled), onWebsite: Boolean(onWebsite), updatedAt });
+    Object.assign(this, { id, title: t, description: d, titleBn: tb, descriptionBn: db, content: String(content).trim(), kind, keywords: k, enabled: Boolean(enabled), updatedAt });
   }
 }
 
