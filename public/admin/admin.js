@@ -634,7 +634,7 @@ function howItWorksView(view) {
     ['Knowledge is chosen by title', 'The prompt lists only the entry titles. The model picks the ones a question needs and fetches their details. Staff write each entry in one plain form, in English or Bangla.'],
     ['Persona is editable, rules are not', 'Staff edit tone, greeting and closing. Flow, safety and scope are code, added last, and win over the persona.'],
     ['Secrets stay on the server', 'The browser only gets a short-lived key. Audio goes browser to OpenAI and never through the Worker.'],
-    ['Bounded', 'A call ends at 5 minutes; silence gets a nudge at 15 s and a hang-up at 30 s. 10 calls per IP per hour.'],
+    ['Bounded', 'A call ends at 5 minutes; silence gets a nudge at 25 s and a hang-up at 50 s. 10 calls per IP per hour.'],
   ];
   const breaks = [
     ['OpenAI session fails', 'Retry panel. Call marked failed.'],

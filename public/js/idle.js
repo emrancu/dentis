@@ -1,5 +1,5 @@
 /** How long a caller may stay silent: a gentle "are you there?" first, then the call ends. */
-export const IDLE = Object.freeze({ nudgeAfterMs: 15000, hangupAfterMs: 30000 });
+export const IDLE = Object.freeze({ nudgeAfterMs: 25000, hangupAfterMs: 50000 });
 
 /**
  * Tracks silence on a call. Pure: the caller passes the clock in, so it is easy to test.
@@ -9,6 +9,7 @@ export const IDLE = Object.freeze({ nudgeAfterMs: 15000, hangupAfterMs: 30000 })
 export class IdleWatch {
   #last;
   #nudged = false;
+  #speaking = false;
 
   constructor(now, config = IDLE) {
     this.config = config;
@@ -19,6 +20,13 @@ export class IdleWatch {
   callerSpoke(now) {
     this.#last = now;
     this.#nudged = false;
+    this.#speaking = true;
+  }
+
+  /** The caller stopped speaking: silence counts from now. Long answers, like a phone number, never count as silence. */
+  callerStopped(now) {
+    this.#last = now;
+    this.#speaking = false;
   }
 
   /** The agent finished a turn (not the nudge): silence counts from now. */
@@ -28,6 +36,7 @@ export class IdleWatch {
 
   /** Returns 'nudge' once per silence, 'hangup' when it has lasted too long, otherwise null. */
   check(now) {
+    if (this.#speaking) return null;
     const idle = now - this.#last;
     if (idle >= this.config.hangupAfterMs) return 'hangup';
     if (idle >= this.config.nudgeAfterMs && !this.#nudged) {

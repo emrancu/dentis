@@ -171,6 +171,7 @@ export class BanglaCall extends EventTarget {
       closingMessages(this.#closingCallId, this.#closing).forEach((m) => this.#send(m));
     }
     if (event.type === 'input_audio_buffer.speech_started') this.#idle?.callerSpoke(Date.now());
+    if (event.type === 'input_audio_buffer.speech_stopped') this.#idle?.callerStopped(Date.now());
     if (event.type === 'output_audio_buffer.stopped' && !this.#closingSent) this.#idle?.agentFinished(Date.now());
     if (event.type === 'output_audio_buffer.started' && this.#closingSent) this.#closingHeard = true;
     if (event.type === 'output_audio_buffer.stopped' && this.#closingHeard) {
