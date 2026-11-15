@@ -30,9 +30,9 @@
       <a href="#services" data-i18n="nav.services">সেবা</a>
       <a href="#visit-steps" data-i18n="nav.how">প্রথম ভিজিট</a>
       <a href="#doctors" data-i18n="nav.doctors">আমাদের ডেন্টিস্ট</a>
-      <a href="#visit" data-i18n="nav.visit">যোগাযোগ</a>
+      <a href="#visit" data-i18n="nav.visit">আমাদের ঠিকানা</a>
     </nav>
-    <button class="btn-book" type="button" data-start-booking data-i18n="nav.book">অ্যাপয়েন্টমেন্ট</button>
+    <button class="btn-book" type="button" data-start-booking data-i18n="nav.book">অ্যাপয়েন্টমেন্ট বুক করুন</button>
     <button class="lang-btn" id="lang-btn" type="button" data-i18n="lang.switch" lang="en">English</button>
     <button class="menu-btn" id="menu-btn" type="button" aria-expanded="false" aria-controls="nav" data-i18n-aria="nav.menu" aria-label="মেনু"><span></span><span></span></button>
   </header>
@@ -49,8 +49,8 @@
           <canvas class="stage-canvas" id="stage-canvas" aria-hidden="true"></canvas>
           <div class="fcard fcard-a" aria-live="polite">
             <span class="fcard-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2l2.2 6.3L21 10l-6.8 1.7L12 18l-2.2-6.3L3 10l6.8-1.7z"/></svg></span>
-            <strong id="tx-name" data-i18n="tx.checkup.name">চেকআপ ও ক্লিনিং</strong>
-            <span id="tx-text" data-i18n="tx.checkup.text">নিয়মিত যত্নে দাঁত ও মাড়ি সুস্থ থাকে</span>
+            <strong id="tx-name" data-i18n="tx.checkup.name">চেকআপ ও পরামর্শ</strong>
+            <span id="tx-text" data-i18n="tx.checkup.text">প্রথম পরামর্শ, দাঁত ও মুখের পরীক্ষা এবং চিকিৎসার পরিকল্পনা।</span>
           </div>
           <div class="fcard fcard-b">
             <span class="fcard-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></span>
@@ -61,7 +61,7 @@
             <button type="button" role="tab" class="tx-tab" data-tx="0" aria-selected="true" data-i18n="tx.checkup.short">চেকআপ</button>
             <button type="button" role="tab" class="tx-tab" data-tx="1" aria-selected="false" data-i18n="tx.whitening.short">সাদা করা</button>
             <button type="button" role="tab" class="tx-tab" data-tx="2" aria-selected="false" data-i18n="tx.braces.short">ব্রেসেস</button>
-            <button type="button" role="tab" class="tx-tab" data-tx="3" aria-selected="false" data-i18n="tx.implant.short">ইমপ্লান্ট</button>
+            <button type="button" role="tab" class="tx-tab" data-tx="3" aria-selected="false" data-i18n="tx.implant.short">ইমপ্ল্যান্ট</button>
           </div>
         </div>
       </div>
@@ -69,7 +69,7 @@
       <div class="hero-inner">
         <p class="eyebrow" data-i18n="hero.eyebrow">ধানমন্ডি, ঢাকায় দাঁতের যত্ন</p>
         <h1 data-i18n-html="hero.title">সুস্থ দাঁত, <em>আত্মবিশ্বাসী হাসি</em>।</h1>
-        <p class="lead" data-i18n="hero.lead">পুরো পরিবারের জন্য আরামদায়ক ও আধুনিক ডেন্টাল সেবা। সাধারণ চেকআপ থেকে জটিল চিকিৎসা, কী হচ্ছে আর কত খরচ, আপনি সবসময় আগেই জানবেন।</p>
+        <p class="lead" data-i18n="hero.lead">পুরো পরিবারের জন্য আরামদায়ক ও আধুনিক ডেন্টাল সেবা, সাধারণ চেকআপ থেকে জটিল চিকিৎসা পর্যন্ত।</p>
         <div class="cta-row">
           <button class="btn-call" id="book-btn" type="button" data-start-booking>
             <span class="btn-call-icon" aria-hidden="true">
@@ -89,6 +89,7 @@
           <span class="call-timer" id="call-timer" aria-hidden="true">0:00</span>
         </div>
         <div class="call-body when-active">
+          <p class="call-consent" data-i18n="call.consent">এই কল ক্লিনিক টিমের জন্য রেকর্ড করা হয়।</p>
           <p class="call-caption" id="call-caption" lang="bn" aria-live="polite"></p>
           <div class="wave" id="wave" aria-hidden="true"></div>
           <div class="call-actions">
@@ -118,9 +119,9 @@
     <section class="section" id="services">
       <div class="wrap">
         <header class="section-head reveal">
-          <p class="kicker" data-i18n="services.eyebrow">আমাদের সেবা</p>
+          <p class="kicker" data-i18n="services.eyebrow">সেবা</p>
           <h2 data-i18n="services.title">আপনার হাসির প্রতিটি ধাপে যত্ন</h2>
-          <p data-i18n="services.sub">নিয়মিত যত্ন, ক্ষতিগ্রস্ত দাঁতের চিকিৎসা ও সৌন্দর্য বাড়ানোর সেবা। শুরুর আগেই ফি বুঝিয়ে বলা হয়।</p>
+          <p data-i18n="services.sub">নিয়মিত যত্ন, ক্ষতিগ্রস্ত দাঁতের চিকিৎসা ও সৌন্দর্য বাড়ানোর সেবা, সব বয়সের জন্য।</p>
         </header>
         <div class="cards" id="services-list" aria-live="polite"></div>
       </div>
@@ -132,12 +133,12 @@
         <header class="section-head reveal">
           <p class="kicker" data-i18n="how.eyebrow">প্রথম ভিজিট</p>
           <h2 data-i18n="how.title">কী আশা করবেন</h2>
-          <p data-i18n="how.sub">কোনো চমক নেই। আমাদের ভিজিট যেভাবে হয়, দেখুন।</p>
+          <p data-i18n="how.sub">আমাদের ভিজিট যেভাবে হয়, দেখুন।</p>
         </header>
         <ol class="steps">
-          <li class="step reveal" style="--i:0"><span class="step-n">1</span><h3 data-i18n="how.1.t">কী সমস্যা, আমাদের বলুন</h3><p data-i18n="how.1.d">নিজের মতো করে বাংলা বা ইংরেজিতে কথা বলে বুক করুন। doctor, scaling-এর মতো ইংরেজি শব্দ মেশালেও সমস্যা নেই।</p></li>
+          <li class="step reveal" style="--i:0"><span class="step-n">1</span><h3 data-i18n="how.1.t">নিজের কথায় বুক করুন</h3><p data-i18n="how.1.d">নিজের মতো করে বাংলা বা ইংরেজিতে কথা বলে বুক করুন। doctor, scaling-এর মতো ইংরেজি শব্দ মেশালেও সমস্যা নেই।</p></li>
           <li class="step reveal" style="--i:1"><span class="step-n">2</span><h3 data-i18n="how.2.t">যত্ন নিয়ে চেকআপ</h3><p data-i18n="how.2.d">ডেন্টিস্ট আপনার দাঁত পরীক্ষা করে যা পেলেন তা সহজ ভাষায় বুঝিয়ে বলেন।</p></li>
-          <li class="step reveal" style="--i:2"><span class="step-n">3</span><h3 data-i18n="how.3.t">পরিষ্কার পরিকল্পনা, পরিষ্কার খরচ</h3><p data-i18n="how.3.d">কোনো কাজ শুরুর আগেই চিকিৎসার পরিকল্পনা ও ফি জানানো হয়। এরপর কী হবে, সিদ্ধান্ত আপনার।</p></li>
+          <li class="step reveal" style="--i:2"><span class="step-n">3</span><h3 data-i18n="how.3.t">পরিষ্কার পরিকল্পনা, সিদ্ধান্ত আপনার</h3><p data-i18n="how.3.d">কোনো কাজ শুরুর আগেই চিকিৎসার পরিকল্পনা পাবেন। এরপর কী হবে, সিদ্ধান্ত আপনার।</p></li>
         </ol>
       </div>
     </section>
@@ -147,12 +148,12 @@
       <div class="wrap">
         <header class="section-head reveal">
           <p class="kicker" data-i18n="why.eyebrow">কেন ডেন্টিস</p>
-          <h2 data-i18n="why.title">আপনার সময় ও আস্থাকে সম্মান করে ডেন্টিস্ট্রি</h2>
+          <h2 data-i18n="why.title">আপনার সময় ও আস্থার প্রতি সম্মান রেখে দাঁতের চিকিৎসা</h2>
         </header>
         <div class="features">
-          <article class="feature reveal" style="--i:0"><h3 data-i18n="why.1.t">আগেই ফি জানুন</h3><p data-i18n="why.1.d">সিদ্ধান্ত নেওয়ার আগে যেকোনো চিকিৎসার খরচ জেনে নিন। শেষে কোনো চমক থাকে না।</p></article>
-          <article class="feature reveal" style="--i:1"><h3 data-i18n="why.2.t">আরামদায়ক, তাড়াহুড়ো ছাড়া যত্ন</h3><p data-i18n="why.2.d">প্রতিটি ধাপ বুঝিয়ে বলি এবং আপনার গতিতে এগোই, বিশেষ করে ভয় পেলে।</p></article>
-          <article class="feature reveal" style="--i:2"><h3 data-i18n="why.3.t">এক ছাদের নিচে বিশেষজ্ঞ</h3><p data-i18n="why.3.d">সাধারণ ডেন্টাল সেবা ও বিশেষজ্ঞ চিকিৎসা এক ক্লিনিকে, তাই এখানে-ওখানে ছুটতে হয় না।</p></article>
+          <article class="feature reveal" style="--i:0"><h3 data-i18n="why.1.t">আগেই ফি জানুন</h3><p data-i18n="why.1.d">সিদ্ধান্ত নেওয়ার আগে যেকোনো চিকিৎসার খরচ জিজ্ঞেস করুন, আমরা জানিয়ে দেব।</p></article>
+          <article class="feature reveal" style="--i:1"><h3 data-i18n="why.2.t">প্রতিটি ধাপ বুঝিয়ে বলি</h3><p data-i18n="why.2.d">চিকিৎসার আগে ও চলাকালে কী করছি আর কেন, তা বলি, এবং আপনার গতিতে এগোই।</p></article>
+          <article class="feature reveal" style="--i:2"><h3 data-i18n="why.3.t">আপনার ভাষায়</h3><p data-i18n="why.3.d">বাংলা বা ইংরেজি, অথবা মিশিয়ে বলুন। আমরা দুটোই বুঝি।</p></article>
           <article class="feature reveal" style="--i:3"><h3 data-i18n="why.4.t">বুক করা সহজ</h3><p data-i18n="why.4.d">যখন সুবিধা, বাংলা বা ইংরেজিতে কথা বলে বুক করুন, তারপর ডেন্টিস্টের কাছে আসুন।</p></article>
         </div>
       </div>
@@ -174,12 +175,12 @@
     <section class="section" id="visit">
       <div class="wrap visit">
         <div class="reveal">
-          <p class="kicker" data-i18n="visit.eyebrow">যোগাযোগ</p>
+          <p class="kicker" data-i18n="visit.eyebrow">আমাদের ঠিকানা</p>
           <h2 data-i18n="visit.title">ধানমন্ডিতে আমাদের খুঁজে নিন</h2>
           <dl class="facts" id="visit-facts"></dl>
           <div class="cta-row">
             <button class="btn-call btn-call-light" type="button" data-start-booking><span data-i18n="visit.cta">অ্যাপয়েন্টমেন্ট বুক করুন</span></button>
-            <button class="btn-outline" type="button" data-start-call data-i18n="visit.call">ডেন্টিসে কল করুন</button>
+            <a class="btn-outline" id="visit-tel" href="#" data-i18n="visit.phoneBtn" hidden>ক্লিনিকে ফোন করুন</a>
           </div>
         </div>
         <div class="visit-art reveal" aria-hidden="true"><img src="/logo-mark.svg" alt="" width="180" height="180"></div>
@@ -187,9 +188,9 @@
     </section>
   </main>
 
-  <button class="fab" id="fab-call" type="button" data-i18n-aria="fab.aria" aria-label="ডেন্টিসে কল করে রিসেপশনিস্টের সাথে কথা বলুন">
+  <button class="fab" id="fab-call" type="button" data-i18n-aria="fab.aria" aria-label="ব্রাউজারেই আমাদের রিসেপশনিস্টের সাথে কথা বলুন">
     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg>
-    <span class="fab-label" data-i18n="fab.label">ডেন্টিসে কল করুন</span>
+    <span class="fab-label" data-i18n="fab.label">কথা বলুন</span>
   </button>
 
   <footer class="site-footer">
@@ -202,13 +203,12 @@
         <a href="#services" data-i18n="nav.services">সেবা</a>
         <a href="#visit-steps" data-i18n="nav.how">প্রথম ভিজিট</a>
         <a href="#doctors" data-i18n="nav.doctors">আমাদের ডেন্টিস্ট</a>
-        <a href="#visit" data-i18n="nav.visit">যোগাযোগ</a>
+        <a href="#visit" data-i18n="nav.visit">আমাদের ঠিকানা</a>
       </nav>
       <div class="footer-contact" id="footer-contact"></div>
     </div>
     <div class="wrap footer-base">
       <p data-i18n="footer.line">© ডেন্টিস ডেন্টাল কেয়ার। নমুনা তথ্যসহ একটি ডেমো ক্লিনিক।</p>
-      <a href="/admin/" data-i18n="footer.staff">স্টাফ পোর্টাল</a>
     </div>
   </footer>
 

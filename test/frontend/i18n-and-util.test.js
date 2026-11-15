@@ -2,9 +2,12 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { DEFAULT_LANG, STRINGS, daysLabel, t } from '../../public/js/i18n.js';
-import { esc, formatDateTime, formatDuration, formatSlot, formatTime, statusLabel } from '../../public/js/util.js';
+import { esc, formatClock, formatClockRange, formatDateTime, formatDuration, formatSlot, formatTime, localDigits, pick, statusLabel, telHref } from '../../public/js/util.js';
+import { D1SkillRepository } from '../../src/infrastructure/d1/content-repositories.js';
+import { createD1 } from '../support/sqlite-d1.js';
 
 const read = (path) => readFileSync(new URL(`../../public/${path}`, import.meta.url), 'utf8');
+const html = () => read('index.html');
 const keysIn = (text, attr) => [...text.matchAll(new RegExp(`${attr}="([^"]+)"`, 'g'))].map((m) => m[1]);
 
 describe('landing page copy', () => {
@@ -44,9 +47,121 @@ describe('landing page copy', () => {
   });
 
   it('labels doctor days starting from Saturday', () => {
-    assert.equal(daysLabel([0, 6, 1], 'en'), 'Sat, Sun, Mon');
+    assert.equal(daysLabel([0, 6], 'en'), 'Sat, Sun');
     assert.equal(daysLabel([6], 'bn'), 'শনি');
     assert.equal(daysLabel([], 'en'), '');
+  });
+});
+
+describe('one style per language', () => {
+  it('shows consecutive working days as a range and others as a list', () => {
+    assert.equal(daysLabel([6, 0, 1, 2, 3, 4], 'en'), 'Sat–Thu');
+    assert.equal(daysLabel([6, 0, 1, 2, 3, 4], 'bn'), 'শনি–বৃহ');
+    assert.equal(daysLabel([0, 2, 4], 'en'), 'Sun, Tue, Thu');
+    assert.equal(daysLabel([6, 1, 3], 'bn'), 'শনি, সোম, বুধ');
+    assert.equal(daysLabel([6, 0], 'en'), 'Sat, Sun');
+  });
+
+  it('times are 12-hour in English and carry a part of the day in Bangla, with Bangla digits', () => {
+    assert.equal(formatClock('10:00', 'en'), '10:00 am');
+    assert.equal(formatClock('17:30', 'en'), '5:30 pm');
+    assert.equal(formatClock('12:00', 'en'), '12:00 pm');
+    assert.equal(formatClock('00:15', 'en'), '12:15 am');
+    assert.equal(formatClock('10:00', 'bn'), 'সকাল ১০:০০');
+    assert.equal(formatClock('12:00', 'bn'), 'দুপুর ১২:০০');
+    assert.equal(formatClock('16:45', 'bn'), 'বিকাল ৪:৪৫');
+    assert.equal(formatClock('18:30', 'bn'), 'সন্ধ্যা ৬:৩০');
+    assert.equal(formatClock('20:00', 'bn'), 'রাত ৮:০০');
+    assert.equal(formatClock('05:00', 'bn'), 'ভোর ৫:০০');
+    assert.equal(formatClockRange('10:00', '17:00', 'en'), '10:00 am–5:00 pm');
+    assert.equal(formatClockRange('10:00', '17:00', 'bn'), 'সকাল ১০:০০–বিকাল ৫:০০');
+  });
+
+  it('the English page never contains Bangla digits or words, and the Bangla page never contains Latin digits in times', () => {
+    for (const t of ['00:00', '09:05', '13:30', '23:59']) {
+      assert.doesNotMatch(formatClock(t, 'en'), /[\u0980-\u09FF]/);
+      assert.doesNotMatch(formatClock(t, 'bn'), /[0-9]/);
+    }
+  });
+
+  it('digits and phone numbers follow the language', () => {
+    assert.equal(localDigits('09638-001122', 'bn'), '০৯৬৩৮-০০১১২২');
+    assert.equal(localDigits('09638-001122', 'en'), '09638-001122');
+    assert.equal(localDigits(null, 'bn'), '');
+    assert.equal(telHref('09638-001122'), 'tel:09638001122');
+    assert.equal(telHref('+880 1712-345678'), 'tel:+8801712345678');
+    assert.equal(telHref(''), '');
+  });
+
+  it('shows the visitor language first and falls back to the other only when it is empty', () => {
+    assert.equal(pick('bn', 'Fillings', 'ফিলিং'), 'ফিলিং');
+    assert.equal(pick('en', 'Fillings', 'ফিলিং'), 'Fillings');
+    assert.equal(pick('bn', 'Fillings', ''), 'Fillings');
+    assert.equal(pick('en', '', 'ফিলিং'), 'ফিলিং');
+    assert.equal(pick('bn', undefined, undefined), '');
+  });
+});
+
+describe('consistent names and one message per place', () => {
+  for (const lang of ['en', 'bn']) {
+    it(`${lang}: the navigation label is the section label, and every booking button says the same`, () => {
+      const S = STRINGS[lang];
+      assert.equal(S['nav.services'], S['services.eyebrow']);
+      assert.equal(S['nav.how'], S['how.eyebrow']);
+      assert.equal(S['nav.doctors'], S['doctors.eyebrow']);
+      assert.equal(S['nav.visit'], S['visit.eyebrow']);
+      assert.equal(S['nav.book'], S['cta.book']);
+      assert.equal(S['visit.cta'], S['cta.book']);
+    });
+
+    it(`${lang}: the fee promise is made once, in "Why Dentis", not in the hero, the services intro or the steps`, () => {
+      const fee = lang === 'en' ? /\bfees?\b|\bcosts?\b|\bprice/i : /ফি|খরচ|দাম/;
+      const offenders = Object.keys(STRINGS[lang]).filter((k) => /^(hero|services|how|tx|doctors|visit)\./.test(k) && fee.test(STRINGS[lang][k]));
+      assert.deepEqual(offenders, []);
+      assert.ok(fee.test(STRINGS[lang]['why.1.d']));
+    });
+
+    it(`${lang}: no boasts that depend on data we do not control`, () => {
+      const all = Object.values(STRINGS[lang]).join(' ').toLowerCase();
+      for (const phrase of ['specialists under one roof', 'no surprises', 'unhurried', 'এক ছাদের নিচে', 'কোনো চমক']) assert.ok(!all.includes(phrase), phrase);
+    });
+  }
+
+  it('the floating button says it is a voice conversation, not a phone call', () => {
+    assert.equal(STRINGS.en['fab.label'], 'Talk to us');
+    assert.equal(STRINGS.bn['fab.label'], 'কথা বলুন');
+    assert.doesNotMatch(STRINGS.en['fab.label'] + STRINGS.en['fab.aria'], /\bcall\b/i);
+  });
+
+  it('the call panel shows the recording notice in both languages', () => {
+    assert.match(STRINGS.en['call.consent'], /recorded/);
+    assert.match(STRINGS.bn['call.consent'], /রেকর্ড/);
+    assert.match(html(), /class="call-consent"/);
+  });
+
+  it('the public footer has no link to the staff portal', () => {
+    assert.doesNotMatch(html().split('<footer')[1], /\/admin/);
+  });
+
+  it('the hero treatment cards use exactly the names and texts of the Services data, in both languages', async () => {
+    const services = (await new D1SkillRepository(createD1({ seed: true })).list()).filter((s) => s.kind === 'service');
+    const byTitle = new Map(services.map((s) => [s.title, s]));
+    const pairs = { checkup: 'Check-up and consultation', whitening: 'Teeth whitening', braces: 'Braces and aligners', implant: 'Dental implants' };
+    for (const [key, title] of Object.entries(pairs)) {
+      const svc = byTitle.get(title);
+      assert.ok(svc, `no service "${title}" in the seed`);
+      assert.equal(STRINGS.en[`tx.${key}.name`], svc.title);
+      assert.equal(STRINGS.en[`tx.${key}.text`], svc.description);
+      assert.equal(STRINGS.bn[`tx.${key}.name`], svc.titleBn);
+      assert.equal(STRINGS.bn[`tx.${key}.text`], svc.descriptionBn);
+    }
+  });
+
+  it('every dictionary key is used by the page (no dead copy)', () => {
+    const source = html() + read('js/main.js');
+    const dynamic = /^(error\.|call\.|tx\.)/;
+    const unused = Object.keys(STRINGS.en).filter((k) => !dynamic.test(k) && !source.includes(`"${k}"`) && !source.includes(`'${k}'`));
+    assert.deepEqual(unused, []);
   });
 });
 

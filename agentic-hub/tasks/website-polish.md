@@ -70,12 +70,12 @@ None.
   - what: Bangla inputs in the skill, doctor and clinic forms, a "no Bangla" marker on service cards
   - files: `public/admin/**`
   - done when: a screenshot check at desktop and phone width shows the forms and the marker
-- [~] 5. Site copy, formats and labels
+- [x] 5. Site copy, formats and labels
   - parallel: yes (after 3)
   - what: new copy in both languages, format helpers, render by language, tel link, talk button, consent line
   - files: `public/index.html`, `public/js/i18n.js`, `public/js/util.js`, `public/js/main.js`, `test/frontend`
   - done when: tests cover formats and language fallback, and the static HTML still equals the Bangla strings
-- [ ] 6. Site typography and layout
+- [~] 6. Site typography and layout
   - parallel: no (after 5)
   - what: Bangla type scale and serif, wordmark, tap targets, centred grids, header button and floating button behaviour, fallback until first frame
   - files: `public/css/site.css`, `public/js/main.js`, `public/js/hero3d.js` (first frame only)

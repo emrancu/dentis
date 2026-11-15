@@ -53,3 +53,28 @@ export const STATUS_LABELS = {
 };
 
 export const statusLabel = (status) => STATUS_LABELS[status] ?? status;
+
+const BN_DIGITS = '০১২৩৪৫৬৭৮৯';
+
+/** Bangla digits for the Bangla page, Latin digits for the English page. */
+export const localDigits = (text, lang) => (lang === 'bn' ? String(text ?? '').replace(/[0-9]/g, (d) => BN_DIGITS[Number(d)]) : String(text ?? ''));
+
+/** The visitor's language first, the other language only when that field is empty. */
+export const pick = (lang, en, bn) => (lang === 'bn' ? bn || en : en || bn) || '';
+
+/** "10:00" -> "10:00 am" in English, "সকাল ১০:০০" in Bangla. */
+export function formatClock(hhmm, lang) {
+  const [h, m] = String(hhmm).split(':').map(Number);
+  const clock = `${h % 12 || 12}:${String(m).padStart(2, '0')}`;
+  if (lang !== 'bn') return `${clock} ${h < 12 ? 'am' : 'pm'}`;
+  const part = h < 4 ? 'রাত' : h < 6 ? 'ভোর' : h < 12 ? 'সকাল' : h < 15 ? 'দুপুর' : h < 18 ? 'বিকাল' : h < 20 ? 'সন্ধ্যা' : 'রাত';
+  return `${part} ${localDigits(clock, 'bn')}`;
+}
+
+export const formatClockRange = (start, end, lang) => `${formatClock(start, lang)}–${formatClock(end, lang)}`;
+
+/** "09638-001122" -> "tel:09638001122". Empty when there is no number. */
+export const telHref = (phone) => {
+  const digits = String(phone ?? '').replace(/[^\d+]/g, '');
+  return digits ? `tel:${digits}` : '';
+};

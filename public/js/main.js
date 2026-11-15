@@ -1,6 +1,6 @@
 import { BanglaCall } from './voice.js';
 import { DEFAULT_LANG, LANGUAGES, daysLabel, t } from './i18n.js';
-import { esc } from './util.js';
+import { esc, formatClockRange, localDigits, pick, telHref } from './util.js';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -45,27 +45,33 @@ $('#lang-btn').addEventListener('click', () => {
 function renderSite() {
   const { clinic, skills, doctors } = site;
   $('#services-list').innerHTML = skills.length
-    ? skills.map((s, i) => `<article class="card reveal in" style="--i:${i % 6}"><span class="card-icon" aria-hidden="true"></span><h3>${esc(s.title)}</h3><p>${esc(s.description)}</p></article>`).join('')
+    ? skills.map((s, i) => `<article class="card reveal in" style="--i:${i % 6}"><h3>${esc(pick(lang, s.title, s.title_bn))}</h3><p>${esc(pick(lang, s.description, s.description_bn))}</p></article>`).join('')
     : `<p class="muted">${esc(t(lang, 'services.empty'))}</p>`;
 
   $('#doctors-list').innerHTML = doctors
     .map((d) => {
-      const name = lang === 'bn' && d.name_bn ? d.name_bn : d.name_en;
+      const name = pick(lang, d.name_en, d.name_bn);
       const initials = d.name_en.replace(/^Dr\.?\s*/i, '').split(/\s+/).map((w) => w[0]).slice(0, 2).join('');
-      return `<article class="doctor reveal in"><span class="avatar" aria-hidden="true">${esc(initials)}</span><h3>${esc(name)}</h3><p class="doctor-role">${esc(d.specialty)}</p><p class="doctor-hours">${esc(daysLabel(d.days, lang))} · ${esc(d.start_time)}–${esc(d.end_time)}</p></article>`;
+      return `<article class="doctor reveal in"><span class="avatar" aria-hidden="true">${esc(initials)}</span><h3>${esc(name)}</h3><p class="doctor-role">${esc(pick(lang, d.specialty, d.specialty_bn))}</p><p class="doctor-hours">${esc(daysLabel(d.days, lang))} · ${esc(formatClockRange(d.start_time, d.end_time, lang))}</p></article>`;
     })
     .join('');
 
+  const phoneLink = clinic.phone ? `<a href="${esc(telHref(clinic.phone))}">${esc(localDigits(clinic.phone, lang))}</a>` : '';
+  const address = pick(lang, clinic.address, clinic.address_bn);
   const rows = [
-    ['visit.address', clinic.address],
-    ['visit.hours', clinic.hours],
-    ['visit.phone', clinic.phone],
-    ['visit.directions', clinic.directions],
-    ['visit.prep', clinic.prep_notes],
+    ['visit.address', esc(address)],
+    ['visit.hours', esc(pick(lang, clinic.hours, clinic.hours_bn))],
+    ['visit.phone', phoneLink],
+    ['visit.directions', esc(pick(lang, clinic.directions, clinic.directions_bn))],
+    ['visit.prep', esc(pick(lang, clinic.prep_notes, clinic.prep_notes_bn))],
   ].filter(([, value]) => value);
-  $('#visit-facts').innerHTML = rows.map(([key, value]) => `<div><dt>${esc(t(lang, key))}</dt><dd>${esc(value)}</dd></div>`).join('');
+  $('#visit-facts').innerHTML = rows.map(([key, value]) => `<div><dt>${esc(t(lang, key))}</dt><dd>${value}</dd></div>`).join('');
 
-  $('#footer-contact').innerHTML = [clinic.address, clinic.phone].filter(Boolean).map((v) => `<span>${esc(v)}</span>`).join('');
+  const tel = $('#visit-tel');
+  tel.hidden = !clinic.phone;
+  if (clinic.phone) tel.href = telHref(clinic.phone);
+
+  $('#footer-contact').innerHTML = [esc(address), phoneLink].filter(Boolean).map((v) => `<span>${v}</span>`).join('');
 }
 
 fetch('/api/public/site')
