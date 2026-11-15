@@ -8,8 +8,8 @@ const MAX_PAGE = 200;
 
 /** Read side of the portal. */
 export class AdminQueries {
-  constructor({ calls, patients, appointments, doctors, callbacks, recordings, clock }) {
-    Object.assign(this, { calls, patients, appointments, doctors, callbacks, recordings, clock });
+  constructor({ calls, patients, appointments, doctors, callbacks, clock }) {
+    Object.assign(this, { calls, patients, appointments, doctors, callbacks, clock });
   }
 
   async #expireStale() {
@@ -77,20 +77,12 @@ export class AdminQueries {
         duration_s: call.durationS,
         status: call.status,
         summary: call.summary,
-        has_recording: Boolean(call.recordingKey),
       },
       extraction: extractionDto(extraction),
       turns: turns.map((t) => ({ idx: t.idx, speaker: t.speaker, text_bn: t.textBn, text_en: t.textEn, ts: t.ts })),
       appointments: appointments.map((a) => appointmentDto(a, patient, doctors.find((d) => d.id === a.doctorId))),
       callbacks: callbacks.map(callbackDto),
     };
-  }
-
-  async getRecording(id) {
-    const call = await this.calls.findById(id);
-    const recording = call?.recordingKey ? await this.recordings.get(call.recordingKey) : null;
-    if (!recording) throw new NotFoundError('recording_not_found', 'No recording for this call.');
-    return recording;
   }
 
   async listAppointments({ status } = {}) {

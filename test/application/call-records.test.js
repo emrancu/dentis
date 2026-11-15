@@ -170,21 +170,3 @@ describe('FinishCall', () => {
     await assert.rejects(finish('nope', []), code('call_not_found'));
   });
 });
-
-describe('StoreRecording', () => {
-  const body = new Uint8Array([1, 2, 3]).buffer;
-
-  it('stores audio under the call id and links it', async () => {
-    const callId = await startCall(world);
-    await s.storeRecording.execute({ callId, body, contentType: 'audio/webm;codecs=opus' });
-    assert.equal((await world.ports.calls.findById(callId)).recordingKey, `calls/${callId}.webm`);
-    assert.equal(world.ports.recordings.files.get(`calls/${callId}.webm`).contentType, 'audio/webm;codecs=opus');
-  });
-
-  it('rejects non-audio and unknown calls', async () => {
-    const callId = await startCall(world);
-    await assert.rejects(s.storeRecording.execute({ callId, body, contentType: 'text/html' }), code('recording_type_invalid'));
-    await assert.rejects(s.storeRecording.execute({ callId, body, contentType: null }), code('recording_type_invalid'));
-    await assert.rejects(s.storeRecording.execute({ callId: 'nope', body, contentType: 'audio/webm' }), code('call_not_found'));
-  });
-});

@@ -3,7 +3,7 @@ import { AdminQueries, ResolveCallback, UpdateAppointmentStatus } from './applic
 import { AgentSettings } from './application/agent/agent-settings.js';
 import { ToolExecutor } from './application/agent/tool-executor.js';
 import { CallNotes } from './application/call-notes.js';
-import { FinishCall, RequestCallback, SaveCallDetails, StartCall, StoreRecording } from './application/call-records.js';
+import { FinishCall, RequestCallback, SaveCallDetails, StartCall } from './application/call-records.js';
 import { ClinicService, DoctorDirectory, GetPublicSite } from './application/clinic.js';
 import { AgentKnowledge, SkillCatalog } from './application/knowledge.js';
 import { PatientRegistry } from './application/patient-registry.js';
@@ -14,7 +14,7 @@ import { BookAppointment, CancelAppointment, CheckAvailability, RescheduleAppoin
  * `ports` is everything listed in application/ports.js plus `clock`, `accessKey` and an optional `newId`.
  */
 export function buildServices(ports) {
-  const { calls, patients, appointments, doctors, skills, settings, callbacks, recordings, gateway, security, clock, accessKey, newId } = ports;
+  const { calls, patients, appointments, doctors, skills, settings, callbacks, gateway, security, clock, accessKey, newId } = ports;
   const notes = new CallNotes({ calls });
   const patientRegistry = new PatientRegistry({ patients, clock });
   const clinic = new ClinicService({ settings });
@@ -29,7 +29,7 @@ export function buildServices(ports) {
 
   return {
     adminAuth: new AdminAuth({ accessKey, security, clock }),
-    adminQueries: new AdminQueries({ calls, patients, appointments, doctors, callbacks, recordings, clock }),
+    adminQueries: new AdminQueries({ calls, patients, appointments, doctors, callbacks, clock }),
     updateAppointmentStatus: new UpdateAppointmentStatus({ appointments, patients, doctors }),
     resolveCallback: new ResolveCallback({ callbacks }),
     skillCatalog: new SkillCatalog({ skills, clock }),
@@ -39,7 +39,6 @@ export function buildServices(ports) {
     getPublicSite: new GetPublicSite({ clinic, doctors }),
     startCall: new StartCall({ calls, doctors, skills, settings, gateway, security, clock, newId }),
     finishCall: new FinishCall({ calls, clock }),
-    storeRecording: new StoreRecording({ calls, recordings }),
     checkAvailability,
     bookAppointment,
     rescheduleAppointment,

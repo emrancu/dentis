@@ -8,7 +8,7 @@ Times are ISO 8601 UTC unless named `slot` (clinic-local `YYYY-MM-DDTHH:MM`).
 | `skills` | `id` PK, `title`, `description`, `title_bn`, `description_bn`, `content`, `kind`, `keywords`, `enabled`, `updated_at` | Agent knowledge. `title` and `description` are English, the `_bn` columns are optional Bangla text the agent can match on |
 | `doctors` | `id` PK, `name_en`, `name_bn`, `specialty`, `specialty_bn`, `days` (JSON array 0=Sun…6=Sat), `start_time`, `end_time`, `active` | Who can be booked |
 | `patients` | `id` PK, `full_name`, `phone` UNIQUE, `created_at` | The person behind calls |
-| `calls` | `id` PK (uuid), `started_at`, `ended_at`, `duration_s`, `status`, `patient_id` FK, `recording_key`, `summary`, `ip_hash` | One record per call |
+| `calls` | `id` PK (uuid), `started_at`, `ended_at`, `duration_s`, `status`, `patient_id` FK, `summary`, `ip_hash` | One record per call |
 | `call_extractions` | `call_id` PK FK, `patient_name`, `phone`, `reason_for_visit`, `preferred_datetime`, `intent`, `outcome`, `notes` | Structured fields |
 | `transcript_turns` | `id` PK, `call_id` FK, `idx`, `speaker`, `text_bn`, `text_en`, `ts` | Full transcript |
 | `appointments` | `id` PK, `patient_id` FK, `call_id` FK, `doctor_id` FK, `slot`, `service`, `status`, `created_at` | Bookings |
@@ -22,7 +22,7 @@ Times are ISO 8601 UTC unless named `slot` (clinic-local `YYYY-MM-DDTHH:MM`).
 - `transcript_turns.speaker`: `agent` or `patient`. `text_en` and `calls.summary` are no longer written (there is no post-call analysis). The columns stay for old rows.
 - `patients.phone` is unique and normalised to `01XXXXXXXXX`.
 - `callbacks.status`: `open` or `resolved`.
-- Recordings live in R2 under `calls/<call_id>.<ext>`; the key is in `calls.recording_key`.
+- No audio is stored. `calls.recording_key` is an unused column left from the old recording feature; nothing reads or writes it.
 - `skills.kind`: `service`, `faq` or `policy`. All are agent only. Default `service`.
 - `skills.keywords`: free text up to 300 characters, Bangla and English synonyms, used when the agent searches.
 - `skills.title` is unique ignoring case (checked by the application).

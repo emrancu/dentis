@@ -26,8 +26,8 @@ export class D1CallRepository {
 
   async save(call) {
     await this.db
-      .prepare('UPDATE calls SET ended_at = ?, duration_s = ?, status = ?, patient_id = ?, recording_key = ?, summary = ? WHERE id = ?')
-      .bind(call.endedAt, call.durationS, call.status, call.patientId, call.recordingKey, call.summary, call.id)
+      .prepare('UPDATE calls SET ended_at = ?, duration_s = ?, status = ?, patient_id = ?, summary = ? WHERE id = ?')
+      .bind(call.endedAt, call.durationS, call.status, call.patientId, call.summary, call.id)
       .run();
   }
 

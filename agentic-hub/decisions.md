@@ -6,7 +6,7 @@
 | Topic | Decision |
 |---|---|
 | Brand | Dentis, a dental centre in Dhaka, with its own SVG logo. |
-| Stack | Cloudflare Workers with vanilla JS (no framework, no front-end build), D1, R2. Three.js only for the hero. |
+| Stack | Cloudflare Workers with vanilla JS (no framework, no front-end build), D1. Three.js only for the hero. |
 | Code style | Domain-driven layers, YAGNI, tests under `test/` (see principles). |
 | Admin | At `/admin`, login with one access key. |
 | Voice | **OpenAI Realtime API** over WebRTC from the browser. The Worker mints a short-lived client secret, so the API key stays on the server. |
@@ -37,7 +37,7 @@
 | Booking | Slot length 30 minutes (setting), at least 30 minutes ahead, at most 60 days ahead. |
 | Abuse guard | 10 sessions per IP per hour, calls end at 5 minutes. |
 | Copy | No unmeasured claims (principle 15). The hero highlights the care, not a booking time. |
-| Recording | The browser records the call and uploads it to R2. A consent notice is shown. |
+| Recording | **Removed.** No audio is stored and there is no R2 bucket. Only the transcript is kept, and the call panel says so. Bring recording back only if the clinic needs audio for disputes or training. |
 | Admin session | HMAC-signed HttpOnly cookie, 12 hours. |
 
 ## Open: Cloudflare AI Search later

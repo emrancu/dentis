@@ -7,7 +7,7 @@ import { Skill } from '../../domain/skills/skill.js';
 
 /** Row (snake_case) to domain object. */
 export const toCall = (r) =>
-  new Call({ id: r.id, startedAt: r.started_at, endedAt: r.ended_at, durationS: r.duration_s, status: r.status, patientId: r.patient_id, recordingKey: r.recording_key, summary: r.summary, ipHash: r.ip_hash });
+  new Call({ id: r.id, startedAt: r.started_at, endedAt: r.ended_at, durationS: r.duration_s, status: r.status, patientId: r.patient_id, summary: r.summary, ipHash: r.ip_hash });
 
 export const toExtraction = (r) =>
   r && { patientName: r.patient_name, phone: r.phone, reasonForVisit: r.reason_for_visit, preferredDatetime: r.preferred_datetime, intent: r.intent, outcome: r.outcome, notes: r.notes };

@@ -2,7 +2,7 @@ import { buildServices } from '../../src/composition.js';
 import { Doctor } from '../../src/domain/scheduling/doctor.js';
 import { Skill } from '../../src/domain/skills/skill.js';
 import { WebCryptoSecurity } from '../../src/infrastructure/security/web-crypto-security.js';
-import { InMemoryAppointments, InMemoryCallbacks, InMemoryCalls, InMemoryDoctors, InMemoryPatients, InMemoryRecordings, InMemorySettings, InMemorySkills } from './in-memory.js';
+import { InMemoryAppointments, InMemoryCallbacks, InMemoryCalls, InMemoryDoctors, InMemoryPatients, InMemorySettings, InMemorySkills } from './in-memory.js';
 
 /** Saturday 2026-11-14, 10:00 in Dhaka (UTC+6). */
 export const NOW = new Date('2026-11-14T04:00:00.000Z');
@@ -36,7 +36,6 @@ export async function buildWorld({ now = NOW } = {}) {
     skills: new InMemorySkills(),
     settings: new InMemorySettings(),
     callbacks: new InMemoryCallbacks(),
-    recordings: new InMemoryRecordings(),
     gateway: new FakeGateway(),
     security: new WebCryptoSecurity({ secret: 'test-secret' }),
     clock: new FixedClock(now),

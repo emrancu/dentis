@@ -34,8 +34,8 @@ export function deriveCallStatus({ failed = false, userTurns = 0, outcome = null
 
 /** Aggregate root: one phone conversation. Transcript turns and the extraction live behind the same repository. */
 export class Call {
-  constructor({ id, startedAt, endedAt = null, durationS = null, status = CallStatus.IN_PROGRESS, patientId = null, recordingKey = null, summary = null, ipHash = null }) {
-    Object.assign(this, { id, startedAt, endedAt, durationS, status, patientId, recordingKey, summary, ipHash });
+  constructor({ id, startedAt, endedAt = null, durationS = null, status = CallStatus.IN_PROGRESS, patientId = null, summary = null, ipHash = null }) {
+    Object.assign(this, { id, startedAt, endedAt, durationS, status, patientId, summary, ipHash });
   }
 
   static start({ id, now, ipHash = null }) {
@@ -48,10 +48,6 @@ export class Call {
 
   attachPatient(patientId) {
     this.patientId = patientId;
-  }
-
-  attachRecording(key) {
-    this.recordingKey = key;
   }
 
   /** Idempotent: the first finish fixes the end time and duration; later calls only update the status. */

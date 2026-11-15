@@ -33,10 +33,9 @@ describe('D1CallRepository', () => {
     assert.deepEqual([call.status, call.endedAt, call.ipHash], ['in_progress', null, 'h1']);
     call.finish({ now: new Date('2026-11-14T04:02:00Z'), status: 'booked' });
     call.summary = 'Booked.';
-    call.attachRecording('calls/c1.webm');
     await calls.save(call);
     const saved = await calls.findById('c1');
-    assert.deepEqual([saved.status, saved.durationS, saved.summary, saved.recordingKey], ['booked', 120, 'Booked.', 'calls/c1.webm']);
+    assert.deepEqual([saved.status, saved.durationS, saved.summary], ['booked', 120, 'Booked.']);
     assert.equal(await calls.findById('missing'), null);
   });
 

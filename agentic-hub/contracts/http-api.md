@@ -1,6 +1,6 @@
 # HTTP API
 
-All paths start with `/api`. JSON in and out, except the recording. Only `/api/*` runs the Worker; everything else is static.
+All paths start with `/api`. JSON in and out. Only `/api/*` runs the Worker; everything else is static.
 
 ## Errors
 `{ "error": { "code": "slot_unavailable", "message": "…", "details": {} } }`
@@ -29,7 +29,6 @@ Admin routes need the cookie `dentis_admin` (HttpOnly, SameSite=Strict, `Secure`
 | `POST /api/session` | optional `{ intent: "booking" \| "general" }`, default `general`. `booking` is sent by the **Book an appointment** button: the agent goes straight to booking after the greeting. `general` is the floating **Call Dentis** button | 201 `{ call_id, client_secret, model, max_seconds }`. 429 `rate_limited` when the IP has 10 sessions in the last hour |
 | `POST /api/agent/tools/:name` | `{ call_id, args }` | 200 tool result (see [agent-tools](agent-tools.md)). 404 `unknown_tool` or `call_not_found` |
 | `POST /api/calls/:id/finish` | `{ turns: [{speaker:"agent"\|"patient", text, ts}], reason: "hangup"\|"error"\|"timeout" }` | 200 `{ status }` |
-| `PUT /api/calls/:id/recording` | audio bytes, `Content-Type: audio/*`, max 10 MB | 204 |
 
 ## Admin
 | Method and path | Body or query | Success |
@@ -40,7 +39,6 @@ Admin routes need the cookie `dentis_admin` (HttpOnly, SameSite=Strict, `Secure`
 | `GET /api/admin/dashboard` | | `{ total, avg_duration_s, by_status:{}, per_day:[{day,count}], open_callbacks, upcoming_appointments }` |
 | `GET /api/admin/calls` | `q`, `status`, `limit`, `offset` | `{ items: [{id,started_at,duration_s,status,patient_name,phone,reason_for_visit}] }` |
 | `GET /api/admin/calls/:id` | | `{ call, extraction, turns, appointments, callbacks }` |
-| `GET /api/admin/calls/:id/recording` | | audio bytes. 404 `recording_not_found` |
 | `GET /api/admin/appointments` | `status` | `{ items: [{id,slot,status,service,patient_name,phone,doctor_id,doctor_name,call_id}] }` |
 | `PATCH /api/admin/appointments/:id` | `{ status: "cancelled"\|"completed" }` | updated item |
 | `GET /api/admin/patients` | `q` | `{ items: [{id,full_name,phone,created_at}] }` |

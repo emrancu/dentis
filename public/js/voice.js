@@ -23,8 +23,6 @@ export class BanglaCall extends EventTarget {
   #audio;
   #audioCtx;
   #analysers = {};
-  #recorder;
-  #chunks = [];
   #transcript = new TranscriptBuilder();
   #callId;
   #maxSeconds = 300;
@@ -109,7 +107,6 @@ export class BanglaCall extends EventTarget {
     pc.ontrack = (e) => {
       this.#audio.srcObject = e.streams[0];
       this.#tap('agent', e.streams[0]);
-      this.#startRecording(e.streams[0]);
     };
     pc.onconnectionstatechange = () => {
       if (this.state === 'live' && ['failed', 'disconnected', 'closed'].includes(pc.connectionState)) this.#finish('error', 'dropped');
@@ -143,20 +140,6 @@ export class BanglaCall extends EventTarget {
     analyser.fftSize = 512;
     this.#audioCtx.createMediaStreamSource(stream).connect(analyser);
     this.#analysers[side] = analyser;
-  }
-
-  /** Records both sides mixed, so staff can listen back. Best effort: failures never affect the call. */
-  #startRecording(remote) {
-    try {
-      const mix = this.#audioCtx.createMediaStreamDestination();
-      this.#audioCtx.createMediaStreamSource(remote).connect(mix);
-      this.#audioCtx.createMediaStreamSource(this.#mic).connect(mix);
-      this.#recorder = new MediaRecorder(mix.stream);
-      this.#recorder.ondataavailable = (e) => e.data.size && this.#chunks.push(e.data);
-      this.#recorder.start(2000);
-    } catch {
-      this.#recorder = null;
-    }
   }
 
   #send(message) {
@@ -250,20 +233,10 @@ export class BanglaCall extends EventTarget {
     this.#finishing = true;
     clearInterval(this.#timer);
     clearTimeout(this.#endTimer);
-    const recording = await this.#stopRecording();
     this.#teardown();
-    if (this.#callId && !silent) await this.#report(reason, recording);
+    if (this.#callId && !silent) await this.#report(reason);
     this.#finishing = false;
     this.#set(errorKind && reason === 'error' ? 'error' : 'ended', errorKind);
-  }
-
-  async #stopRecording() {
-    const recorder = this.#recorder;
-    if (!recorder || recorder.state === 'inactive') return null;
-    const stopped = new Promise((resolve) => (recorder.onstop = resolve));
-    recorder.stop();
-    await stopped;
-    return this.#chunks.length ? new Blob(this.#chunks, { type: recorder.mimeType || 'audio/webm' }) : null;
   }
 
   #teardown() {
@@ -275,7 +248,7 @@ export class BanglaCall extends EventTarget {
     this.#analysers = {};
   }
 
-  async #report(reason, recording) {
+  async #report(reason) {
     const id = encodeURIComponent(this.#callId);
     try {
       await fetch(`/api/calls/${id}/finish`, {
@@ -284,7 +257,6 @@ export class BanglaCall extends EventTarget {
         body: JSON.stringify({ turns: this.#transcript.toTurns(), reason }),
         keepalive: true,
       });
-      if (recording) await fetch(`/api/calls/${id}/recording`, { method: 'PUT', headers: { 'Content-Type': recording.type.split(';')[0] }, body: recording });
     } catch {
       // The portal shows the call as incomplete if the report never arrives.
     }
@@ -300,8 +272,6 @@ export class BanglaCall extends EventTarget {
   #reset() {
     Object.assign(this, { muted: false });
     this.#callId = undefined;
-    this.#chunks = [];
-    this.#recorder = null;
     this.#pendingEnd = false;
     this.#closingCallId = null;
     this.#closingSent = false;

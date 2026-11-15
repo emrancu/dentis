@@ -129,9 +129,3 @@ export class InMemoryCallbacks extends Table {
   async listForCall(callId) { return this.all().filter((c) => c.callId === callId); }
   async countOpen() { return this.all().filter((c) => c.status === 'open').length; }
 }
-
-export class InMemoryRecordings {
-  files = new Map();
-  async put(key, body, contentType) { this.files.set(key, { body, contentType }); }
-  async get(key) { return this.files.get(key) ?? null; }
-}

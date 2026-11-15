@@ -28,15 +28,6 @@ export function registerAdminRoutes(router, s) {
   router.add('GET', '/api/admin/dashboard', async () => json(await s.adminQueries.dashboard()), admin);
   router.add('GET', '/api/admin/calls', async ({ query }) => json(await s.adminQueries.listCalls(Object.fromEntries(query))), admin);
   router.add('GET', '/api/admin/calls/:id', async ({ params }) => json(await s.adminQueries.getCall(params.id)), admin);
-  router.add(
-    'GET',
-    '/api/admin/calls/:id/recording',
-    async ({ params }) => {
-      const { body, contentType } = await s.adminQueries.getRecording(params.id);
-      return new Response(body, { headers: { 'Content-Type': contentType, 'Cache-Control': 'private, max-age=3600' } });
-    },
-    admin,
-  );
 
   router.add('GET', '/api/admin/appointments', async ({ query }) => json(await s.adminQueries.listAppointments(Object.fromEntries(query))), admin);
   router.add('PATCH', '/api/admin/appointments/:id', async ({ request, params }) => json(await s.updateAppointmentStatus.execute(id(params), (await readJson(request)).status)), admin);

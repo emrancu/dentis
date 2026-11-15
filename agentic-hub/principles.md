@@ -4,7 +4,7 @@
 2. **Domain-driven layers** in `src/`, dependencies point inward only:
    - `domain/`: entities, value objects, domain services, typed errors. Imports nothing from other layers.
    - `application/`: use cases (one class per intent, `execute(input)`), ports (the repository and gateway shapes it needs), the agent prompt and tools.
-   - `infrastructure/`: D1, R2, OpenAI and crypto adapters that implement the ports.
+   - `infrastructure/`: D1, OpenAI and crypto adapters that implement the ports.
    - `interface/`: HTTP router and handlers. Thin: parse, call a use case, map the result.
    - `composition.js` wires adapters into use cases. `index.js` is the Worker entry.
    A test (`test/architecture.test.js`) fails if a layer imports an outer layer.

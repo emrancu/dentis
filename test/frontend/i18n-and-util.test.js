@@ -133,9 +133,9 @@ describe('consistent names and one message per place', () => {
     assert.doesNotMatch(STRINGS.en['fab.label'] + STRINGS.en['fab.aria'], /\bcall\b/i);
   });
 
-  it('the call panel shows the recording notice in both languages', () => {
-    assert.match(STRINGS.en['call.consent'], /recorded/);
-    assert.match(STRINGS.bn['call.consent'], /রেকর্ড/);
+  it('the call panel shows the transcript notice in both languages', () => {
+    assert.match(STRINGS.en['call.consent'], /transcript/);
+    assert.match(STRINGS.bn['call.consent'], /লিখিত/);
     assert.match(html(), /class="call-consent"/);
   });
 

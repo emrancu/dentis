@@ -3,7 +3,7 @@
 A dental centre website: the hero's main action is **Book an appointment** (booked by voice in Bangla), with a Three.js 3D stage on the right that cycles through four dental treatments (drag to spin) and a floating **Call Dentis** button at the bottom right. A staff portal lives at `/admin`. Built for the StrategyByte AI Engineer task brief (`StrategyByte_AI_Engineer_Task_Brief_14Nov.pdf`).
 
 - **Voice:** OpenAI Realtime API over WebRTC, straight from the browser. The Worker only mints a short-lived key.
-- **Backend:** one Cloudflare Worker (vanilla JS), D1 for data, R2 for recordings. No framework, no build step, no runtime dependencies.
+- **Backend:** one Cloudflare Worker (vanilla JS), D1 for data. No framework, no build step, no runtime dependencies.
 - **Admin:** access-key login. Staff manage the agent's knowledge ("skills"), doctors and the clinic profile, and read every call.
 - **Code:** domain-driven layers, tested. Rules, decisions and contracts live in [`agentic-hub/`](agentic-hub/README.md). Agents read [`CLAUDE.md`](CLAUDE.md).
 
@@ -33,8 +33,7 @@ Browser ──POST /api/session {intent}──▶ StartCall: new call row, promp
    │                                  short-lived OpenAI key returned
    ├─ WebRTC audio + data channel ──▶ OpenAI Realtime (gpt-realtime-mini, Bangla)
    ├─ model function call ──POST /api/agent/tools/:name──▶ ToolExecutor ─▶ use cases ─▶ D1
-   ├─ hang up ──POST /api/calls/:id/finish──▶ transcript saved, status derived
-   └─ PUT /api/calls/:id/recording ─▶ R2
+   └─ hang up ──POST /api/calls/:id/finish──▶ transcript saved, status derived
 ```
 
 **Agent tools** (see [contract](agentic-hub/contracts/agent-tools.md)): `get_clinic_info`, `list_doctors`, `list_skills`, `get_skill`, `lookup_skill`, `check_availability`, `book_appointment`, `reschedule_appointment`, `cancel_appointment`, `save_patient_details`, `request_human_callback`, `get_current_datetime`, `end_call`. Facts such as fees, hours and slots come only from these tools. Editing a skill in `/admin` changes the next call, with no deploy.
@@ -49,14 +48,13 @@ cp .dev.vars.example .dev.vars        # put your OPENAI_API_KEY and an ADMIN_ACC
 npm run db:init:local                 # apply migrations (tracked): schema + Dentis demo clinic + knowledge
 npm run db:samples:local              # optional: 4 invented sample calls from seed/
 npm run dev                           # http://localhost:8787  (admin: /admin)
-npm test                              # 461 tests, no setup needed
+npm test                              # 456 tests, no setup needed
 ```
 
 ## Deploy
 
 ```bash
 npx wrangler d1 create dentis         # copy the database_id into wrangler.jsonc
-npx wrangler r2 bucket create dentis-recordings
 npm run db:init:remote                # applies pending migrations once
 npm run db:samples:remote             # optional sample calls
 npx wrangler secret put OPENAI_API_KEY
@@ -71,7 +69,7 @@ Add a Cloudflare rate-limiting rule on `POST /api/admin/login` in production.
 ```
 src/domain/          entities, value objects, rules (imports nothing)
 src/application/     use cases, agent prompt + tools, ports
-src/infrastructure/  D1, R2, OpenAI, WebCrypto adapters
+src/infrastructure/  D1, OpenAI, WebCrypto adapters
 src/interface/http/  router and routes
 src/composition.js   the only place that wires adapters to use cases
 public/              landing page (Three.js hero) and /admin SPA, plain ES modules; fonts/ and vendor/ are self-hosted
@@ -83,7 +81,7 @@ agentic-hub/         requirements, principles, epics, contracts, task commands
 
 ## Tests
 
-`npm test` runs 461 tests with Node's built-in runner:
+`npm test` runs 456 tests with Node's built-in runner:
 
 | Folder | What it proves |
 |---|---|
@@ -91,7 +89,7 @@ agentic-hub/         requirements, principles, epics, contracts, task commands
 | `test/application` | every use case and every agent tool (success and failure paths) with in-memory ports |
 | `test/infrastructure` | the **real SQL and migrations** (via a `node:sqlite` stand-in for D1), OpenAI request shapes, HMAC |
 | `test/application/retrieval-eval.test.js` | Bangla and English questions find the right knowledge entry (top 3 for at least 90 percent) |
-| `test/interface` | the whole HTTP API end to end: sessions, tools, finish, recording, admin auth, CRUD |
+| `test/interface` | the whole HTTP API end to end: sessions, tools, finish, admin auth, CRUD |
 | `test/frontend` | transcript building from Realtime events, copy completeness in both languages, formatters |
 | `test/architecture.test.js` | layers only import inward (fails on a bad import) |
 
@@ -114,5 +112,5 @@ agentic-hub/         requirements, principles, epics, contracts, task commands
 
 1. Landing page, flip through the treatments in the hero, switch to Bangla (20 s).
 2. Press **Book an appointment**, book an appointment by voice, mixing in English words, read the phone number back (90 s).
-3. Open `/admin`, log in, show the call, transcript, captured fields, the appointment and the recording (45 s).
+3. Open `/admin`, log in, show the call, transcript, captured fields, and the appointment (45 s).
 4. Edit a skill's fee in **Agent skills**, call again and ask for the price (25 s).

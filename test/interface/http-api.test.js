@@ -113,16 +113,6 @@ describe('public API', () => {
     assert.equal((await request('POST', '/api/calls/nope/finish', { body: { turns: [] } })).status, 404);
   });
 
-  it('accepts a recording as binary audio, and rejects empty, oversized and non-audio bodies', async () => {
-    await request('POST', '/api/session');
-    const put = (raw, type = 'audio/webm') => request('PUT', '/api/calls/call-1/recording', { raw, headers: { 'Content-Type': type } });
-    assert.equal((await put(new Uint8Array([1, 2, 3]))).status, 204);
-    assert.ok(world.ports.recordings.files.has('calls/call-1.webm'));
-    assert.equal((await put(new Uint8Array(0))).status, 400);
-    assert.equal((await put(new Uint8Array(10 * 1024 * 1024 + 1))).status, 400);
-    assert.equal((await put(new Uint8Array([1]), 'text/html')).status, 400);
-  });
-
   it('answers 404 JSON for an unknown path and for the wrong method', async () => {
     assert.equal((await request('GET', '/api/nothing')).status, 404);
     assert.equal((await request('GET', '/api/session')).status, 404);
@@ -131,7 +121,7 @@ describe('public API', () => {
 
 describe('admin authentication', () => {
   it('rejects every admin route without a cookie', async () => {
-    for (const [method, path] of [['GET', '/api/admin/me'], ['GET', '/api/admin/dashboard'], ['GET', '/api/admin/calls'], ['GET', '/api/admin/skills'], ['PUT', '/api/admin/settings'], ['GET', '/api/admin/calls/x/recording']]) {
+    for (const [method, path] of [['GET', '/api/admin/me'], ['GET', '/api/admin/dashboard'], ['GET', '/api/admin/calls'], ['GET', '/api/admin/skills'], ['PUT', '/api/admin/settings'], ['GET', '/api/admin/calls/x']]) {
       const res = await request(method, path);
       assert.equal(res.status, 401, `${method} ${path}`);
       assert.equal((await res.json()).error.code, 'unauthorized');
@@ -260,16 +250,6 @@ describe('admin API', () => {
     const resolved = await request('PATCH', `/api/admin/callbacks/${callbacks.items[0].id}/resolve`, { headers: h });
     assert.equal((await resolved.json()).status, 'resolved');
     assert.equal((await request('PATCH', '/api/admin/callbacks/999/resolve', { headers: h })).status, 404);
-  });
-
-  it('streams a stored recording with its content type, and 404 when there is none', async () => {
-    await request('POST', '/api/session');
-    assert.equal((await request('GET', '/api/admin/calls/call-1/recording', { headers: h })).status, 404);
-    await request('PUT', '/api/calls/call-1/recording', { raw: new Uint8Array([7, 7]), headers: { 'Content-Type': 'audio/webm' } });
-    const res = await request('GET', '/api/admin/calls/call-1/recording', { headers: h });
-    assert.equal(res.status, 200);
-    assert.equal(res.headers.get('Content-Type'), 'audio/webm');
-    assert.deepEqual([...new Uint8Array(await res.arrayBuffer())], [7, 7]);
   });
 
   it('404 for an unknown call', async () => {

@@ -94,19 +94,13 @@ describe('AdminQueries', () => {
     const callId = await makeCall({ book: true, turns: [turn('agent', 'আসসালামু আলাইকুম'), turn('patient', 'আমি অ্যাপয়েন্টমেন্ট চাই')] });
     const d = await s.adminQueries.getCall(callId);
     assert.equal(d.call.status, 'booked');
-    assert.equal(d.call.has_recording, false);
     assert.equal(d.extraction.outcome, 'booked');
     assert.deepEqual(d.turns.map((t) => [t.speaker, t.text_bn, t.text_en]), [['agent', 'আসসালামু আলাইকুম', null], ['patient', 'আমি অ্যাপয়েন্টমেন্ট চাই', null]]);
     assert.deepEqual([d.appointments[0].slot, d.appointments[0].doctor_name, d.appointments[0].patient_name], ['2026-11-15T11:00', 'Dr. Nusrat Jahan', 'Rahim Uddin']);
     assert.deepEqual(d.callbacks, []);
   });
 
-  it('plays back a stored recording and says not found otherwise', async () => {
-    const callId = await makeCall();
-    await assert.rejects(s.adminQueries.getRecording(callId), code('recording_not_found'));
-    await s.storeRecording.execute({ callId, body: new Uint8Array([1]).buffer, contentType: 'audio/webm' });
-    assert.equal((await s.adminQueries.getRecording(callId)).contentType, 'audio/webm');
-    await assert.rejects(s.adminQueries.getRecording('nope'), code('recording_not_found'));
+  it('says not found for an unknown call', async () => {
     await assert.rejects(s.adminQueries.getCall('nope'), code('call_not_found'));
   });
 

@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { R2RecordingStore } from '../../src/infrastructure/r2/r2-recording-store.js';
 import { WebCryptoSecurity } from '../../src/infrastructure/security/web-crypto-security.js';
 
 describe('WebCryptoSecurity', () => {
@@ -23,21 +22,5 @@ describe('WebCryptoSecurity', () => {
     assert.equal(await security.safeEqual('secret', 'secreT'), false);
     assert.equal(await security.safeEqual('secret', 'secret-and-more'), false);
     assert.equal(await security.safeEqual('', ''), true);
-  });
-});
-
-describe('R2RecordingStore', () => {
-  it('puts with the content type and reads it back', async () => {
-    const objects = new Map();
-    const bucket = {
-      put: async (key, body, options) => objects.set(key, { body, httpMetadata: options.httpMetadata }),
-      get: async (key) => objects.get(key) ?? null,
-    };
-    const store = new R2RecordingStore(bucket);
-    await store.put('calls/c1.webm', new Uint8Array([1]).buffer, 'audio/webm');
-    const found = await store.get('calls/c1.webm');
-    assert.equal(found.contentType, 'audio/webm');
-    assert.ok(found.body);
-    assert.equal(await store.get('calls/none.webm'), null);
   });
 });

@@ -205,7 +205,6 @@ async function callDetail(view, id) {
         <section class="card"><h2>Captured details</h2><dl class="dl">
           ${field('Name', extraction.patient_name)}${field('Phone', extraction.phone)}${field('Reason for visit', extraction.reason_for_visit)}${field('Preferred time', /^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(extraction.preferred_datetime ?? '') ? formatSlot(extraction.preferred_datetime) : extraction.preferred_datetime)}${field('Intent', extraction.intent)}${field('Outcome', extraction.outcome)}${field('Notes', extraction.notes)}
         </dl></section>
-        ${call.has_recording ? `<section class="card"><h2>Recording</h2><audio controls preload="none" src="/api/admin/calls/${encodeURIComponent(call.id)}/recording"></audio></section>` : ''}
         ${appointments.length ? `<section class="card"><h2>Appointment</h2>${appointments.map((a) => `<dl class="dl"><dt>When</dt><dd>${esc(formatSlot(a.slot))}</dd><dt>Doctor</dt><dd>${esc(a.doctor_name)}</dd><dt>Service</dt><dd>${esc(a.service || '–')}</dd><dt>Status</dt><dd>${chip(a.status)}</dd></dl>`).join('<hr>')}</section>` : ''}
         ${callbacks.length ? `<section class="card"><h2>Follow-up requested</h2>${callbacks.map((c) => `<dl class="dl"><dt>Name</dt><dd>${esc(c.name)}</dd><dt>Phone</dt><dd>${esc(c.phone)}</dd><dt>Reason</dt><dd>${esc(c.reason)}</dd><dt>Status</dt><dd>${chip(c.status)}</dd></dl>`).join('<hr>')}</section>` : ''}
       </div>
@@ -555,7 +554,7 @@ async function clinicView(view) {
 /** Engineering reference for reviewers: architecture, sequence, trust boundaries, tool surface, failure modes, limits. */
 function howItWorksView(view) {
   // Sequence diagram: lifelines left to right, then messages top to bottom. [from, to, label, dashed?]
-  const lanes = ['Browser', 'Worker', 'OpenAI Realtime', 'D1 / R2'];
+  const lanes = ['Browser', 'Worker', 'OpenAI Realtime', 'D1'];
   const msgs = [
     [0, 1, '1  POST /api/session {intent}'],
     [1, 3, '2  read settings, doctors, skills'],
@@ -569,8 +568,7 @@ function howItWorksView(view) {
     [1, 0, '10  {ok, ...} result', true],
     [0, 2, '11  function_call_output + response.create'],
     [0, 1, '12  POST /api/calls/:id/finish {turns, reason}'],
-    [0, 1, '13  PUT /api/calls/:id/recording (webm, 10 MB cap)'],
-    [1, 3, '14  status derived, turns saved, audio to R2'],
+    [1, 3, '13  status derived, turns and details saved'],
   ];
   const W = 960, left = 80, gap = 266, top = 54, row = 34;
   const x = (n) => left + n * gap;
@@ -612,7 +610,6 @@ function howItWorksView(view) {
     ['Page closed mid-call', 'sendBeacon sends the transcript. If it never arrives the call shows as incomplete.'],
     ['Caller goes silent', 'Nudge at 15 s, closing line and hang-up at 30 s (public/js/idle.js).'],
     ['Slot taken between check and book', 'The unique index rejects the second insert; the tool returns slot_unavailable with alternatives and the agent offers other times.'],
-    ['Recording upload fails', 'Best effort. The call, transcript and details are already saved.'],
   ];
   const limits = [
     ['Voice model', 'gpt-realtime-mini, voice marin, semantic VAD, near-field noise reduction'],
@@ -620,13 +617,12 @@ function howItWorksView(view) {
     ['Call length', '300 s hard cap (MAX_CALL_SECONDS)'],
     ['Session rate', '10 per IP per hour (MAX_SESSIONS_PER_HOUR)'],
     ['Prompt size', 'Persona up to 4000 chars, greeting and closing 300 each; knowledge titles only, capped at 40 (TITLE_INDEX_CAP)'],
-    ['Recording', 'webm, up to 10 MB, private R2 bucket'],
-    ['Runtime', 'One Cloudflare Worker, D1 (SQLite), R2. No queues, no cron, no cache layer; reads go straight to D1 each call.'],
+    ['Runtime', 'One Cloudflare Worker, D1 (SQLite). No queues, no cron, no cache layer; reads go straight to D1 each call.'],
   ];
   const gaps = [
-    'The transcript and the recording are produced in the browser and reported by it. The server cannot verify them against OpenAI. They are for staff review, not for evidence.',
+    'The transcript is produced in the browser and reported by it. The server cannot verify it against OpenAI. It is for staff review, not for evidence. Audio is not stored at all.',
     'The tool endpoint trusts the call id as its only credential. It is a random uuid and stops working once the call finishes, but it is not a signed token. Binding tools to the ephemeral session would be the next hardening step.',
-    'The "stays on topic, no medical advice" behaviour is prompt-enforced, so it is probabilistic. Facts and bookings are code-enforced. Review real recordings; there is no automated conversation eval yet, only a retrieval eval for knowledge lookup.',
+    'The "stays on topic, no medical advice" behaviour is prompt-enforced, so it is probabilistic. Facts and bookings are code-enforced. Read real transcripts; there is no automated conversation eval yet, only a retrieval eval for knowledge lookup.',
     'Latency, token cost per call and behaviour under concurrent load are not measured. The mini model was chosen for cost, and its Bangla quality has not been benchmarked against the full model.',
     'There is no post-call analysis. Anything the agent did not save through a tool is only in the transcript.',
   ];
@@ -635,17 +631,17 @@ function howItWorksView(view) {
   view.innerHTML = `${head('How the agent works', 'Engineering reference: architecture, one call end to end, trust boundaries, failure modes')}
     <section class="card"><h2>Architecture</h2>
       <div class="arch">
-        <div class="arch-col"><h3>Browser</h3><ul><li>Vanilla JS, <code>BanglaCall</code></li><li>RTCPeerConnection to OpenAI for audio and a data channel for events</li><li>MediaRecorder for the recording</li><li>Relays tool calls to the Worker</li></ul></div>
+        <div class="arch-col"><h3>Browser</h3><ul><li>Vanilla JS, <code>BanglaCall</code></li><li>RTCPeerConnection to OpenAI for audio and a data channel for events</li><li>Relays tool calls to the Worker</li></ul></div>
         <div class="arch-col arch-main"><h3>Cloudflare Worker</h3>
           <div class="layers">
             <div><b>interface</b> routes, auth, JSON, error mapping</div>
             <div><b>application</b> use cases: StartCall, ToolExecutor, BookAppointment, FinishCall</div>
             <div><b>domain</b> Slot, PhoneNumber, Skill, AgentPrompt, Call (no I/O)</div>
-            <div><b>infrastructure</b> D1 repositories, R2, OpenAI gateway, WebCrypto</div>
+            <div><b>infrastructure</b> D1 repositories, OpenAI gateway, WebCrypto</div>
           </div>
           <p>Dependencies point inward. A layering test fails the build if a domain file imports from outside.</p>
         </div>
-        <div class="arch-col"><h3>External</h3><ul><li><b>OpenAI Realtime</b> speech in, speech out, tool calls</li><li><b>D1</b> relational data</li><li><b>R2</b> private recordings</li></ul></div>
+        <div class="arch-col"><h3>External</h3><ul><li><b>OpenAI Realtime</b> speech in, speech out, tool calls</li><li><b>D1</b> relational data</li></ul></div>
       </div>
     </section>
     <section class="card" style="margin-top:16px"><h2>One call, end to end</h2>${svg}

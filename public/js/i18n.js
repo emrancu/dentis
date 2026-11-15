@@ -89,7 +89,7 @@ export const STRINGS = {
     'footer.tag': 'Gentle, modern dentistry for the whole family.',
     'footer.line': '© Dentis Dental Care. A demo clinic with sample data.',
     'visit.phoneBtn': 'Phone the clinic',
-    'call.consent': 'This call is recorded for the clinic team.',
+    'call.consent': 'A written transcript of this call is kept for the clinic team.',
   },
   bn: {
     'meta.title': 'ডেন্টিস ডেন্টাল কেয়ার, ধানমন্ডি, ঢাকা',
@@ -180,7 +180,7 @@ export const STRINGS = {
     'footer.tag': 'পুরো পরিবারের জন্য আরামদায়ক ও আধুনিক ডেন্টাল সেবা।',
     'footer.line': '© ডেন্টিস ডেন্টাল কেয়ার। নমুনা তথ্যসহ একটি ডেমো ক্লিনিক।',
     'visit.phoneBtn': 'ক্লিনিকে ফোন করুন',
-    'call.consent': 'এই কল ক্লিনিক টিমের জন্য রেকর্ড করা হয়।',
+    'call.consent': 'এই কলের লিখিত রূপ ক্লিনিক টিমের জন্য সংরক্ষণ করা হয়।',
   },
 };
 

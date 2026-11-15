@@ -14,7 +14,6 @@ export const MAX_CALL_SECONDS = 300;
 const STALE_AFTER_MS = 30 * 60 * 1000;
 const MAX_TURNS = 500;
 const MAX_TURN_CHARS = 2000;
-const RECORDING_EXTENSIONS = { webm: 'webm', ogg: 'ogg', mp4: 'm4a', mpeg: 'mp3' };
 
 const ago = (now, ms) => new Date(now.getTime() - ms).toISOString();
 const definedOnly = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined));
@@ -126,22 +125,5 @@ export class FinishCall {
     });
     await this.calls.save(call);
     return call;
-  }
-}
-
-export class StoreRecording {
-  constructor({ calls, recordings }) {
-    Object.assign(this, { calls, recordings });
-  }
-
-  async execute({ callId, body, contentType }) {
-    const call = await this.calls.findById(callId);
-    if (!call) throw new NotFoundError('call_not_found', 'Call not found.');
-    const subtype = /^audio\/([a-z0-9]+)/i.exec(contentType ?? '')?.[1]?.toLowerCase();
-    if (!subtype) throw new ValidationError('recording_type_invalid', 'Recording must be audio.');
-    const key = `calls/${callId}.${RECORDING_EXTENSIONS[subtype] ?? 'bin'}`;
-    await this.recordings.put(key, body, contentType);
-    call.attachRecording(key);
-    await this.calls.save(call);
   }
 }
