@@ -24,7 +24,6 @@ Everything the agent says and knows is edited in `/admin`, with no deploy. The n
 - **Agent prompt:** edit the persona and tone (`Instructions`) and the `Greeting`. Write `{clinic}` where the clinic name goes. **Show final prompt** previews the whole prompt for unsaved text, and **Reset to default** restores the built-in text. The booking steps, tool rules, "facts only from tools" and safety rules are **locked in code**. They always come after your text and win over it, so they cannot be edited away.
 - **Agent knowledge:** each entry has a type (**Service**, **FAQ** or **Policy**), a title, a description, and the details the agent will say, in English or Bangla. This knowledge is for the voice agent only. The website's service list is fixed copy in `public/js/services.js`, so editing it needs a code change.
 - **How the agent finds an entry:** it is shown the titles of enabled entries (never the details), up to 40. It fetches one by exact title with `get_skill`, or searches with `lookup_skill` by the caller's own words. Past 40 entries the list is left out and the agent only searches. The page shows "N of 40 titles in the agent's index".
-- **Retrieval is tested:** `test/application/retrieval-eval.test.js` runs 32 Bangla and English phrasings through the real seed and ranking. The expected entry must be in the top 3 for at least 90 percent (today 32 of 32; 29 of 32 are first).
 
 ## How a call works
 
@@ -88,7 +87,6 @@ agentic-hub/         requirements, principles, epics, contracts, task commands
 | `test/domain` | phone, slot, availability, call status, skill ranking (Bangla word endings), agent prompt rules |
 | `test/application` | every use case and every agent tool (success and failure paths) with in-memory ports |
 | `test/infrastructure` | the **real SQL and migrations** (via a `node:sqlite` stand-in for D1), OpenAI request shapes, HMAC |
-| `test/application/retrieval-eval.test.js` | Bangla and English questions find the right knowledge entry (top 3 for at least 90 percent) |
 | `test/interface` | the whole HTTP API end to end: sessions, tools, finish, admin auth, CRUD |
 | `test/frontend` | transcript building from Realtime events, copy completeness in both languages, formatters |
 | `test/architecture.test.js` | layers only import inward (fails on a bad import) |

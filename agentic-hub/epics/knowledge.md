@@ -16,7 +16,6 @@ Staff change how the agent speaks, and keep the clinic's details and FAQs up to 
 - [ ] Editing the instructions changes the next call. The safety and booking rules cannot be edited away.
 - [ ] An FAQ added in admin is answered correctly on the next call, in Bangla and English.
 - [ ] FAQs do not appear in the website Services section.
-- [ ] The retrieval eval passes at the agreed target (proposed: the right skill in the top 3 for 90% of phrasings).
 
 ## Open questions
 See "Knowledge approach" in [decisions](../decisions.md).

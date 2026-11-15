@@ -527,7 +527,7 @@ function dialog(html, onSubmit) {
 function skillDialog(skill) {
   dialog(`<h2>${skill ? 'Edit entry' : 'Add entry'}</h2>
     <label class="field"><span>Type</span><select name="kind">${KINDS.map(([k, label]) => `<option value="${k}" ${(skill?.kind ?? 'service') === k ? 'selected' : ''}>${label}</option>`).join('')}</select></label>
-    <label class="field"><span>Title: what the agent looks up</span><input type="text" name="title" value="${esc(skill?.title ?? '')}" maxlength="80" required></label>
+    <label class="field"><span>Title: what the agent looks up. Write it clearly, like "Root canal treatment cost", so the agent knows when to use it</span><input type="text" name="title" value="${esc(skill?.title ?? '')}" maxlength="80" required></label>
     <label class="field"><span>Description</span><input type="text" name="description" value="${esc(skill?.description ?? '')}" maxlength="400" required></label>
     <p class="hint">Everything here is for the voice agent only. The website lists its services separately. Write in English or Bangla.</p>
     <label class="field"><span>Details the agent will say: prices, steps, rules</span><textarea name="content" maxlength="4000" class="bn">${esc(skill?.content ?? '')}</textarea></label>
