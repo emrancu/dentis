@@ -8,7 +8,6 @@ const NAV = [
   ['', 'Overview'],
   ['calls', 'Calls'],
   ['appointments', 'Appointments'],
-  ['follow-ups', 'Follow-ups'],
   ['patients', 'Patients'],
   ['agent', 'Agent prompt'],
   ['skills', 'Agent knowledge'],
@@ -92,7 +91,7 @@ async function renderShell() {
     <div class="shell">
       <aside class="side" id="side" aria-label="Sections">
         <a class="brand" href="#/"><img src="/logo-mark.svg" alt="">Dentis</a>
-        ${NAV.map(([key, label]) => `<a class="nav" href="#/${key}" ${key === base ? 'aria-current="page"' : ''}>${esc(label)}${key === 'follow-ups' ? '<span class="badge" id="fu-badge" hidden></span>' : ''}</a>`).join('')}
+        ${NAV.map(([key, label]) => `<a class="nav" href="#/${key}" ${key === base ? 'aria-current="page"' : ''}>${esc(label)}</a>`).join('')}
         <span class="spacer"></span>
         <a class="nav" href="/" target="_blank" rel="noopener">View website ↗</a>
         <button class="nav" id="logout" type="button">Log out</button>
@@ -104,17 +103,12 @@ async function renderShell() {
     await api('POST', '/logout').catch(() => {});
     showLogin();
   };
-  api('GET', '/callbacks?status=open').then(({ items }) => {
-    const badge = document.getElementById('fu-badge');
-    if (badge && items.length) Object.assign(badge, { hidden: false, textContent: items.length });
-  }).catch(() => {});
 }
 
 const views = {
   '': overview,
   calls: callsView,
   appointments: appointmentsView,
-  'follow-ups': followUpsView,
   patients: patientsView,
   agent: agentView,
   skills: skillsView,
@@ -148,7 +142,6 @@ async function overview(view) {
       <div class="card stat"><div class="n">${d.by_status.booked ?? 0}</div><div class="l">Calls that booked</div></div>
       <div class="card stat"><div class="n">${esc(formatDuration(d.avg_duration_s))}</div><div class="l">Average call length</div></div>
       <div class="card stat"><div class="n">${d.upcoming_appointments}</div><div class="l">Upcoming appointments</div></div>
-      <div class="card stat"><div class="n">${d.open_callbacks}</div><div class="l">Follow-ups waiting</div></div>
     </div>
     <div class="grid two">
       <section class="card"><h2>Calls, last 7 days</h2>
@@ -217,7 +210,7 @@ async function callDetail(view, id) {
     </div>`;
 }
 
-/* ---------- appointments, follow-ups, patients ---------- */
+/* ---------- appointments, patients ---------- */
 async function appointmentsView(view) {
   const { items } = await api('GET', '/appointments');
   view.innerHTML = `${head('Appointments', 'Bookings made by the receptionist')}${
@@ -242,22 +235,6 @@ async function appointmentsView(view) {
     if (!ok) return;
     await api('PATCH', `/appointments/${b.dataset.id}`, { status: b.dataset.act });
     toast(done ? 'Marked as done' : 'Appointment cancelled');
-    route();
-  })));
-}
-
-async function followUpsView(view) {
-  const { items } = await api('GET', '/callbacks');
-  view.innerHTML = `${head('Follow-ups', 'Callers who need a human to call back')}${
-    items.length
-      ? `<div class="table-wrap"><table><thead><tr><th>Requested</th><th>Caller</th><th>Reason</th><th>Best time</th><th>Status</th><th></th></tr></thead><tbody>${items
-          .map((c) => `<tr><td>${esc(formatDateTime(c.created_at))}</td><td><strong class="bn">${esc(c.name)}</strong><br><span class="muted">${esc(c.phone)}</span></td><td>${esc(c.reason)}</td><td>${esc(c.preferred_time || '–')}</td><td>${chip(c.status)}</td><td>${c.status === 'open' ? `<button class="btn btn-small" data-id="${c.id}">Mark resolved</button>` : ''} ${c.call_id ? `<a href="#/calls/${esc(c.call_id)}">Call</a>` : ''}</td></tr>`)
-          .join('')}</tbody></table></div>`
-      : `<div class="table-wrap">${empty('No follow-ups. Nobody is waiting for a callback.')}</div>`
-  }`;
-  view.querySelectorAll('button[data-id]').forEach((b) => (b.onclick = guard(async () => {
-    await api('PATCH', `/callbacks/${b.dataset.id}/resolve`);
-    toast('Marked resolved');
     route();
   })));
 }
