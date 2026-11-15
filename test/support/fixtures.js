@@ -1,7 +1,7 @@
 import { buildServices } from '../../src/composition.js';
-import { Doctor } from '../../src/domain/scheduling/doctor.js';
-import { Skill } from '../../src/domain/skills/skill.js';
-import { WebCryptoSecurity } from '../../src/infrastructure/security/web-crypto-security.js';
+import { Doctor } from '../../src/scheduling/doctor.js';
+import { Skill } from '../../src/knowledge/skill.js';
+import { WebCryptoSecurity } from '../../src/admin/security.js';
 import { InMemoryAppointments, InMemoryCallbacks, InMemoryCalls, InMemoryDoctors, InMemoryPatients, InMemorySettings, InMemorySkills } from './in-memory.js';
 
 /** Saturday 2026-11-14, 10:00 in Dhaka (UTC+6). */

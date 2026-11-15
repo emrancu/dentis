@@ -1,17 +1,19 @@
-import { AdminAuth } from './application/admin-auth.js';
-import { AdminQueries, ResolveCallback, UpdateAppointmentStatus } from './application/admin-portal.js';
-import { AgentSettings } from './application/agent/agent-settings.js';
-import { ToolExecutor } from './application/agent/tool-executor.js';
-import { CallNotes } from './application/call-notes.js';
-import { FinishCall, RequestCallback, SaveCallDetails, StartCall } from './application/call-records.js';
-import { ClinicService, DoctorDirectory, GetPublicSite } from './application/clinic.js';
-import { AgentKnowledge, SkillCatalog } from './application/knowledge.js';
-import { PatientRegistry } from './application/patient-registry.js';
-import { BookAppointment, CancelAppointment, CheckAvailability, RescheduleAppointment } from './application/scheduling.js';
+import { AdminAuth } from './admin/auth.js';
+import { AdminQueries, ResolveCallback, UpdateAppointmentStatus } from './admin/portal.js';
+import { AgentSettings } from './agent/agent-settings.js';
+import { ToolExecutor } from './agent/tool-executor.js';
+import { CallNotes } from './calls/call-notes.js';
+import { FinishCall, RequestCallback, SaveCallDetails, StartCall } from './calls/call-records.js';
+import { ClinicService } from './clinic/clinic.js';
+import { DoctorDirectory } from './scheduling/doctor-directory.js';
+import { GetPublicSite } from './website/public-site.js';
+import { AgentKnowledge, SkillCatalog } from './knowledge/knowledge.js';
+import { PatientRegistry } from './scheduling/patient-registry.js';
+import { BookAppointment, CancelAppointment, CheckAvailability, RescheduleAppointment } from './scheduling/scheduling.js';
 
 /**
  * The only place that knows both use cases and adapters.
- * `ports` is everything listed in application/ports.js plus `clock`, `accessKey` and an optional `newId`.
+ * `ports` is the stores (D1), the OpenAI gateway and the security helper, plus `clock`, `accessKey` and an optional `newId`.
  */
 export function buildServices(ports) {
   const { calls, patients, appointments, doctors, skills, settings, callbacks, gateway, security, clock, accessKey, newId } = ports;

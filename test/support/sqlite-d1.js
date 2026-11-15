@@ -12,7 +12,7 @@ export function createD1({ seed = false } = {}) {
   const db = new DatabaseSync(':memory:');
   db.exec('PRAGMA foreign_keys = ON');
   // seed:false = schema only (the files below). seed:true = every migration in order.
-  const files = readdirSync(new URL('../../migrations/', import.meta.url)).filter((f) => f.endsWith('.sql')).sort();
+  const files = readdirSync(new URL('../../migrations', import.meta.url)).filter((f) => f.endsWith('.sql')).sort();
   for (const f of files) {
     if (!seed && !SCHEMA_ONLY.includes(f)) continue;
     db.exec(readFileSync(new URL(`../../migrations/${f}`, import.meta.url), 'utf8'));

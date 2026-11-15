@@ -1,4 +1,4 @@
-import { dhakaParts } from '../../src/domain/shared/time.js';
+import { dhakaParts } from '../../src/shared/time.js';
 
 /** Copies an object so tests see persistence semantics (changes need a save). */
 const clone = (o) => (o && typeof o === 'object' ? Object.assign(Object.create(Object.getPrototypeOf(o)), o) : o);

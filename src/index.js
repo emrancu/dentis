@@ -1,11 +1,12 @@
 import { buildServices } from './composition.js';
-import { SystemClock } from './domain/shared/time.js';
-import { D1CallRepository } from './infrastructure/d1/call-repository.js';
-import { D1CallbackRepository, D1SettingsRepository, D1SkillRepository } from './infrastructure/d1/content-repositories.js';
-import { D1AppointmentRepository, D1DoctorRepository, D1PatientRepository } from './infrastructure/d1/scheduling-repositories.js';
-import { OpenAIRealtimeGateway } from './infrastructure/openai/realtime-gateway.js';
-import { WebCryptoSecurity } from './infrastructure/security/web-crypto-security.js';
-import { createApp } from './interface/http/app.js';
+import { SystemClock } from './shared/time.js';
+import { D1CallRepository, D1CallbackRepository } from './calls/store.js';
+import { D1SettingsRepository } from './clinic/store.js';
+import { D1SkillRepository } from './knowledge/store.js';
+import { D1AppointmentRepository, D1DoctorRepository, D1PatientRepository } from './scheduling/store.js';
+import { OpenAIRealtimeGateway } from './agent/realtime-gateway.js';
+import { WebCryptoSecurity } from './admin/security.js';
+import { createApp } from './app.js';
 
 let app;
 

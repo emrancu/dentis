@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 import { DEFAULT_LANG, STRINGS, daysLabel, t } from '../../public/js/i18n.js';
 import { esc, formatClock, formatClockRange, formatDateTime, formatDuration, formatSlot, formatTime, localDigits, pick, statusLabel, telHref } from '../../public/js/util.js';
 import { SERVICES } from '../../public/js/services.js';
-import { D1SkillRepository } from '../../src/infrastructure/d1/content-repositories.js';
+import { D1SkillRepository } from '../../src/knowledge/store.js';
 import { createD1 } from '../support/sqlite-d1.js';
 
 const read = (path) => readFileSync(new URL(`../../public/${path}`, import.meta.url), 'utf8');
@@ -293,7 +293,7 @@ describe('static pages', () => {
 
   it('the admin page is not indexable and the SPA entry exists', () => {
     assert.match(read('admin/index.html'), /name="robots" content="noindex"/);
-    assert.ok(readdirSync(new URL('../../public/admin/', import.meta.url)).includes('admin.js'));
+    assert.ok(readdirSync(new URL('../../public/admin', import.meta.url)).includes('admin.js'));
   });
 
   it('the logo files are valid SVG with the Dentis name', () => {
