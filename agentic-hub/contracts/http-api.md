@@ -17,6 +17,11 @@ All paths start with `/api`. JSON in and out, except the recording. Only `/api/*
 ## Auth
 Admin routes need the cookie `dentis_admin` (HttpOnly, SameSite=Strict, `Secure` on https, 12 h) from `POST /api/admin/login`. Non-GET admin requests must also send `X-Requested-With: dentis`. Missing or bad cookie: 401 `unauthorized`.
 
+## Home page
+| Method and path | Notes |
+|---|---|
+| `GET /` | The Worker serves `index.html` itself and adds, for the language in `?lang=bn\|en` (default `bn`): `<html lang>`, title, description, canonical and `hreflang` links (`bn`, `en`, `x-default`), Open Graph and Twitter tags with an absolute `/og.png`, and `Dentist` JSON-LD built from the public clinic profile (`name`, `alternateName`, `url`, `image`, `telephone`, `address`, `openingHours` as text, `availableLanguage`). `Cache-Control: public, max-age=300`. If the clinic data cannot be read the page is still served, without JSON-LD. Every other path is a plain static asset. |
+
 ## Public
 | Method and path | Body | Success |
 |---|---|---|

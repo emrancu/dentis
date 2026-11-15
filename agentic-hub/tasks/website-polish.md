@@ -90,11 +90,37 @@ None.
   - what: README, test counts
   - files: `README.md`
   - done when: README matches what was built
-- [~] 9. Premortem & spec re-evaluation
+- [x] 9. Premortem & spec re-evaluation
   - parallel: no (after all above)
-  - premortem: <to fill>
-  - spec changes: <to fill>
+  - premortem: see the table below
+  - spec changes: see the list below
   - done when: premortem filled in and spec and contracts match what was built
+
+### Premortem
+Imagine the site went live and visitors or staff still found it inconsistent, slow or broken.
+
+| Likely cause | Covered by |
+|---|---|
+| Staff add a service but forget the Bangla text, so the Bangla page shows an English card | The site falls back to the other language (tested) and admin shows a "No Bangla text for the website" marker on the card. It is a warning, not a block. |
+| Staff rename a service in admin and the hero card keeps the old name | The four hero treatment names are fixed dictionary strings. A test keeps them equal to the **seed** data only. Renaming a service later is not caught. Known limitation of a hero with four fixed 3D models. |
+| The migrations break an existing database | `0005` adds columns once (tracked), `0006` is safe to run twice (tested, including no duplicate implants). Applied on a real local D1. **Not run on a remote D1.** |
+| The Worker now serves `/`, so a data or asset problem takes the home page down | The page is served without JSON-LD when the clinic data fails, and the asset response is passed through when the page is missing (both tested). **Only run under `wrangler dev`, not deployed**, so `env.ASSETS.fetch("/")` under `run_worker_first` is verified locally only. |
+| Each page view reads the database for the JSON-LD | One small read, `max-age=300`, with a fallback. **Load was not measured** and there is no edge cache. |
+| A shared `?lang=` link and a saved choice disagree | The link wins and the address bar follows the toggle (tested). |
+| The Bangla wording sounds off to a native reader | Both languages are checked for consistency by tests, **but no native speaker has read them.** "অ্যাপয়েন্টমেন্ট" vs "সিরিয়াল" is the open example. |
+| A crawler indexes only the Bangla body | Metadata, `hreflang` and JSON-LD are per language, but the body text is client-rendered. Documented, not fixed. |
+| Fonts or Three.js fail to load | Both are served from this site. A missing 3D library shows the fallback tooth, and a missing font falls back to system fonts. Tested for the file names and ranges, not for a failed download. |
+| Tap targets feel small on a phone | All controls measure at least 44px except the hero treatment pills (32px with an invisible 44px hit area). |
+| The other person's hero work and mine collide | The first-frame hook in `hero3d.js` is the only change to their scene code. Their hero commit was built on, not rewritten. |
+
+### Spec changes
+- **Migrations:** the schema and the data are two files, `0005_bilingual_columns.sql` and `0006_bilingual_content.sql`, so tests can create an empty schema. The test helper lists the schema-only files.
+- **SEO is server-side.** The spec said the JSON-LD would be built in the browser. It is written by the Worker (`GET /`), which also fixes the missing language for crawlers. Contract and decisions updated.
+- **Agent-only entries** (FAQ, policy) also got Bangla twin text, so no entry in admin mixes languages.
+- **Implants:** a "Dental implants" service was added to the seed because the hero shows it. A test ties the hero names to the service names.
+- **Bangla serif and sizes** shipped as planned. Self-hosted font weights: Inter 400/500/600, Fraunces 500/600, Hind Siliguri 400/500/600, Noto Serif Bengali 500/600.
+- **Finding 15 (cards that go nowhere)** is fixed only in part: the fake hover lift and the identical icons are gone, but the cards still have no action. A "ask about this" action would need a topic-aware call and is a separate task.
+- **Finding 24:** the staff-portal link left the public footer. The "demo clinic with sample data" line stays on purpose and is one dictionary key.
 
 ## Feature pull requests
 - [ ] Pull request opened after the premortem

@@ -49,7 +49,7 @@ cp .dev.vars.example .dev.vars        # put your OPENAI_API_KEY and an ADMIN_ACC
 npm run db:init:local                 # apply migrations (tracked): schema + Dentis demo clinic + knowledge
 npm run db:samples:local              # optional: 4 invented sample calls from seed/
 npm run dev                           # http://localhost:8787  (admin: /admin)
-npm test                              # 400 tests, no setup needed
+npm test                              # 401 tests, no setup needed
 ```
 
 ## Deploy
@@ -83,7 +83,7 @@ agentic-hub/         requirements, principles, epics, contracts, task commands
 
 ## Tests
 
-`npm test` runs 400 tests with Node's built-in runner:
+`npm test` runs 401 tests with Node's built-in runner:
 
 | Folder | What it proves |
 |---|---|

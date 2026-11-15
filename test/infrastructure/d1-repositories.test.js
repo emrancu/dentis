@@ -283,6 +283,14 @@ describe('bilingual content', () => {
     }
   });
 
+  it('the Bangla content migration can be run again without duplicating the implants service or changing counts', async () => {
+    const seeded = createD1({ seed: true });
+    const count = async () => (await new D1SkillRepository(seeded).list()).length;
+    const before = await count();
+    seeded.exec(readFileSync(new URL('../../migrations/0006_bilingual_content.sql', import.meta.url), 'utf8'));
+    assert.equal(await count(), before);
+  });
+
   it('seed: the clinic offers implants, because the hero shows them', async () => {
     const titles = (await new D1SkillRepository(createD1({ seed: true })).list()).map((s) => s.title);
     assert.ok(titles.includes('Dental implants'));

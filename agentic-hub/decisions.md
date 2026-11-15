@@ -22,7 +22,7 @@
 | Voice button naming | The floating button is "Talk to us" / "কথা বলুন". It is a voice call in the browser, not a phone call. The clinic's phone number is a separate `tel:` link. |
 | Typography | Bangla root size is 8% larger, headings use a Bangla serif, small labels are heavier. |
 | Self-hosting | Fonts and Three.js are served from this site. |
-| SEO | Open Graph and Twitter tags, `Dentist` JSON-LD built in the browser from the clinic data, `hreflang` alternates for `?lang=bn` and `?lang=en`. Not server-rendered per language (out of scope). |
+| SEO | The Worker serves `/` and writes the per-language title, description, canonical and `hreflang` links, Open Graph and Twitter tags and `Dentist` JSON-LD into the HTML, from the live clinic profile. The body is still rendered in the browser, so a crawler sees Bangla body text even for `?lang=en`. Separate server-rendered `/en` pages are out of scope. |
 | Footer | The public footer does not link to the staff portal. The "demo clinic with sample data" line stays while this is a demo and is one dictionary key to remove at launch. |
 | Two call entry points | `Book an appointment` starts a call with intent `booking` (the agent goes straight to booking). `Call Dentis` starts intent `general`. Both use the same voice agent. |
 
