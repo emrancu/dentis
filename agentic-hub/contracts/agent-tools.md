@@ -13,8 +13,8 @@ Dates are `YYYY-MM-DD`, times are 24-hour `HH:MM`, clinic-local. Phone numbers m
 | `get_clinic_info` | | `name_en, name_bn, phone, address, address_bn, directions, directions_bn, hours, hours_bn` | |
 | `list_doctors` | | `doctors: [{name_en,name_bn,specialty,specialty_bn,days,start_time,end_time}]` | |
 | `list_skills` | | `skills: [{title,description}]` | |
-| `lookup_skill` | `query` (the caller's words, Bangla or English; matches title, keywords, description and details) | `found, skills: [{title,description,title_bn,description_bn,content}]` (top 3) | |
-| `get_skill` | `title` (exact, case-insensitive, one of the titles listed in the prompt) | `found: true, skill: {title,description,title_bn,description_bn,content}` | `skill_not_found` (use `lookup_skill` instead) |
+| `lookup_skill` | `query` (the caller's words, Bangla or English; matches title, keywords, description and details) | `found, skills: [{title,description,content}]` (top 3) | |
+| `get_skill` | `title` (exact, case-insensitive, one of the titles listed in the prompt) | `found: true, skill: {title,description,content}` | `skill_not_found` (use `lookup_skill` instead) |
 | `check_availability` | `date`, `doctor_name?`, `period?` (`morning`, `afternoon`, `evening`) | `date, weekday_bn, slots: [{time,doctor_name_en,doctor_name_bn}]` (max 8) | `date_invalid`, `doctor_not_found` |
 | `book_appointment` | `patient_name`, `phone`, `reason`, `date`, `time`, `doctor_name?` | `appointment_id, slot, doctor_name_en, doctor_name_bn, patient_name, phone_spoken` | `name_invalid`, `phone_invalid`, `date_invalid`, `time_invalid`, `slot_in_past`, `slot_too_far`, `doctor_not_found`, `slot_unavailable` (with `alternatives`) |
 | `reschedule_appointment` | `phone`, `new_date`, `new_time`, `old_date?`, `doctor_name?` | `appointment_id, slot, doctor_name_en, doctor_name_bn` | `phone_invalid`, `appointment_not_found`, `appointment_ambiguous` (with `appointments`), `slot_unavailable` and the date and time codes |

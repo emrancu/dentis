@@ -359,10 +359,7 @@ describe('admin agent prompt', () => {
     assert.equal((await res.json()).error.code, 'csrf_rejected');
   });
 
-  it('Bangla fields round-trip through skills, doctors and settings, and reach the public site', async () => {
-    const skill = await (await request('POST', '/api/admin/skills', { body: { title: 'Implants', description: 'Replacement for a missing tooth', title_bn: 'ইমপ্ল্যান্ট', description_bn: 'হারানো দাঁতের বিকল্প', kind: 'service' }, headers: h })).json();
-    assert.deepEqual([skill.title_bn, skill.description_bn], ['ইমপ্ল্যান্ট', 'হারানো দাঁতের বিকল্প']);
-
+  it('Bangla fields round-trip through doctors and settings, and reach the public site', async () => {
     const doctor = await (await request('PUT', '/api/admin/doctors/1', { body: { name_en: 'Dr. Nusrat Jahan', name_bn: 'ডা. নুসরাত জাহান', specialty: 'General', specialty_bn: 'সাধারণ সেবা', days: [6, 0], start_time: '10:00', end_time: '17:00' }, headers: h })).json();
     assert.equal(doctor.specialty_bn, 'সাধারণ সেবা');
 
@@ -374,9 +371,9 @@ describe('admin agent prompt', () => {
     assert.equal(site.clinic.hours_bn, 'শনি–বৃহ');
   });
 
-  it('rejects over-long Bangla text with a coded 400', async () => {
-    const res = await request('POST', '/api/admin/skills', { body: { title: 'Odd', description: 'x1', title_bn: 'ক'.repeat(81) }, headers: h });
-    assert.equal(res.status, 400);
-    assert.equal((await res.json()).error.code, 'skill_title_bn_too_long');
+  it('agent knowledge is one plain form: Bangla text goes in the same fields', async () => {
+    const skill = await (await request('POST', '/api/admin/skills', { body: { title: 'ইমপ্ল্যান্ট', description: 'হারানো দাঁতের বিকল্প', content: 'খরচ ৬০০০০ টাকা', kind: 'service' }, headers: h })).json();
+    assert.deepEqual([skill.title, skill.description], ['ইমপ্ল্যান্ট', 'হারানো দাঁতের বিকল্প']);
+    assert.equal('title_bn' in skill || 'description_bn' in skill, false);
   });
 });

@@ -464,7 +464,7 @@ async function skillsView(view) {
       ${[['all', 'All', items.length], ...KINDS.map(([k, , plural]) => [k, plural, items.filter((s) => s.kind === k).length])].map(([k, label, n]) => `<button type="button" class="tab" data-filter="${k}" aria-pressed="${skillFilter === k}">${esc(label)} <span>${n}</span></button>`).join('')}
     </div>
     ${shown.length ? `<div class="skills">${shown.map((s) => `
-      <article class="card skill ${s.enabled ? '' : 'off'}"><div><span class="chip kind-${esc(s.kind)}">${esc(kindLabel(s.kind))}</span></div><h3>${esc(s.title)}</h3>${s.title_bn ? `<p class="muted bn" style="margin:-4px 0 0">${esc(s.title_bn)}</p>` : ''}<p class="muted" style="margin:0">${esc(s.description)}</p>${s.content ? `<div class="content bn">${esc(s.content)}</div>` : ''}${s.keywords ? `<p class="keywords bn">${esc(s.keywords)}</p>` : ''}
+      <article class="card skill ${s.enabled ? '' : 'off'}"><div><span class="chip kind-${esc(s.kind)}">${esc(kindLabel(s.kind))}</span></div><h3>${esc(s.title)}</h3><p class="muted" style="margin:0">${esc(s.description)}</p>${s.content ? `<div class="content bn">${esc(s.content)}</div>` : ''}${s.keywords ? `<p class="keywords bn">${esc(s.keywords)}</p>` : ''}
         <div class="actions"><label class="switch"><input type="checkbox" data-toggle="${s.id}" ${s.enabled ? 'checked' : ''}> ${s.enabled ? 'Enabled' : 'Disabled'}</label><span style="flex:1"></span><button class="btn btn-small" data-edit="${s.id}">Edit</button><button class="btn btn-small btn-danger" data-del="${s.id}">Delete</button></div>
       </article>`).join('')}</div>` : empty(items.length ? 'Nothing of this type yet.' : 'No entries yet. Add the first one so the agent can answer questions.')}`;
   const byId = new Map(items.map((s) => [String(s.id), s]));
@@ -527,15 +527,13 @@ function dialog(html, onSubmit) {
 function skillDialog(skill) {
   dialog(`<h2>${skill ? 'Edit entry' : 'Add entry'}</h2>
     <label class="field"><span>Type</span><select name="kind">${KINDS.map(([k, label]) => `<option value="${k}" ${(skill?.kind ?? 'service') === k ? 'selected' : ''}>${label}</option>`).join('')}</select></label>
-    <label class="field"><span>Title in English: what the agent looks up</span><input type="text" name="title" value="${esc(skill?.title ?? '')}" maxlength="80" required></label>
-    <label class="field"><span>Description in English</span><input type="text" name="description" value="${esc(skill?.description ?? '')}" maxlength="400" required></label>
-    <label class="field"><span>Title in Bangla (helps the agent match callers)</span><input type="text" name="title_bn" value="${esc(skill?.title_bn ?? '')}" maxlength="80" class="bn"></label>
-    <label class="field"><span>Description in Bangla (helps the agent match callers)</span><input type="text" name="description_bn" value="${esc(skill?.description_bn ?? '')}" maxlength="400" class="bn"></label>
-    <p class="hint">Everything here is for the voice agent only. The website lists its services separately. Bangla text is optional.</p>
+    <label class="field"><span>Title: what the agent looks up</span><input type="text" name="title" value="${esc(skill?.title ?? '')}" maxlength="80" required></label>
+    <label class="field"><span>Description</span><input type="text" name="description" value="${esc(skill?.description ?? '')}" maxlength="400" required></label>
+    <p class="hint">Everything here is for the voice agent only. The website lists its services separately. Write in English or Bangla.</p>
     <label class="field"><span>Details the agent will say: prices, steps, rules</span><textarea name="content" maxlength="4000" class="bn">${esc(skill?.content ?? '')}</textarea></label>
-    <label class="field"><span>Keywords: other words callers use, Bangla and English, separated by commas</span><input type="text" name="keywords" value="${esc(skill?.keywords ?? '')}" maxlength="300" class="bn" placeholder="wisdom, দাঁত তোলা, আক্কেল দাঁত"></label>
+    <label class="field"><span>Keywords: other words callers use, in either language, separated by commas</span><input type="text" name="keywords" value="${esc(skill?.keywords ?? '')}" maxlength="300" class="bn" placeholder="wisdom, দাঁত তোলা, আক্কেল দাঁত"></label>
     <label class="switch"><input type="checkbox" name="enabled" ${skill?.enabled ?? true ? 'checked' : ''}> Enabled</label>`, (f) => {
-    const body = { title: f.get('title'), description: f.get('description'), title_bn: f.get('title_bn'), description_bn: f.get('description_bn'), content: f.get('content'), kind: f.get('kind'), keywords: f.get('keywords'), enabled: f.get('enabled') === 'on' };
+    const body = { title: f.get('title'), description: f.get('description'), content: f.get('content'), kind: f.get('kind'), keywords: f.get('keywords'), enabled: f.get('enabled') === 'on' };
     return skill ? api('PUT', `/skills/${skill.id}`, body) : api('POST', '/skills', body);
   });
 }

@@ -257,29 +257,27 @@ describe('bilingual content', () => {
   const BANGLA = /[\u0980-\u09FF]/;
   const LATIN_WORD = /[A-Za-z]{3,}/;
 
-  it('a skill and a doctor round-trip their Bangla fields through the real SQL', async () => {
+  it('a skill written in Bangla and a doctor Bangla field round-trip through the real SQL', async () => {
     const db2 = createD1();
     const skills = new D1SkillRepository(db2);
-    const s = await skills.insert(new Skill({ title: 'Whitening', description: 'Brighter', titleBn: 'দাঁত সাদা করা', descriptionBn: 'উজ্জ্বল হাসি', updatedAt: now.toISOString() }));
-    s.titleBn = 'সাদা করা';
+    const s = await skills.insert(new Skill({ title: 'দাঁত সাদা করা', description: 'উজ্জ্বল হাসি', updatedAt: now.toISOString() }));
+    s.title = 'সাদা করা';
     await skills.save(s);
     const [loaded] = await skills.list();
-    assert.deepEqual([loaded.titleBn, loaded.descriptionBn], ['সাদা করা', 'উজ্জ্বল হাসি']);
+    assert.deepEqual([loaded.title, loaded.description], ['সাদা করা', 'উজ্জ্বল হাসি']);
     const doctors = new D1DoctorRepository(db2);
     const d = await doctors.insert(new Doctor({ nameEn: 'Dr. Nusrat', specialty: 'Braces', specialtyBn: 'ব্রেসেস' }));
     assert.equal((await doctors.findById(d.id)).specialtyBn, 'ব্রেসেস');
   });
 
-  it('seed: English fields are English only and Bangla fields are Bangla only, so no string mixes languages', async () => {
+  it('seed: titles and descriptions are English, keywords carry the Bangla words', async () => {
     const seeded = createD1({ seed: true });
     const everything = await new D1SkillRepository(seeded).list();
     const services = everything.filter((s) => s.kind === 'service');
     assert.ok(services.length >= 8);
     for (const s of everything) {
       assert.doesNotMatch(s.title + s.description, BANGLA, `English fields of "${s.title}" contain Bangla`);
-      assert.match(s.titleBn, BANGLA, `${s.title} has no Bangla title`);
-      assert.match(s.descriptionBn, BANGLA, `${s.title} has no Bangla description`);
-      assert.doesNotMatch(s.titleBn + s.descriptionBn, LATIN_WORD, `Bangla fields of "${s.title}" contain English words`);
+      assert.match(s.keywords, BANGLA, `${s.title} has no Bangla keywords`);
     }
     for (const d of await new D1DoctorRepository(seeded).list()) {
       assert.doesNotMatch(d.specialty, BANGLA);
@@ -292,14 +290,6 @@ describe('bilingual content', () => {
       assert.match(p[`${f}Bn`], BANGLA, `${f}Bn is not Bangla`);
       assert.doesNotMatch(p[`${f}Bn`], LATIN_WORD, `${f}Bn contains English words`);
     }
-  });
-
-  it('the Bangla content migration can be run again without duplicating the implants service or changing counts', async () => {
-    const seeded = createD1({ seed: true });
-    const count = async () => (await new D1SkillRepository(seeded).list()).length;
-    const before = await count();
-    seeded.exec(readFileSync(new URL('../../migrations/0006_bilingual_content.sql', import.meta.url), 'utf8'));
-    assert.equal(await count(), before);
   });
 
   it('seed: the clinic offers implants, because the hero shows them', async () => {

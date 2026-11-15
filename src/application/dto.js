@@ -1,5 +1,5 @@
 /** Read-model shapes returned to the outside world. snake_case, as written in contracts/. */
-export const skillDto = (s) => ({ id: s.id, title: s.title, description: s.description, title_bn: s.titleBn, description_bn: s.descriptionBn, content: s.content, kind: s.kind, keywords: s.keywords, enabled: s.enabled, updated_at: s.updatedAt });
+export const skillDto = (s) => ({ id: s.id, title: s.title, description: s.description, content: s.content, kind: s.kind, keywords: s.keywords, enabled: s.enabled, updated_at: s.updatedAt });
 
 export const doctorDto = (d) => ({
   id: d.id,

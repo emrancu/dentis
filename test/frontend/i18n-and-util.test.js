@@ -3,6 +3,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { DEFAULT_LANG, STRINGS, daysLabel, t } from '../../public/js/i18n.js';
 import { esc, formatClock, formatClockRange, formatDateTime, formatDuration, formatSlot, formatTime, localDigits, pick, statusLabel, telHref } from '../../public/js/util.js';
+import { SERVICES } from '../../public/js/services.js';
 import { D1SkillRepository } from '../../src/infrastructure/d1/content-repositories.js';
 import { createD1 } from '../support/sqlite-d1.js';
 
@@ -152,8 +153,9 @@ describe('consistent names and one message per place', () => {
       assert.ok(svc, `no service "${title}" in the seed`);
       assert.equal(STRINGS.en[`tx.${key}.name`], svc.title);
       assert.equal(STRINGS.en[`tx.${key}.text`], svc.description);
-      assert.equal(STRINGS.bn[`tx.${key}.name`], svc.titleBn);
-      assert.equal(STRINGS.bn[`tx.${key}.text`], svc.descriptionBn);
+      const site = SERVICES.find((x) => x.en[0] === title);
+      assert.ok(site, `no "${title}" in the website Services list`);
+      assert.deepEqual([STRINGS.bn[`tx.${key}.name`], STRINGS.bn[`tx.${key}.text`]], site.bn);
     }
   });
 

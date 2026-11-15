@@ -20,7 +20,7 @@ describe('get_skill', () => {
   it('returns the full details for an exact title, ignoring case and extra spaces', async () => {
     const r = await run('get_skill', { title: '  root CANAL treatment ' });
     assert.equal(r.ok, true);
-    assert.deepEqual(r.skill, { title: 'Root canal treatment', description: 'Saves an infected tooth.', title_bn: '', description_bn: '', content: 'Fee: 6000 to 12000 taka.' });
+    assert.deepEqual(r.skill, { title: 'Root canal treatment', description: 'Saves an infected tooth.', content: 'Fee: 6000 to 12000 taka.' });
   });
 
   it('fails with a code and guidance for an unknown title', async () => {
@@ -47,14 +47,13 @@ describe('get_skill', () => {
   });
 });
 
-describe('Bangla display fields', () => {
-  it('get_skill and lookup_skill return the Bangla title and description for the agent to use', async () => {
-    await s.skillCatalog.update(1, { title: 'Scaling and polishing', description: 'Cleaning', titleBn: 'স্কেলিং ও পলিশিং', descriptionBn: 'দাঁত পরিষ্কার', content: 'Fee: 1500 taka.' });
-    const got = (await run('get_skill', { title: 'Scaling and polishing' })).skill;
-    assert.deepEqual([got.title_bn, got.description_bn], ['স্কেলিং ও পলিশিং', 'দাঁত পরিষ্কার']);
+describe('Bangla text', () => {
+  it('an entry written in Bangla is found and returned as written', async () => {
+    await s.skillCatalog.update(1, { title: 'স্কেলিং ও পলিশিং', description: 'দাঁত পরিষ্কার', content: 'খরচ ১৫০০ টাকা।' });
+    const got = (await run('get_skill', { title: 'স্কেলিং ও পলিশিং' })).skill;
+    assert.deepEqual(got, { title: 'স্কেলিং ও পলিশিং', description: 'দাঁত পরিষ্কার', content: 'খরচ ১৫০০ টাকা।' });
     const found = (await run('lookup_skill', { query: 'স্কেলিং' })).skills[0];
-    assert.equal(found.title, 'Scaling and polishing');
-    assert.equal(found.title_bn, 'স্কেলিং ও পলিশিং');
+    assert.equal(found.title, 'স্কেলিং ও পলিশিং');
   });
 
   it('the public site carries the Bangla specialty of doctors and the Bangla clinic fields', async () => {
