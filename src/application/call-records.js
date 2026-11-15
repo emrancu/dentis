@@ -35,16 +35,19 @@ export class StartCall {
     await this.calls.create(call);
     try {
       const [doctors, skills, map] = await Promise.all([this.doctors.list(), this.skills.list(), this.settings.all()]);
+      const agentPrompt = AgentPrompt.fromSettings(map);
+      const profile = ClinicProfile.fromMap(map);
       const instructions = buildInstructions({
-        profile: ClinicProfile.fromMap(map),
+        profile,
         doctors: doctors.filter((d) => d.active),
         skills,
         now: dhakaParts(now),
         intent: intent === 'booking' ? 'booking' : 'general',
-        agentPrompt: AgentPrompt.fromSettings(map),
+        agentPrompt,
       });
+      const { greeting, closing } = agentPrompt.resolve(profile.nameEn);
       const secret = await this.gateway.createClientSecret({ instructions, tools: AGENT_TOOLS });
-      return { callId: call.id, clientSecret: secret.value, model: secret.model, maxSeconds: MAX_CALL_SECONDS };
+      return { callId: call.id, clientSecret: secret.value, model: secret.model, maxSeconds: MAX_CALL_SECONDS, greeting, closing };
     } catch (error) {
       call.markFailed(now);
       await this.calls.save(call);

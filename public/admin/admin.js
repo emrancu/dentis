@@ -256,6 +256,7 @@ async function patientsView(view) {
 /* ---------- agent prompt ---------- */
 const MAX_INSTRUCTIONS = 4000;
 const MAX_GREETING = 300;
+const MAX_CLOSING = 300;
 
 async function agentView(view) {
   const a = await api('GET', '/agent');
@@ -266,6 +267,8 @@ async function agentView(view) {
           <textarea name="instructions" rows="14" class="bn" spellcheck="false">${esc(a.instructions)}</textarea></label>
         <label class="field"><span>Greeting <small class="counter" id="count-greeting"></small></span>
           <textarea name="greeting" rows="3" class="bn" spellcheck="false">${esc(a.greeting)}</textarea></label>
+        <label class="field"><span>Closing: said when the call ends <small class="counter" id="count-closing"></small></span>
+          <textarea name="closing" rows="3" class="bn" spellcheck="false">${esc(a.closing)}</textarea></label>
         <p class="hint">Write <code>{clinic}</code> where the clinic name should go.</p>
         <p class="error-text" id="agent-error" role="alert"></p>
         <div class="toolbar" style="margin:0">
@@ -278,7 +281,7 @@ async function agentView(view) {
         <p class="muted" style="margin-top:0">These parts stay in code, come after your text, and win over it. They cannot be edited or removed here.</p>
         <ul class="locked">
           <li>Today's date and time</li>
-          <li>The call flow: name, phone read back digit by digit, reason, time, confirm before booking</li>
+          <li>The call flow: name, phone read back in English digits, reason, time, confirm before booking</li>
           <li>Facts only from the clinic's tools: never invent prices, hours or slots</li>
           <li>Safety: no medical advice, emergencies go to a doctor or hospital</li>
           <li>Clinic hours, doctors and the knowledge topic titles</li>
@@ -295,10 +298,11 @@ async function agentView(view) {
   const update = () => {
     count('instructions', MAX_INSTRUCTIONS, view.querySelector('#count-instructions'));
     count('greeting', MAX_GREETING, view.querySelector('#count-greeting'));
+    count('closing', MAX_CLOSING, view.querySelector('#count-closing'));
   };
   form.addEventListener('input', update);
   update();
-  const body = () => ({ instructions: field('instructions').value, greeting: field('greeting').value });
+  const body = () => ({ instructions: field('instructions').value, greeting: field('greeting').value, closing: field('closing').value });
   const errorEl = view.querySelector('#agent-error');
 
   form.onsubmit = async (e) => {
@@ -312,8 +316,8 @@ async function agentView(view) {
     }
   };
   view.querySelector('#reset').onclick = guard(async () => {
-    if (!confirm('Reset the instructions and the greeting to the built-in defaults?')) return;
-    await api('PUT', '/agent', { instructions: '', greeting: '' });
+    if (!confirm('Reset the instructions, greeting and closing to the built-in defaults?')) return;
+    await api('PUT', '/agent', { instructions: '', greeting: '', closing: '' });
     toast('Reset to default');
     route();
   });

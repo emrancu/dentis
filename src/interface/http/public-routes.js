@@ -9,7 +9,7 @@ export function registerPublicRoutes(router, s) {
   router.add('POST', '/api/session', async ({ request }) => {
     const { intent } = await readOptionalJson(request);
     const session = await s.startCall.execute({ ip: request.headers.get('CF-Connecting-IP'), intent });
-    return json({ call_id: session.callId, client_secret: session.clientSecret, model: session.model, max_seconds: session.maxSeconds }, 201);
+    return json({ call_id: session.callId, client_secret: session.clientSecret, model: session.model, max_seconds: session.maxSeconds, greeting: session.greeting, closing: session.closing }, 201);
   });
 
   router.add('POST', '/api/agent/tools/:name', async ({ request, params }) => {

@@ -50,9 +50,9 @@ Admin routes need the cookie `dentis_admin` (HttpOnly, SameSite=Strict, `Secure`
 | `POST /api/admin/skills` | `{ title, description, title_bn?, description_bn?, content?, kind?, keywords?, enabled? }`. `title_bn` up to 80 and `description_bn` up to 400 characters, optional Bangla text the agent can match on. `kind` is `service` (default), `faq` or `policy`. `keywords` up to 300 characters. 409 `skill_title_taken` when another skill has the same title (case-insensitive) | 201 skill |
 | `PUT /api/admin/skills/:id` | same as POST | skill |
 | `DELETE /api/admin/skills/:id` | | 204 |
-| `GET /api/admin/agent` | | `{ instructions, greeting, default_instructions, default_greeting }`. `instructions` and `greeting` are the text the agent really uses: the saved text, or the default when nothing is saved. `{clinic}` is left in so staff edit the template |
-| `PUT /api/admin/agent` | `{ instructions, greeting }`. An empty or blank string means "use the default". `{clinic}` is replaced with the clinic name. Limits: instructions 4000 characters, greeting 300. 400 `instructions_too_long` or `greeting_too_long` | same shape as GET |
-| `POST /api/admin/agent/preview` | `{ instructions?, greeting? }` (unsaved text, blank means default). Saves nothing | `{ prompt }`: the full prompt a new call would get, with the locked rules, today's date, clinic, doctors and knowledge titles |
+| `GET /api/admin/agent` | | `{ instructions, greeting, closing, default_instructions, default_greeting, default_closing }`. `instructions`, `greeting` and `closing` are the text the agent really uses: the saved text, or the default when nothing is saved. `{clinic}` is left in so staff edit the template |
+| `PUT /api/admin/agent` | `{ instructions, greeting, closing }`. An empty or blank string means "use the default". `{clinic}` is replaced with the clinic name. Limits: instructions 4000 characters, greeting 300. 400 `instructions_too_long` or `greeting_too_long` | same shape as GET |
+| `POST /api/admin/agent/preview` | `{ instructions?, greeting?, closing? }` (unsaved text, blank means default). Saves nothing | `{ prompt }`: the full prompt a new call would get, with the locked rules, today's date, clinic, doctors and knowledge titles |
 | `GET /api/admin/doctors` | | `{ items: [doctor] }` |
 | `POST /api/admin/doctors` | `{ name_en, name_bn?, specialty?, specialty_bn?, days, start_time, end_time, active? }` | 201 doctor |
 | `PUT /api/admin/doctors/:id` | same as POST | doctor |
@@ -65,7 +65,7 @@ Times are clinic-local (Asia/Dhaka). Timestamps (`started_at`, `ts`, `created_at
 
 ## Agent prompt
 The prompt a call gets is built when the call starts, from three parts. A change applies to the next call, never to a call already running.
-1. **Editable:** `instructions` (persona, tone, language) then, inside the call flow, the `greeting`.
+1. **Editable:** `instructions` (persona, tone, language) then, inside the call flow, the `greeting` and the `closing`. The browser speaks both word for word: `POST /api/session` returns them (`greeting`, `closing`, `{clinic}` filled in). The closing is spoken after the model calls `end_call` and its own reply is done, then the call hangs up. The model is told not to say goodbye itself.
 2. **Locked in code:** today's date and time, the call purpose for the booking intent, the call flow, "facts only from tools", safety, the clinic summary, the knowledge titles, and a closing line saying these rules win over anything above. Admin cannot edit or remove them.
 3. **Knowledge titles:** titles of enabled skills, sorted, listed only while there are at most `title_index_cap` (40) of them. Over the cap the list is left out and the agent is told to use `lookup_skill`.
 

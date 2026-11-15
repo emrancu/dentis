@@ -39,7 +39,7 @@ describe('public API', () => {
   it('POST /api/session starts a call and returns only the short-lived key', async () => {
     const res = await request('POST', '/api/session', { headers: { 'CF-Connecting-IP': '203.0.113.5' } });
     assert.equal(res.status, 201);
-    assert.deepEqual(await res.json(), { call_id: 'call-1', client_secret: 'ek_test', model: 'gpt-realtime-mini', max_seconds: 300 });
+    assert.deepEqual(await res.json(), { call_id: 'call-1', client_secret: 'ek_test', model: 'gpt-realtime-mini', max_seconds: 300, greeting: 'আসসালামু আলাইকুম, Dentis Dental Care-এ আপনাকে স্বাগতম। আমি কীভাবে আপনাকে সাহায্য করতে পারি?', closing: 'কল করার জন্য আপনাকে ধন্যবাদ। আপনার দিনটি ভালো কাটুক। আল্লাহ হাফেজ।' });
   });
 
   it('POST /api/session takes an optional intent in a JSON body, and an empty body still works', async () => {
@@ -318,9 +318,20 @@ describe('admin agent prompt', () => {
 
   it('shows the default text with its defaults', async () => {
     const r = await (await request('GET', '/api/admin/agent', { headers: h })).json();
-    assert.deepEqual(Object.keys(r).sort(), ['default_greeting', 'default_instructions', 'greeting', 'instructions']);
+    assert.deepEqual(Object.keys(r).sort(), ['closing', 'default_closing', 'default_greeting', 'default_instructions', 'greeting', 'instructions']);
     assert.equal(r.instructions, r.default_instructions);
     assert.match(r.instructions, /\{clinic\}/);
+  });
+
+  it('a saved greeting and closing are returned to the next call and the closing is in the prompt', async () => {
+    const saved = await request('PUT', '/api/admin/agent', { body: { instructions: '', greeting: 'Salam from {clinic}.', closing: 'Dhonnobad for calling {clinic}.' }, headers: h });
+    assert.equal(saved.status, 200);
+    const session = await (await request('POST', '/api/session', { headers: { 'CF-Connecting-IP': '203.0.113.9' } })).json();
+    assert.equal(session.greeting, 'Salam from Dentis Dental Care.');
+    assert.equal(session.closing, 'Dhonnobad for calling Dentis Dental Care.');
+    const prompt = world.ports.gateway.sessions.at(-1).instructions;
+    assert.match(prompt, /Dhonnobad for calling Dentis Dental Care\./);
+    assert.match(prompt, /read it back in English/);
   });
 
   it('saves the text, and the next call uses it while keeping the locked rules', async () => {
