@@ -50,7 +50,7 @@ $('#lang-btn').addEventListener('click', () => {
 function renderSite() {
   const { clinic, skills, doctors } = site;
   $('#services-list').innerHTML = skills.length
-    ? skills.map((s, i) => `<article class="card reveal in" style="--i:${i % 6}"><h3>${esc(pick(lang, s.title, s.title_bn))}</h3><p>${esc(pick(lang, s.description, s.description_bn))}</p></article>`).join('')
+    ? skills.map((s, i) => `<div class="mag-area reveal in" style="--i:${i % 6}"><article class="card mag"><span class="mag__light" aria-hidden="true"></span><div class="mag__content"><h3>${esc(pick(lang, s.title, s.title_bn))}</h3><p>${esc(pick(lang, s.description, s.description_bn))}</p></div></article></div>`).join('')
     : `<p class="muted">${esc(t(lang, 'services.empty'))}</p>`;
 
   $('#doctors-list').innerHTML = doctors

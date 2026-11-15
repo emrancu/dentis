@@ -161,3 +161,57 @@ describe('the controller', () => {
     assert.match(main, /initMagnetic\(\)/);
   });
 });
+
+describe('the service cards in the page', () => {
+  const css = readFileSync(new URL('../../public/css/site.css', import.meta.url), 'utf8');
+  const main = readFileSync(new URL('../../public/js/main.js', import.meta.url), 'utf8');
+  const rule = (selector) => new RegExp(`^${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\{([^}]*)\\}`, 'm').exec(css)?.[1] ?? '';
+
+  it('each card sits in a static wrapper and has a light layer under a content layer', () => {
+    assert.match(main, /<div class="mag-area reveal in"[^>]*><article class="card mag"><span class="mag__light" aria-hidden="true"><\/span><div class="mag__content"><h3>.*?<\/h3><p>.*?<\/p><\/div><\/article><\/div>/s);
+  });
+
+  it('the reveal animation is on the wrapper, so it can never fight the magnetic transform on the card', () => {
+    assert.doesNotMatch(main, /class="card mag[^"]*reveal/);
+  });
+
+  it('the card clips its light and is positioned; the content layer is above the light and ignores the pointer', () => {
+    assert.match(rule('.card.mag'), /position: relative; overflow: hidden/);
+    assert.match(rule('.mag__content'), /position: relative; z-index: 1; pointer-events: none/);
+    assert.match(rule('.mag__light'), /z-index: 0/);
+    assert.match(rule('.mag__light'), /pointer-events: none/);
+  });
+
+  it('moves with the 0.4s spring, on transform only, for the card and its content', () => {
+    assert.match(css, /--spring: cubic-bezier\(0\.3, 1\.5, 0\.5, 1\)/);
+    assert.match(rule('.card.mag'), /transition: transform 0\.4s var\(--spring\)/);
+    assert.match(rule('.mag__content'), /transition: transform 0\.4s var\(--spring\)/);
+  });
+
+  it('the light is the text colour at 6% (the cards are light), transparent at 62%, and fades in 0.3s on hover', () => {
+    assert.match(rule('.mag__light'), /radial-gradient\(circle at center, rgb\(11 31 42 \/ 0\.06\) 0, transparent 62%\)/);
+    assert.match(rule('.mag__light'), /opacity: 0; transition: opacity 0\.3s/);
+    assert.match(css, /\.card\.mag\.is-hover \.mag__light \{ opacity: 1; \}/);
+  });
+
+  it('the shadow grows when the cursor is near', () => {
+    assert.match(css, /\.card\.mag\.is-near \{ box-shadow: var\(--shadow-near\), var\(--hairline\); \}/);
+    assert.ok(css.includes('--shadow-near: 0 2px 6px'));
+    assert.ok(css.includes('0 30px 54px -16px'), 'a larger, softer shadow than the resting 14px 34px');
+  });
+
+  it('there is no transition and no effect for reduced motion', () => {
+    assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{ \.card\.mag, \.mag__content \{ transition: none; \} \}/);
+  });
+
+  it('the polish: a shared soft surface with a hairline on the service, step and doctor cards, and a wash behind Services', () => {
+    for (const sel of ['.card', '.step', '.doctor']) assert.match(rule(sel), /linear-gradient\(180deg, #fff 0%, #fbfefd 100%\)/, sel);
+    for (const sel of ['.card', '.step', '.doctor']) assert.match(rule(sel), /var\(--hairline\)/, sel);
+    assert.match(css, /^#services \{ background: radial-gradient\(/m);
+  });
+
+  it('only the service cards are magnetic, and no card lifts on hover', () => {
+    assert.doesNotMatch(css, /\.step\.mag|\.doctor\.mag/);
+    assert.doesNotMatch(css, /\.card:hover|\.doctor:hover/);
+  });
+});
