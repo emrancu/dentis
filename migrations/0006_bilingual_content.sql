@@ -10,6 +10,14 @@ UPDATE skills SET description = 'Metal and ceramic braces to straighten teeth.',
 UPDATE skills SET description = 'Safe in-clinic whitening for a brighter smile.', title_bn = 'দাঁত সাদা করা', description_bn = 'ক্লিনিকে নিরাপদ পদ্ধতিতে উজ্জ্বল হাসি।' WHERE title = 'Teeth whitening';
 UPDATE skills SET description = 'Removal of damaged teeth and wisdom teeth.', title_bn = 'দাঁত তোলা', description_bn = 'ক্ষতিগ্রস্ত দাঁত ও আক্কেল দাঁত তোলা।' WHERE title = 'Tooth extraction';
 
+-- Agent-only entries (policy and FAQ): English description only, Bangla twins filled.
+UPDATE skills SET description = 'How appointments, delays and cancellations work.', title_bn = 'অ্যাপয়েন্টমেন্ট ও বাতিলের নিয়ম', description_bn = 'অ্যাপয়েন্টমেন্ট, দেরি ও বাতিলের নিয়ম।' WHERE title = 'Booking and cancellation policy';
+UPDATE skills SET description = 'Parking for patients.', title_bn = 'পার্কিং কোথায়', description_bn = 'রোগীদের জন্য পার্কিং।' WHERE title = 'Where to park';
+UPDATE skills SET description = 'Dental care for kids.', title_bn = 'শিশুদের চিকিৎসা', description_bn = 'শিশুদের দাঁতের যত্ন।' WHERE title = 'Treating children';
+UPDATE skills SET description = 'What to bring to the first appointment.', title_bn = 'প্রথম ভিজিটে কী আনবেন', description_bn = 'প্রথম অ্যাপয়েন্টমেন্টে যা সঙ্গে আনতে হবে।' WHERE title = 'What to bring on your first visit';
+UPDATE skills SET description = 'Urgent dental pain and what to do.', title_bn = 'জরুরি ও রাতের ব্যথা', description_bn = 'জরুরি দাঁতের ব্যথায় কী করবেন।' WHERE title = 'Emergency and after-hours pain';
+UPDATE skills SET description = 'Comfort during treatment.', title_bn = 'চিকিৎসার সময় ব্যথা', description_bn = 'চিকিৎসার সময় আরাম।' WHERE title = 'Pain during treatment';
+
 -- The hero already shows implants, so the clinic offers them (demo data).
 INSERT INTO skills (title, description, title_bn, description_bn, content, kind, keywords, enabled, updated_at)
 SELECT column1, column2, column3, column4, column5, column6, column7, 1, '2026-11-14T00:00:00.000Z' FROM (VALUES (

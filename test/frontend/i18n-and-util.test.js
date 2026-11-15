@@ -202,6 +202,52 @@ describe('Bangla is the default language', () => {
   });
 });
 
+describe('layout rules that protect the review findings', () => {
+  const css = read('css/site.css');
+  const main = read('js/main.js');
+
+  it('the header booking button stays hidden until the hero button scrolls away', () => {
+    assert.match(css, /\.btn-book \{ opacity: 0; visibility: hidden;/);
+    assert.match(css, /\.site-header\.show-book \.btn-book \{ opacity: 1;/);
+    assert.match(main, /classList\.toggle\('show-book'/);
+  });
+
+  it('on phones the floating button yields to the hero button', () => {
+    assert.match(css, /\.hero-cta-visible \.fab \{ opacity: 0;/);
+    assert.match(main, /classList\.toggle\('hero-cta-visible'/);
+  });
+
+  it('the 3D stage replaces the fallback only after its first painted frame', () => {
+    assert.match(main, /onReady: \(\) => document\.body\.classList\.add\('has-3d'\)/);
+    assert.doesNotMatch(main, /if \(hero\) document\.body\.classList\.add\('has-3d'\)/);
+    assert.match(css, /\.has-3d \.tooth-fallback \{ opacity: 0; \}/);
+    assert.match(read('js/hero3d.js'), /onReady\(\)/);
+  });
+
+  it('touch targets are at least 44px for the header, navigation, footer links and inline links', () => {
+    for (const rule of [/\.nav a \{ min-height: 44px/, /\.brand \{ min-height: 44px/, /\.footer-links a \{[^}]*min-height: 44px/, /\.facts a, \.footer-contact a \{[^}]*min-height: 44px/, /\.menu-btn \{ display: none; width: 44px; height: 44px/]) assert.match(css, rule);
+    assert.match(css, /\.btn-book \{[^}]*min-height: 44px/);
+    assert.match(css, /\.lang-btn \{[^}]*min-height: 44px/);
+  });
+
+  it('cards that do nothing do not lift on hover, and rows are centred so there is no orphan', () => {
+    assert.doesNotMatch(css, /\.card:hover/);
+    assert.doesNotMatch(css, /\.doctor:hover/);
+    assert.match(css, /\.cards \{ display: flex; flex-wrap: wrap; justify-content: center;/);
+    assert.match(css, /\.doctors \{ display: flex; flex-wrap: wrap; justify-content: center;/);
+  });
+
+  it('Bangla gets a larger root size, tighter display leading and a serif for headings', () => {
+    assert.match(css, /html\[lang='bn'\] \{ font-size: 108%; \}/);
+    assert.match(css, /html\[lang='bn'\] h1 \{ line-height: 1\.25; \}/);
+    assert.match(css, /html\[lang='bn'\] h1[^{]*\{ font-family: 'Noto Serif Bengali'/);
+  });
+
+  it('the header shows the Bangla name next to the logo', () => {
+    assert.match(html(), /class="brand-bn" lang="bn">ডেন্টিস ডেন্টাল কেয়ার</);
+  });
+});
+
 describe('static pages', () => {
   it('the hero has a canvas for the 3D tooth and a static tooth as the fallback', () => {
     const html = read('index.html');

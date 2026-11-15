@@ -75,12 +75,12 @@ None.
   - what: new copy in both languages, format helpers, render by language, tel link, talk button, consent line
   - files: `public/index.html`, `public/js/i18n.js`, `public/js/util.js`, `public/js/main.js`, `test/frontend`
   - done when: tests cover formats and language fallback, and the static HTML still equals the Bangla strings
-- [~] 6. Site typography and layout
+- [x] 6. Site typography and layout
   - parallel: no (after 5)
   - what: Bangla type scale and serif, wordmark, tap targets, centred grids, header button and floating button behaviour, fallback until first frame
   - files: `public/css/site.css`, `public/js/main.js`, `public/js/hero3d.js` (first frame only)
   - done when: re-run of the audit shows no overlap, targets of at least 44px, no overflow at 360, 768 and 1440 px in both languages
-- [ ] 7. Self-hosting and SEO
+- [~] 7. Self-hosting and SEO
   - parallel: no (after 6)
   - what: fonts and Three.js served from this site, social image, meta tags, JSON-LD, `hreflang`, `?lang=`
   - files: `public/fonts/**`, `public/vendor/**`, `public/index.html`, `public/css/`, `public/js/main.js`, `public/og.png`

@@ -261,9 +261,10 @@ describe('bilingual content', () => {
 
   it('seed: English fields are English only and Bangla fields are Bangla only, so no string mixes languages', async () => {
     const seeded = createD1({ seed: true });
-    const services = (await new D1SkillRepository(seeded).list()).filter((s) => s.kind === 'service');
+    const everything = await new D1SkillRepository(seeded).list();
+    const services = everything.filter((s) => s.kind === 'service');
     assert.ok(services.length >= 8);
-    for (const s of services) {
+    for (const s of everything) {
       assert.doesNotMatch(s.title + s.description, BANGLA, `English fields of "${s.title}" contain Bangla`);
       assert.match(s.titleBn, BANGLA, `${s.title} has no Bangla title`);
       assert.match(s.descriptionBn, BANGLA, `${s.title} has no Bangla description`);

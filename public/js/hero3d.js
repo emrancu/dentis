@@ -59,7 +59,7 @@ const facing = (dir) => new THREE.Quaternion().setFromUnitVectors(new THREE.Vect
  * The hero scene: a 3D model for each treatment (check-up, whitening, braces, implant) that swaps with `show(i)`.
  * Drag to spin the model; a tap on it calls `onTap`. Returns {show, destroy}, or null if WebGL is unavailable.
  */
-export function startHero(canvas, { onTap = () => {} } = {}) {
+export function startHero(canvas, { onTap = () => {}, onReady = () => {} } = {}) {
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -246,6 +246,7 @@ export function startHero(canvas, { onTap = () => {} } = {}) {
   let bounce = 0;
   let intro = reduced ? 10 : 0;
   let last = performance.now();
+  let painted = false;
   let raf;
 
   const frame = (now) => {
@@ -291,6 +292,10 @@ export function startHero(canvas, { onTap = () => {} } = {}) {
     if (implant.visible) crownMesh.position.y = 1.2 + (0.18 + 0.18 * Math.sin(t * 1.6)) * calm;
 
     renderer.render(scene, camera);
+    if (!painted) {
+      painted = true;
+      onReady(); // the page can now swap the fallback for the canvas
+    }
   };
   raf = requestAnimationFrame(frame);
 

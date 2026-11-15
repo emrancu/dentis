@@ -176,8 +176,10 @@ restartTimer();
 
 import('./hero3d.js')
   .then(({ startHero }) => {
-    hero = startHero($('#stage-canvas'), { onTap: () => { showTreatment(treatment + 1); restartTimer(); } });
-    if (hero) document.body.classList.add('has-3d');
+    hero = startHero($('#stage-canvas'), {
+      onTap: () => { showTreatment(treatment + 1); restartTimer(); },
+      onReady: () => document.body.classList.add('has-3d'), // after the first painted frame, so there is never an empty stage
+    });
   })
   .catch(() => {});
 
@@ -214,6 +216,12 @@ sectionLinks.forEach((_, id) => document.getElementById(id) && spy.observe(docum
 /* ---------- header and reveal on scroll ---------- */
 const header = $('#header');
 const onScroll = () => header.classList.toggle('scrolled', scrollY > 24);
+
+// The header button shows once the big hero button has scrolled away; on phones the floating button yields to it.
+new IntersectionObserver(([entry]) => {
+  header.classList.toggle('show-book', !entry.isIntersecting);
+  document.body.classList.toggle('hero-cta-visible', entry.isIntersecting);
+}).observe($('#book-btn'));
 addEventListener('scroll', onScroll, { passive: true });
 onScroll();
 
