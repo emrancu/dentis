@@ -17,7 +17,7 @@ export const toPatient = (r) => new Patient({ id: r.id, fullName: r.full_name, p
 export const toDoctor = (r) =>
   new Doctor({ id: r.id, nameEn: r.name_en, nameBn: r.name_bn, specialty: r.specialty, specialtyBn: r.specialty_bn, days: JSON.parse(r.days), startTime: r.start_time, endTime: r.end_time, active: Boolean(r.active) });
 
-export const toSkill = (r) => new Skill({ id: r.id, title: r.title, description: r.description, titleBn: r.title_bn, descriptionBn: r.description_bn, content: r.content, kind: r.kind, keywords: r.keywords, enabled: Boolean(r.enabled), updatedAt: r.updated_at });
+export const toSkill = (r) => new Skill({ id: r.id, title: r.title, description: r.description, titleBn: r.title_bn, descriptionBn: r.description_bn, content: r.content, kind: r.kind, keywords: r.keywords, enabled: Boolean(r.enabled), onWebsite: Boolean(r.on_website), updatedAt: r.updated_at });
 
 export const toAppointment = (r) =>
   new Appointment({ id: r.id, patientId: r.patient_id, callId: r.call_id, doctorId: r.doctor_id, slot: r.slot, service: r.service, status: r.status, createdAt: r.created_at });

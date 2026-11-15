@@ -25,21 +25,6 @@ export class FakeGateway {
   }
 }
 
-export class FakeAnalyzer {
-  calls = 0;
-  fail = false;
-  result = {
-    summary: 'The patient asked for a toothache appointment.',
-    english: null,
-    extraction: { patientName: 'Guessed Name', phone: '01898765432', reasonForVisit: 'toothache', preferredDatetime: 'Sunday evening', intent: 'booking' },
-  };
-  async analyze({ turns }) {
-    this.calls++;
-    if (this.fail) throw new Error('analysis down');
-    return { ...this.result, english: this.result.english ?? turns.map((t) => `EN: ${t.textBn}`) };
-  }
-}
-
 /** Wires the real use cases to in-memory ports, seeded with two doctors and three skills. */
 export async function buildWorld({ now = NOW } = {}) {
   let n = 0;
@@ -53,7 +38,6 @@ export async function buildWorld({ now = NOW } = {}) {
     callbacks: new InMemoryCallbacks(),
     recordings: new InMemoryRecordings(),
     gateway: new FakeGateway(),
-    analyzer: new FakeAnalyzer(),
     security: new WebCryptoSecurity({ secret: 'test-secret' }),
     clock: new FixedClock(now),
     accessKey: ACCESS_KEY,

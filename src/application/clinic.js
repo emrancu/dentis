@@ -29,7 +29,7 @@ export class GetPublicSite {
     const [profile, skills, doctors] = await Promise.all([this.clinic.profile(), this.skills.list(), this.doctors.list()]);
     return {
       clinic: profile.toJSON(),
-      skills: skills.filter((s) => s.enabled && s.kind === 'service').map(({ id, title, description, titleBn, descriptionBn }) => ({ id, title, description, title_bn: titleBn, description_bn: descriptionBn })),
+      skills: skills.filter((s) => s.enabled && s.onWebsite && s.kind === 'service').map(({ id, title, description, titleBn, descriptionBn }) => ({ id, title, description, title_bn: titleBn, description_bn: descriptionBn })),
       doctors: doctors.filter((d) => d.active).map(doctorDto),
     };
   }

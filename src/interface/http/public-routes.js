@@ -17,10 +17,9 @@ export function registerPublicRoutes(router, s) {
     return json(await s.toolExecutor.execute(params.name, body.args, body.call_id));
   });
 
-  router.add('POST', '/api/calls/:id/finish', async ({ request, params, waitUntil }) => {
+  router.add('POST', '/api/calls/:id/finish', async ({ request, params }) => {
     const body = await readJson(request);
     const call = await s.finishCall.execute({ callId: params.id, turns: body.turns, reason: body.reason });
-    waitUntil(s.analyzeCall.execute({ callId: call.id }).catch((error) => console.error('analysis failed', error)));
     return json({ status: call.status });
   });
 

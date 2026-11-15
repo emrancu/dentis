@@ -92,13 +92,11 @@ describe('AdminQueries', () => {
 
   it('returns the whole call: extraction, ordered transcript, appointment and callbacks', async () => {
     const callId = await makeCall({ book: true, turns: [turn('agent', 'আসসালামু আলাইকুম'), turn('patient', 'আমি অ্যাপয়েন্টমেন্ট চাই')] });
-    await s.analyzeCall.execute({ callId });
     const d = await s.adminQueries.getCall(callId);
     assert.equal(d.call.status, 'booked');
     assert.equal(d.call.has_recording, false);
-    assert.equal(d.call.summary, 'The patient asked for a toothache appointment.');
     assert.equal(d.extraction.outcome, 'booked');
-    assert.deepEqual(d.turns.map((t) => [t.speaker, t.text_bn, t.text_en]), [['agent', 'আসসালামু আলাইকুম', 'EN: আসসালামু আলাইকুম'], ['patient', 'আমি অ্যাপয়েন্টমেন্ট চাই', 'EN: আমি অ্যাপয়েন্টমেন্ট চাই']]);
+    assert.deepEqual(d.turns.map((t) => [t.speaker, t.text_bn, t.text_en]), [['agent', 'আসসালামু আলাইকুম', null], ['patient', 'আমি অ্যাপয়েন্টমেন্ট চাই', null]]);
     assert.deepEqual([d.appointments[0].slot, d.appointments[0].doctor_name, d.appointments[0].patient_name], ['2026-11-15T11:00', 'Dr. Nusrat Jahan', 'Rahim Uddin']);
     assert.deepEqual(d.callbacks, []);
   });

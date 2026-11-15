@@ -7,7 +7,7 @@ A receptionist that sounds natural in colloquial Bangla, books real appointments
 - A system prompt built for each session from the clinic profile, doctors, skill titles and today's date. Rules: Dhaka Bangla, code-switching, short turns, read back digits, safety.
 - The tools in [agent-tools](../contracts/agent-tools.md).
 - Booking rules: valid Bangladeshi mobile (Bangla digits accepted), a real future date within 60 days, doctor schedule, no double-booking, alternatives on conflict.
-- Post-call analysis: English summary and translation, gap-filling extraction.
+- No post-call analysis: the tools capture the structured data. The transcript is Bangla only.
 - Abuse guard: sessions per IP, call length.
 
 ## Acceptance

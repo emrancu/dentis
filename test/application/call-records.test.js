@@ -171,52 +171,6 @@ describe('FinishCall', () => {
   });
 });
 
-describe('AnalyzeCall', () => {
-  const prepare = async () => {
-    const callId = await startCall(world);
-    await s.finishCall.execute({ callId, turns: [turn('agent', 'আসসালামু আলাইকুম'), turn('patient', 'দাঁতে ব্যথা')], reason: 'hangup' });
-    return callId;
-  };
-
-  it('saves the English translation of each turn and the summary', async () => {
-    const callId = await prepare();
-    await s.analyzeCall.execute({ callId });
-    const turns = await world.ports.calls.getTurns(callId);
-    assert.deepEqual(turns.map((t) => t.textEn), ['EN: আসসালামু আলাইকুম', 'EN: দাঁতে ব্যথা']);
-    assert.equal(turns[1].textBn, 'দাঁতে ব্যথা');
-    assert.equal((await world.ports.calls.findById(callId)).summary, 'The patient asked for a toothache appointment.');
-  });
-
-  it('fills missing fields but never overrides what the tools captured', async () => {
-    const callId = await prepare();
-    await world.ports.calls.mergeExtraction(callId, { patientName: 'Rahim Uddin' });
-    await s.analyzeCall.execute({ callId });
-    const e = await world.ports.calls.getExtraction(callId);
-    assert.equal(e.patientName, 'Rahim Uddin');
-    assert.deepEqual([e.phone, e.reasonForVisit, e.intent], ['01898765432', 'toothache', 'booking']);
-  });
-
-  it('drops a guessed phone number that is not valid', async () => {
-    const callId = await prepare();
-    world.ports.analyzer.result.extraction.phone = '12-34';
-    await s.analyzeCall.execute({ callId });
-    assert.equal((await world.ports.calls.getExtraction(callId)).phone ?? null, null);
-  });
-
-  it('ignores an unknown intent', async () => {
-    const callId = await prepare();
-    world.ports.analyzer.result.extraction.intent = 'dance';
-    await s.analyzeCall.execute({ callId });
-    assert.equal((await world.ports.calls.getExtraction(callId)).intent ?? null, null);
-  });
-
-  it('does nothing for a call with no transcript', async () => {
-    const callId = await startCall(world);
-    await s.analyzeCall.execute({ callId });
-    assert.equal(world.ports.analyzer.calls, 0);
-  });
-});
-
 describe('StoreRecording', () => {
   const body = new Uint8Array([1, 2, 3]).buffer;
 

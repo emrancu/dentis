@@ -32,7 +32,7 @@
 | Topic | Default |
 |---|---|
 | Voice settings | Model `gpt-realtime-mini` (the low-cost model; switch to `gpt-realtime` for higher quality), voice `marin`, caller transcription `gpt-4o-mini-transcribe` with language `bn`, semantic VAD. |
-| Post-call analysis | A small chat model writes an English summary, an English translation of each turn, and fills gaps in the extraction. It never overrides data the tools captured. |
+| Post-call analysis | **Removed.** The tools already capture structured data (name, phone, reason, time, outcome), so no summary, translation or gap-filling call is made. The transcript is stored in Bangla only. |
 | Clinic week | Doctors work Saturday to Thursday by default. Friday is off. Each doctor has their own days and hours. |
 | Booking | Slot length 30 minutes (setting), at least 30 minutes ahead, at most 60 days ahead. |
 | Abuse guard | 10 sessions per IP per hour, calls end at 5 minutes. |

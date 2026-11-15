@@ -105,18 +105,8 @@ describe('public API', () => {
     assert.equal(detail.call.status, 'booked');
     assert.equal(detail.extraction.phone, VALID_PHONE);
     assert.equal(detail.turns.length, 2);
-    assert.equal(detail.turns[0].text_en, 'EN: আসসালামু আলাইকুম');
+    assert.equal(detail.turns[0].text_bn, 'আসসালামু আলাইকুম');
     assert.equal(detail.appointments[0].slot, '2026-11-15T11:00');
-  });
-
-  it('finish starts the analysis in the background and survives its failure', async () => {
-    await request('POST', '/api/session');
-    world.ports.analyzer.fail = true;
-    const res = await request('POST', '/api/calls/call-1/finish', { body: { reason: 'hangup', turns: [{ speaker: 'patient', text: 'hi', ts: '2026-11-14T04:00:01Z' }] } });
-    assert.equal(res.status, 200);
-    assert.equal(waiting.length, 1);
-    await Promise.all(waiting);
-    assert.equal(world.ports.analyzer.calls, 1);
   });
 
   it('finish answers 404 for an unknown call', async () => {
@@ -310,6 +300,15 @@ describe('admin API', () => {
     const site = await (await request('GET', '/api/public/site')).json();
     assert.ok(!site.skills.some((k) => k.title === 'Where to park'));
     assert.equal(site.skills.length, 2);
+  });
+
+  it('on_website false hides a service from the public site but the admin list still returns it', async () => {
+    const res = await request('POST', '/api/admin/skills', { body: { title: 'Normal check-up', description: 'Routine check', kind: 'service', on_website: false }, headers: h });
+    assert.equal((await res.json()).on_website, false);
+    const site = await (await request('GET', '/api/public/site')).json();
+    assert.ok(!site.skills.some((k) => k.title === 'Normal check-up'));
+    const list = await (await request('GET', '/api/admin/skills', { headers: h })).json();
+    assert.equal(list.items.find((k) => k.title === 'Normal check-up').on_website, false);
   });
 
   it('an FAQ added in admin is answered by the agent through get_skill on the next call', async () => {

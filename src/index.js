@@ -3,7 +3,6 @@ import { SystemClock } from './domain/shared/time.js';
 import { D1CallRepository } from './infrastructure/d1/call-repository.js';
 import { D1CallbackRepository, D1SettingsRepository, D1SkillRepository } from './infrastructure/d1/content-repositories.js';
 import { D1AppointmentRepository, D1DoctorRepository, D1PatientRepository } from './infrastructure/d1/scheduling-repositories.js';
-import { OpenAICallAnalyzer } from './infrastructure/openai/call-analyzer.js';
 import { OpenAIRealtimeGateway } from './infrastructure/openai/realtime-gateway.js';
 import { R2RecordingStore } from './infrastructure/r2/r2-recording-store.js';
 import { WebCryptoSecurity } from './infrastructure/security/web-crypto-security.js';
@@ -24,7 +23,6 @@ function buildApp(env) {
       callbacks: new D1CallbackRepository(env.DB),
       recordings: new R2RecordingStore(env.RECORDINGS),
       gateway: new OpenAIRealtimeGateway({ apiKey: env.OPENAI_API_KEY }),
-      analyzer: new OpenAICallAnalyzer({ apiKey: env.OPENAI_API_KEY }),
       security: new WebCryptoSecurity({ secret: accessKey || 'admin-not-configured' }),
       clock: new SystemClock(),
       accessKey,

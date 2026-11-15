@@ -119,6 +119,21 @@ describe('what the website and the agent see', () => {
     assert.deepEqual(site.skills.map((k) => k.title), ['Scaling and polishing', 'Root canal treatment']);
   });
 
+  it('a service hidden from the website is still known to the agent', async () => {
+    await add({ title: 'Normal check-up', onWebsite: false });
+    const site = await s.getPublicSite.execute();
+    assert.ok(!site.skills.some((k) => k.title === 'Normal check-up'));
+    assert.ok((await run('list_skills')).skills.some((k) => k.title === 'Normal check-up'));
+    assert.equal((await run('get_skill', { title: 'Normal check-up' })).skill.title, 'Normal check-up');
+    await startCall(world, '3.3.3.3');
+    assert.match(world.ports.gateway.sessions.at(-1).instructions, /- Normal check-up/);
+  });
+
+  it('a new service is shown on the website by default', async () => {
+    await add({ title: 'Braces' });
+    assert.ok((await s.getPublicSite.execute()).skills.some((k) => k.title === 'Braces'));
+  });
+
   it('the agent still sees FAQs and policies in list_skills and in the prompt', async () => {
     await add({ title: 'Where to park', kind: 'faq' });
     assert.ok((await run('list_skills')).skills.some((k) => k.title === 'Where to park'));

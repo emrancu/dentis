@@ -210,7 +210,6 @@ async function callDetail(view, id) {
         <section class="card"><h2>Captured details</h2><dl class="dl">
           ${field('Name', extraction.patient_name)}${field('Phone', extraction.phone)}${field('Reason for visit', extraction.reason_for_visit)}${field('Preferred time', /^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(extraction.preferred_datetime ?? '') ? formatSlot(extraction.preferred_datetime) : extraction.preferred_datetime)}${field('Intent', extraction.intent)}${field('Outcome', extraction.outcome)}${field('Notes', extraction.notes)}
         </dl></section>
-        ${call.summary ? `<section class="card"><h2>Summary</h2><p style="margin:0">${esc(call.summary)}</p></section>` : ''}
         ${call.has_recording ? `<section class="card"><h2>Recording</h2><audio controls preload="none" src="/api/admin/calls/${encodeURIComponent(call.id)}/recording"></audio></section>` : ''}
         ${appointments.length ? `<section class="card"><h2>Appointment</h2>${appointments.map((a) => `<dl class="dl"><dt>When</dt><dd>${esc(formatSlot(a.slot))}</dd><dt>Doctor</dt><dd>${esc(a.doctor_name)}</dd><dt>Service</dt><dd>${esc(a.service || '–')}</dd><dt>Status</dt><dd>${chip(a.status)}</dd></dl>`).join('<hr>')}</section>` : ''}
         ${callbacks.length ? `<section class="card"><h2>Follow-up requested</h2>${callbacks.map((c) => `<dl class="dl"><dt>Name</dt><dd>${esc(c.name)}</dd><dt>Phone</dt><dd>${esc(c.phone)}</dd><dt>Reason</dt><dd>${esc(c.reason)}</dd><dt>Status</dt><dd>${chip(c.status)}</dd></dl>`).join('<hr>')}</section>` : ''}
@@ -363,7 +362,7 @@ async function skillsView(view) {
       ${[['all', 'All', items.length], ...KINDS.map(([k, , plural]) => [k, plural, items.filter((s) => s.kind === k).length])].map(([k, label, n]) => `<button type="button" class="tab" data-filter="${k}" aria-pressed="${skillFilter === k}">${esc(label)} <span>${n}</span></button>`).join('')}
     </div>
     ${shown.length ? `<div class="skills">${shown.map((s) => `
-      <article class="card skill ${s.enabled ? '' : 'off'}"><div><span class="chip kind-${esc(s.kind)}">${esc(kindLabel(s.kind))}</span>${s.kind === 'service' && s.enabled && !(s.title_bn && s.description_bn) ? ' <span class="chip warn-bn">No Bangla text for the website</span>' : ''}</div><h3>${esc(s.title)}</h3>${s.title_bn ? `<p class="muted bn" style="margin:-4px 0 0">${esc(s.title_bn)}</p>` : ''}<p class="muted" style="margin:0">${esc(s.description)}</p>${s.content ? `<div class="content bn">${esc(s.content)}</div>` : ''}${s.keywords ? `<p class="keywords bn">${esc(s.keywords)}</p>` : ''}
+      <article class="card skill ${s.enabled ? '' : 'off'}"><div><span class="chip kind-${esc(s.kind)}">${esc(kindLabel(s.kind))}</span>${s.kind === 'service' && s.enabled && !s.on_website ? ' <span class="chip">Hidden from website</span>' : ''}${s.kind === 'service' && s.enabled && s.on_website && !(s.title_bn && s.description_bn) ? ' <span class="chip warn-bn">No Bangla text for the website</span>' : ''}</div><h3>${esc(s.title)}</h3>${s.title_bn ? `<p class="muted bn" style="margin:-4px 0 0">${esc(s.title_bn)}</p>` : ''}<p class="muted" style="margin:0">${esc(s.description)}</p>${s.content ? `<div class="content bn">${esc(s.content)}</div>` : ''}${s.keywords ? `<p class="keywords bn">${esc(s.keywords)}</p>` : ''}
         <div class="actions"><label class="switch"><input type="checkbox" data-toggle="${s.id}" ${s.enabled ? 'checked' : ''}> ${s.enabled ? 'Enabled' : 'Disabled'}</label><span style="flex:1"></span><button class="btn btn-small" data-edit="${s.id}">Edit</button><button class="btn btn-small btn-danger" data-del="${s.id}">Delete</button></div>
       </article>`).join('')}</div>` : empty(items.length ? 'Nothing of this type yet.' : 'No entries yet. Add the first one so the agent can answer questions.')}`;
   const byId = new Map(items.map((s) => [String(s.id), s]));
@@ -415,8 +414,9 @@ function skillDialog(skill) {
     <p class="hint">Shown on the website for services. Agent-only entries (FAQ, policy) can leave these empty.</p>
     <label class="field"><span>Details the agent will say: prices, steps, rules</span><textarea name="content" maxlength="4000" class="bn">${esc(skill?.content ?? '')}</textarea></label>
     <label class="field"><span>Keywords: other words callers use, Bangla and English, separated by commas</span><input type="text" name="keywords" value="${esc(skill?.keywords ?? '')}" maxlength="300" class="bn" placeholder="wisdom, দাঁত তোলা, আক্কেল দাঁত"></label>
-    <label class="switch"><input type="checkbox" name="enabled" ${skill?.enabled ?? true ? 'checked' : ''}> Enabled</label>`, (f) => {
-    const body = { title: f.get('title'), description: f.get('description'), title_bn: f.get('title_bn'), description_bn: f.get('description_bn'), content: f.get('content'), kind: f.get('kind'), keywords: f.get('keywords'), enabled: f.get('enabled') === 'on' };
+    <label class="switch"><input type="checkbox" name="enabled" ${skill?.enabled ?? true ? 'checked' : ''}> Enabled: the agent can use it</label>
+    <label class="switch" data-website><input type="checkbox" name="on_website" ${skill?.on_website ?? true ? 'checked' : ''}> Show on the website (services only). Turn off for things like a normal check-up that callers ask about but you do not list.</label>`, (f) => {
+    const body = { title: f.get('title'), description: f.get('description'), title_bn: f.get('title_bn'), description_bn: f.get('description_bn'), content: f.get('content'), kind: f.get('kind'), keywords: f.get('keywords'), enabled: f.get('enabled') === 'on', on_website: f.get('on_website') === 'on' };
     return skill ? api('PUT', `/skills/${skill.id}`, body) : api('POST', '/skills', body);
   });
 }
@@ -504,7 +504,6 @@ function dataView(view) {
         <li><span><strong>Session.</strong> The website asks the server to start a call. A <code>calls</code> row is created and a short-lived key is issued, so the API key never reaches the browser.</span></li>
         <li><span><strong>Tools.</strong> While the caller talks, the agent calls server tools: check slots, book, save details, look up skills. Each one validates input (Bangla digits and BD phone numbers are normalised) and writes to the database.</span></li>
         <li><span><strong>Finish.</strong> At hang-up the browser sends the ordered transcript. The server stores the turns and works out the status from what actually happened.</span></li>
-        <li><span><strong>Analysis.</strong> In the background a model writes an English summary, translates each turn and fills gaps in the extraction. It never overwrites what the tools captured.</span></li>
         <li><span><strong>Recording.</strong> The audio is stored in a private R2 bucket, linked from the call.</span></li>
       </ol></section>
       <section class="card"><h2>Validation</h2><p class="muted" style="margin-top:0">Phone: 11-digit Bangladeshi mobile starting 01 (+880 and Bangla digits accepted). Date: a real calendar day, not in the past, within 60 days. Time: inside the doctor's hours on a slot boundary. Names: 2–80 characters.</p></section>
