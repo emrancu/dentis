@@ -2,6 +2,8 @@
 
 A dental centre website: the hero's main action is **Book an appointment** (booked by voice in Bangla), with a Three.js 3D stage on the right that cycles through four dental treatments (drag to spin) and a floating **Call Dentis** button at the bottom right. A staff portal lives at `/admin`. Built for the StrategyByte AI Engineer task brief (`StrategyByte_AI_Engineer_Task_Brief_14Nov.pdf`).
 
+**Live:** website https://dentis.emrancu1.workers.dev, staff portal https://dentis.emrancu1.workers.dev/admin (reviewer login is in the submission email), code https://github.com/emrancu/dentis
+
 - **Voice:** OpenAI Realtime API over WebRTC, straight from the browser. The Worker only mints a short-lived key.
 - **Backend:** one Cloudflare Worker (vanilla JS), D1 for data. No framework, no build step, no runtime dependencies.
 - **Admin:** access-key login. Staff manage the agent's knowledge ("skills"), doctors and the clinic profile, and read every call.
@@ -37,7 +39,15 @@ Browser ──POST /api/session {intent}──▶ StartCall: new call row, promp
 
 **Agent tools** (see [contract](agentic-hub/contracts/agent-tools.md)): `get_clinic_info`, `list_doctors`, `get_skill`, `check_availability`, `book_appointment`, `reschedule_appointment`, `cancel_appointment`, `save_patient_details`, `request_human_callback`, `get_current_datetime`, `end_call`. Facts such as fees, hours and slots come only from these tools. Editing a skill in `/admin` changes the next call, with no deploy.
 
-**Data model** ([contract](agentic-hub/contracts/data-model.md)): `calls`, `call_extractions`, `transcript_turns`, `patients`, `appointments`, `callbacks`, `skills`, `doctors`, `settings`. Validation lives in the domain: Bangladeshi mobile numbers (Bangla digits and `+880` accepted), real future dates within 60 days, doctor hours, one active booking per doctor and slot (also a unique index). After a call a small model adds an English summary and translation and fills gaps in the extraction. It never overrides what the tools captured.
+**Data model** ([contract](agentic-hub/contracts/data-model.md)): `calls`, `call_extractions`, `transcript_turns`, `patients`, `appointments`, `callbacks`, `skills`, `doctors`, `settings`. Validation lives in the domain: Bangladeshi mobile numbers (Bangla digits and `+880` accepted), real future dates within 60 days, doctor hours, one active booking per doctor and slot (also a unique index). 
+
+**Where the data lives and how it moves**
+- **Storage:** Cloudflare D1 (SQLite), created in the APAC region. The Worker is the only thing that reads or writes it.
+- **No audio is recorded or stored.** Audio goes from the browser straight to OpenAI. Only text is kept.
+- **During the call:** the agent's tools save the name, phone, reason, bookings and callback requests as they are learned (`save_patient_details`, `book_appointment`, `request_human_callback`), so nothing depends on the call ending cleanly.
+- **After the call:** the browser builds the transcript from the Realtime events and posts it to `POST /api/calls/:id/finish`. The server stores the turns with speaker and time and works out the call status (booked, rescheduled, cancelled, enquiry, follow-up needed, incomplete, failed).
+- **Validation:** Bangla or English digits are normalised (`০১৭১…` and `+880 17…` become `01712345678`) before a number is accepted. Dates and times are checked against real calendar days, the booking window and doctor hours.
+- **Transcript language:** turns are stored in the language spoken. The `text_en` column exists for an English translation but is not filled, because there is no translation step yet.
 
 ## Run locally
 
@@ -106,10 +116,10 @@ agentic-hub/         requirements, principles, epics, contracts, task commands
 - The `social image` is a fixed picture. It does not change when the clinic profile does.
 
 
-- **A live voice call was not run end to end.** This build environment had no OpenAI key or microphone. Everything around the call is tested: session creation, tool execution, transcript handling, status derivation, the call panel states. The Realtime endpoint shapes (`/v1/realtime/client_secrets`, `/v1/realtime/calls`, GA event names) follow OpenAI's docs as I know them. **Make one real call first** and watch the browser console if anything differs.
+- **Live calls have been tried, and the prompt was tuned from them** (phone numbers are read back from a server-generated English digit text, and silence is counted from when the caller stops speaking). Everything around the call is also tested: session creation, tool execution, transcript handling, status derivation, the call panel states.
 - **Bangla quality is not measured.** The prompt asks for colloquial Dhaka Bangla, code-switching, digit read-back and safe behaviour. Accent and number recognition depend on the model. Read-back confirmation is the safety net.
-- **Not deployed.** I had no Cloudflare account access. The steps above are tested only against `wrangler dev` with local D1.
-- **Sample calls are invented** (`seed/sample_calls.sql`). Replace them with your own test calls before submitting.
+- **Deployed on the Cloudflare Workers free tier** with D1. The OpenAI key must keep a credit balance for calls to work.
+- **Any sample calls in the portal are invented test data** (`seed/sample_calls.sql`). No real patient data is used.
 - Single shared access key, no per-user audit, no login rate limit in code.
 - Out of scope: phone (PSTN) calls, outbound calls, calendar sync, several clinics, payments. See [decisions](agentic-hub/decisions.md).
 
@@ -118,4 +128,4 @@ agentic-hub/         requirements, principles, epics, contracts, task commands
 1. Landing page, flip through the treatments in the hero, switch to Bangla (20 s).
 2. Press **Book an appointment**, book an appointment by voice, mixing in English words, read the phone number back (90 s).
 3. Open `/admin`, log in, show the call, transcript, captured fields, and the appointment (45 s).
-4. Edit a skill's fee in **Agent skills**, call again and ask for the price (25 s).
+4. Edit an entry's fee in **Agent knowledge**, call again and ask for the price (25 s).
