@@ -106,7 +106,8 @@ describe('knowledge titles in the prompt', () => {
     const t = buildInstructions({ ...base, skills: [skill('Scaling and polishing', { content: 'Fee: 1500 taka SECRET-DETAIL' })] });
     assert.match(t, /- Scaling and polishing/);
     assert.doesNotMatch(t, /SECRET-DETAIL|1500/);
-    assert.match(t, /fetch it with get_skill using the exact title/);
+    assert.match(t, /fetch each one they need with get_skill using the exact title/);
+    assert.match(t, /call get_skill once per topic/);
   });
 
   it('lists every kind of enabled skill, sorted, and skips disabled ones', () => {
