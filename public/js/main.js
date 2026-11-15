@@ -132,11 +132,11 @@ $$('[data-start-booking]').forEach((b) => b.addEventListener('click', () => star
 $('#fab-call').addEventListener('click', () => startCall('general'));
 $$('[data-start-call]').forEach((b) => b.addEventListener('click', () => startCall('general')));
 $$('[data-restart]').forEach((b) => b.addEventListener('click', () => startCall(call.intent)));
-$('[data-close]').addEventListener('click', () => {
+$$('[data-close]').forEach((b) => b.addEventListener('click', () => {
   panel.hidden = true;
   document.body.classList.remove('panel-open');
   $('#fab-call').focus();
-});
+}));
 $('#end-btn').addEventListener('click', () => call.end());
 $('#mute-btn').addEventListener('click', () => {
   const muted = call.toggleMute();
