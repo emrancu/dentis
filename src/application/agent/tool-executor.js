@@ -56,7 +56,7 @@ export class ToolExecutor {
           intent: text(a.intent),
           notes: text(a.notes),
         }),
-      request_human_callback: (a, callId) => requestCallback.execute({ callId, name: a.name, phone: a.phone, reason: a.reason, preferredTime: a.preferred_time }),
+      request_human_callback: (a, callId) => requestCallback.execute({ callId, name: a.name, phone: a.phone, reason: a.reason, preferredTime: a.preferred_time, urgent: a.urgent === true }),
       end_call: async () => ({}),
     };
   }

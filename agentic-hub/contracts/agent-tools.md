@@ -20,7 +20,7 @@ Dates are `YYYY-MM-DD`, times are 24-hour `HH:MM`, clinic-local. Phone numbers m
 | `reschedule_appointment` | `phone`, `new_date`, `new_time`, `old_date?`, `doctor_name?` | `appointment_id, slot, doctor_name_en, doctor_name_bn` | `phone_invalid`, `appointment_not_found`, `appointment_ambiguous` (with `appointments`), `slot_unavailable` and the date and time codes |
 | `cancel_appointment` | `phone`, `date?` | `appointment_id, slot` | `phone_invalid`, `appointment_not_found`, `appointment_ambiguous` |
 | `save_patient_details` | `patient_name?`, `phone?`, `reason?`, `preferred_datetime_text?`, `intent?`, `notes?` | `saved: [field names]` | `phone_invalid`, `name_invalid` |
-| `request_human_callback` | `name`, `phone`, `reason`, `preferred_time?` | `callback_id` | `phone_invalid`, `name_invalid` |
+| `request_human_callback` | `name`, `phone`, `reason` (clear English for staff), `preferred_time?`, `urgent?` (true for emergencies, swelling, bleeding, accidents, an upset caller) | `callback_id` | `phone_invalid`, `name_invalid` |
 | `end_call` | | `ok` only. The browser hangs up after the agent finishes speaking | |
 
 `intent` values: `booking`, `reschedule`, `cancel`, `enquiry`, `callback`, `other`.

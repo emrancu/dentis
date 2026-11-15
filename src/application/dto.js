@@ -42,6 +42,7 @@ export const callbackDto = (c) => ({
   phone: c.phone,
   reason: c.reason,
   preferred_time: c.preferredTime,
+  urgent: c.urgent,
   status: c.status,
   created_at: c.createdAt,
 });

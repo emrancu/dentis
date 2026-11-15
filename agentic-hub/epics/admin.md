@@ -8,7 +8,7 @@ Clinic staff manage what the agent knows and who it can book.
 - Doctors: names (EN and BN), specialty, days, hours, active.
 - Clinic profile: names, phone, address, directions, hours, slot length.
 - Appointments: cancel or mark completed.
-- Follow-ups: list callback requests, mark resolved.
+- Callbacks: the people the agent handed to a human. Open and urgent ones first, a badge on the menu (red when one is urgent), the caller's phone as a tap-to-call link, and Mark as called with a confirmation.
 
 ## Acceptance
 - [ ] Editing a skill, doctor or the profile changes the agent on the next call.

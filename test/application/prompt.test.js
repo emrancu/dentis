@@ -18,6 +18,13 @@ const many = (n) => Array.from({ length: n }, (_, i) => skill(`Topic ${String(i)
 describe('buildInstructions', () => {
   const text = buildInstructions(base);
 
+  it('has a handoff section: collect details, call the tool, then tell the caller a person will phone', () => {
+    assert.match(text, /# When you cannot handle it: pass to a human/);
+    assert.match(text, /Call request_human_callback/);
+    assert.match(text, /Set urgent to true for a pain emergency/);
+    assert.match(text, /Never say a callback was recorded when it was not/);
+  });
+
   it('names the clinic and today in Dhaka, with the weekday', () => {
     assert.match(text, /Dentis Dental Care \(ডেন্টিস ডেন্টাল কেয়ার\)/);
     assert.match(text, /Saturday \(শনিবার\), 2026-11-14, 10:00/);

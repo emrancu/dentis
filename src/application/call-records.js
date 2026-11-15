@@ -79,8 +79,8 @@ export class RequestCallback {
     Object.assign(this, { callbacks, notes, clock });
   }
 
-  async execute({ callId, name, phone, reason, preferredTime }) {
-    const request = CallbackRequest.create({ callId, name, phone, reason, preferredTime, now: this.clock.now() });
+  async execute({ callId, name, phone, reason, preferredTime, urgent }) {
+    const request = CallbackRequest.create({ callId, name, phone, reason, preferredTime, urgent, now: this.clock.now() });
     const saved = await this.callbacks.insert(request);
     await this.notes.record(callId, { intent: 'callback', patientName: request.name, phone: request.phone }, Outcome.CALLBACK);
     return { callback_id: saved.id };

@@ -23,4 +23,4 @@ export const toAppointment = (r) =>
   new Appointment({ id: r.id, patientId: r.patient_id, callId: r.call_id, doctorId: r.doctor_id, slot: r.slot, service: r.service, status: r.status, createdAt: r.created_at });
 
 export const toCallback = (r) =>
-  new CallbackRequest({ id: r.id, callId: r.call_id, name: r.name, phone: r.phone, reason: r.reason, preferredTime: r.preferred_time, status: r.status, createdAt: r.created_at });
+  new CallbackRequest({ id: r.id, callId: r.call_id, name: r.name, phone: r.phone, reason: r.reason, preferredTime: r.preferred_time, urgent: Boolean(r.urgent), status: r.status, createdAt: r.created_at });

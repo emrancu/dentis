@@ -9,6 +9,7 @@ const NAV = [
   ['calls', 'Calls'],
   ['appointments', 'Appointments'],
   ['schedule', 'Schedule'],
+  ['callbacks', 'Callbacks'],
   ['patients', 'Patients'],
   ['agent', 'Agent prompt'],
   ['skills', 'Agent knowledge'],
@@ -92,7 +93,7 @@ async function renderShell() {
     <div class="shell">
       <aside class="side" id="side" aria-label="Sections">
         <a class="brand" href="#/"><img src="/logo-mark.svg" alt="">Dentis</a>
-        ${NAV.map(([key, label]) => `<a class="nav" href="#/${key}" ${key === base ? 'aria-current="page"' : ''}>${esc(label)}</a>`).join('')}
+        ${NAV.map(([key, label]) => `<a class="nav" href="#/${key}" ${key === base ? 'aria-current="page"' : ''}>${esc(label)}${key === 'callbacks' ? '<span class="badge" id="cb-badge" hidden></span>' : ''}</a>`).join('')}
         <span class="spacer"></span>
         <a class="nav" href="/" target="_blank" rel="noopener">View website ↗</a>
         <button class="nav" id="logout" type="button">Log out</button>
@@ -104,6 +105,18 @@ async function renderShell() {
     await api('POST', '/logout').catch(() => {});
     showLogin();
   };
+  refreshCallbackBadge();
+}
+
+/** The number of people waiting for a call, on the menu. Red when any of them is urgent. */
+function refreshCallbackBadge() {
+  api('GET', '/callbacks?status=open').then(({ items }) => {
+    const badge = document.getElementById('cb-badge');
+    if (!badge) return;
+    badge.hidden = items.length === 0;
+    badge.textContent = items.length;
+    badge.classList.toggle('urgent', items.some((c) => c.urgent));
+  }).catch(() => {});
 }
 
 const views = {
@@ -111,6 +124,7 @@ const views = {
   calls: callsView,
   appointments: appointmentsView,
   schedule: scheduleView,
+  callbacks: callbacksView,
   patients: patientsView,
   agent: agentView,
   skills: skillsView,
@@ -144,6 +158,7 @@ async function overview(view) {
       <div class="card stat"><div class="n">${d.by_status.booked ?? 0}</div><div class="l">Calls that booked</div></div>
       <div class="card stat"><div class="n">${esc(formatDuration(d.avg_duration_s))}</div><div class="l">Average call length</div></div>
       <div class="card stat"><div class="n">${d.upcoming_appointments}</div><div class="l">Upcoming appointments</div></div>
+      <a class="card stat" href="#/callbacks"><div class="n">${d.open_callbacks}</div><div class="l">Callbacks waiting</div></a>
     </div>
     <div class="grid two">
       <section class="card"><h2>Calls, last 7 days</h2>
@@ -236,6 +251,45 @@ async function appointmentsView(view) {
     if (!ok) return;
     await api('PATCH', `/appointments/${b.dataset.id}`, { status: b.dataset.act });
     toast(done ? 'Marked as done' : 'Appointment cancelled');
+    route();
+  })));
+}
+
+/* ---------- callbacks: people the agent passed to a human ---------- */
+let callbackFilter = 'open';
+
+async function callbacksView(view) {
+  const { items: all } = await api('GET', '/callbacks');
+  const open = all.filter((c) => c.status === 'open');
+  const items = callbackFilter === 'open' ? open : all;
+  const row = (c) => `<tr class="${c.urgent && c.status === 'open' ? 'cb-urgent' : ''}">
+      <td>${c.urgent ? '<span class="chip urgent">Urgent</span><br>' : ''}${esc(formatDateTime(c.created_at))}</td>
+      <td><strong class="bn">${esc(c.name)}</strong><br><a href="tel:${esc(c.phone)}">${esc(c.phone)}</a></td>
+      <td>${esc(c.reason)}</td>
+      <td>${esc(c.preferred_time || '–')}</td>
+      <td>${chip(c.status)}</td>
+      <td>${c.status === 'open' ? `<button class="btn btn-small btn-primary" data-done="${c.id}">Mark as called</button>` : ''} ${c.call_id ? `<a href="#/calls/${esc(c.call_id)}">Call</a>` : ''}</td></tr>`;
+  view.innerHTML = `${head('Callbacks', 'People the voice agent passed to a human. Call them back, then mark it done.')}
+    <div class="tabs" role="group" aria-label="Filter">
+      ${[['open', 'Waiting', open.length], ['all', 'All', all.length]].map(([k, label, n]) => `<button type="button" class="tab" data-filter="${k}" aria-pressed="${callbackFilter === k}">${label} <span>${n}</span></button>`).join('')}
+    </div>
+    ${items.length
+      ? `<div class="table-wrap"><table><thead><tr><th>Requested</th><th>Caller</th><th>What they need</th><th>Best time</th><th>Status</th><th></th></tr></thead><tbody>${items.map(row).join('')}</tbody></table></div>`
+      : `<div class="table-wrap">${empty('Nobody is waiting for a callback.')}</div>`}`;
+  view.querySelectorAll('[data-filter]').forEach((b) => (b.onclick = () => ((callbackFilter = b.dataset.filter), route())));
+  const byId = new Map(all.map((c) => [String(c.id), c]));
+  view.querySelectorAll('[data-done]').forEach((b) => (b.onclick = guard(async () => {
+    const c = byId.get(b.dataset.done);
+    const ok = await confirmDialog({
+      title: 'Mark as called?',
+      text: `${c.name} (${c.phone}) will be removed from the waiting list. Only do this after you have spoken to them or tried to.`,
+      confirm: 'Mark as called',
+      cancel: 'Not yet',
+    });
+    if (!ok) return;
+    await api('PATCH', `/callbacks/${b.dataset.done}/resolve`);
+    toast('Marked as called');
+    refreshCallbackBadge();
     route();
   })));
 }
@@ -595,11 +649,24 @@ function howItWorksView(view) {
     'Tool calls are authorised only by the call id. Signing them to the session is the next hardening step.',
     'Staying on topic and refusing medical advice come from the prompt, so they are not guaranteed. Latency, cost and Bangla quality of the mini model are not measured.',
   ];
+  // Every path a caller's sentence can take: what triggers it, which tools run, what the agent says, where it ends.
+  const paths = [
+    { tone: 'answer', title: 'A question the clinic can answer', trigger: 'Fees, hours, address, doctors, services, FAQs.', tools: 'get_skill · lookup_skill · get_clinic_info · list_doctors', says: 'Answers from the tool result, in short Bangla. Prices and hours are read, never recalled.', ends: 'Back to "anything else?". No result found: goes to a human.' },
+    { tone: 'book', title: 'Booking, change or cancel', trigger: '"I need an appointment", "move it to Sunday".', tools: 'check_availability → book / reschedule / cancel_appointment, save_patient_details', says: 'Asks one thing at a time, offers only real free slots, reads name, phone and time back.', ends: 'Confirms only after the tool says ok. Slot taken: offers other times.' },
+    { tone: 'human', title: 'It cannot handle it: pass to a human', trigger: 'Emergency, complaint, asks for a person, no answer in the data, or a tool fails.', tools: 'request_human_callback (urgent = true for emergencies)', says: 'Stays calm, asks name, phone and what happened, then says: "the team will call you on this number".', ends: 'The request appears under Callbacks. Staff phone the caller and mark it done.' },
+    { tone: 'off', title: 'Off topic or medical advice', trigger: 'Politics, small talk, "what medicine should I take?", "what is wrong with my tooth?"', tools: 'none', says: 'One polite line: it can only help with the clinic. No diagnosis, no medicine. Offers a booking instead.', ends: 'Returns to dental topics. Keeps the call short.' },
+  ];
+  const pathCard = (p) => `<div class="path path-${p.tone}"><h3>${esc(p.title)}</h3><dl><dt>When</dt><dd>${esc(p.trigger)}</dd><dt>Tools</dt><dd class="mono">${esc(p.tools)}</dd><dt>Agent says</dt><dd>${esc(p.says)}</dd><dt>Ends</dt><dd>${esc(p.ends)}</dd></dl></div>`;
   const list = (rows) => rows.map(([t, d]) => `<div class="eng-row"><strong>${esc(t)}</strong><span>${esc(d)}</span></div>`).join('');
 
   view.innerHTML = `${head('How the agent works', 'A one-page overview for engineering review')}
     <section class="card"><h2>One call, end to end</h2>${svg}
       <p class="muted diagram-note">Solid arrows are requests, dashed arrows are replies. The Worker runs interface, application, domain and infrastructure layers, with dependencies pointing inward.</p>
+    </section>
+    <section class="card" style="margin-top:16px"><h2>How the agent decides</h2>
+      <div class="decide"><span class="decide-start">Caller speaks</span><span class="decide-arrow" aria-hidden="true">↓</span><span class="decide-q">The voice model picks one path. Every fact it says on any path must come from a tool result.</span></div>
+      <div class="paths">${paths.map(pathCard).join('')}</div>
+      <p class="muted diagram-note">Guard rails on every path: the safety and scope rules are locked in code and written last in the prompt. Tool inputs are validated again on the server. If a tool cannot answer, the agent hands over instead of guessing.</p>
     </section>
     <div class="grid two" style="margin-top:16px">
       <section class="card"><h2>Design rules</h2><div class="eng-list">${list(rules)}</div></section>

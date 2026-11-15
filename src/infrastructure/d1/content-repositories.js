@@ -59,8 +59,8 @@ export class D1CallbackRepository {
 
   async insert(c) {
     const { meta } = await this.db
-      .prepare('INSERT INTO callbacks (call_id, name, phone, reason, preferred_time, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
-      .bind(c.callId, c.name, c.phone, c.reason, c.preferredTime, c.status, c.createdAt)
+      .prepare('INSERT INTO callbacks (call_id, name, phone, reason, preferred_time, urgent, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(c.callId, c.name, c.phone, c.reason, c.preferredTime, c.urgent ? 1 : 0, c.status, c.createdAt)
       .run();
     c.id = meta.last_row_id;
     return c;
@@ -76,7 +76,7 @@ export class D1CallbackRepository {
   }
 
   async list(status) {
-    const { results } = await this.db.prepare('SELECT * FROM callbacks WHERE (?1 IS NULL OR status = ?1) ORDER BY created_at DESC LIMIT 200').bind(status ?? null).all();
+    const { results } = await this.db.prepare('SELECT * FROM callbacks WHERE (?1 IS NULL OR status = ?1) ORDER BY (status = \'open\') DESC, urgent DESC, created_at DESC LIMIT 200').bind(status ?? null).all();
     return results.map(toCallback);
   }
 

@@ -100,6 +100,20 @@ describe('ToolExecutor results', () => {
     assert.deepEqual(await run('end_call'), { ok: true });
   });
 
+  it('a handoff stores the callback, marks urgent only when the agent says so, and sets the call outcome', async () => {
+    await run('request_human_callback', { name: 'Karim', phone: VALID_PHONE, reason: 'Swelling after extraction', urgent: true });
+    await run('request_human_callback', { name: 'Rina', phone: VALID_PHONE, reason: 'Wants to talk about fees', urgent: 'yes' });
+    const items = await world.ports.callbacks.list('open');
+    assert.deepEqual(items.map((c) => [c.name, c.urgent]), [['Karim', true], ['Rina', false]]);
+    assert.equal((await world.ports.calls.getExtraction(callId)).outcome, 'callback_needed');
+  });
+
+  it('a handoff without a valid phone or a reason fails clearly so the agent asks again', async () => {
+    const r = await run('request_human_callback', { name: 'Karim', phone: '12', reason: 'x' });
+    assert.deepEqual([r.ok, typeof r.message], [false, 'string']);
+    assert.equal((await world.ports.callbacks.list()).length, 0);
+  });
+
   it('domain failures come back as ok:false with a code, guidance and details, not as exceptions', async () => {
     const bad = await run('book_appointment', { patient_name: 'Rahim', phone: '123', reason: 'x', date: '2026-11-15', time: '10:30' });
     assert.equal(bad.ok, false);

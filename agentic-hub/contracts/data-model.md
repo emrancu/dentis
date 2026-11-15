@@ -12,7 +12,7 @@ Times are ISO 8601 UTC unless named `slot` (clinic-local `YYYY-MM-DDTHH:MM`).
 | `call_extractions` | `call_id` PK FK, `patient_name`, `phone`, `reason_for_visit`, `preferred_datetime`, `intent`, `outcome`, `notes` | Structured fields |
 | `transcript_turns` | `id` PK, `call_id` FK, `idx`, `speaker`, `text_bn`, `text_en`, `ts` | Full transcript |
 | `appointments` | `id` PK, `patient_id` FK, `call_id` FK, `doctor_id` FK, `slot`, `service`, `status`, `created_at` | Bookings |
-| `callbacks` | `id` PK, `call_id` FK, `name`, `phone`, `reason`, `preferred_time`, `status`, `created_at` | Human follow-up requests |
+| `callbacks` | `id` PK, `call_id` FK, `name`, `phone`, `reason`, `preferred_time`, `urgent`, `status`, `created_at` | Human follow-up requests |
 
 ## Rules
 - `calls.status`: `in_progress`, `booked`, `rescheduled`, `cancelled`, `enquiry`, `follow_up_needed`, `incomplete`, `failed`.

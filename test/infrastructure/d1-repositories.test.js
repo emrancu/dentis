@@ -226,6 +226,18 @@ describe('D1 content repositories', () => {
     assert.deepEqual(await settings.all(), { name_en: 'B', phone: '1' });
   });
 
+  it('callbacks: urgent round-trips and lists first among the open ones, resolved last', async () => {
+    const callbacks = new D1CallbackRepository(db);
+    const make = (reason, urgent) => CallbackRequest.create({ callId: null, name: 'Karim', phone: '01712345678', reason, urgent, now });
+    const old = await callbacks.insert(make('resolved one', true));
+    await callbacks.insert(make('calm', false));
+    await callbacks.insert(make('emergency', true));
+    old.resolve();
+    await callbacks.save(old);
+    assert.deepEqual((await callbacks.list()).map((c) => c.reason), ['emergency', 'calm', 'resolved one']);
+    assert.equal((await callbacks.list('open'))[0].urgent, true);
+  });
+
   it('callbacks: insert, filter, resolve, count', async () => {
     const callbacks = new D1CallbackRepository(db);
     const make = (reason) => CallbackRequest.create({ callId: null, name: 'Karim', phone: '01712345678', reason, now });

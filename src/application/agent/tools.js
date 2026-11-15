@@ -51,8 +51,8 @@ export const AGENT_TOOLS = [
   ),
   tool(
     'request_human_callback',
-    'Record a request for a staff member to call back. Use for medical questions, complaints, or anything you cannot answer from the tools.',
-    { name: str('Caller name.'), phone: str(PHONE), reason: str('What the caller needs.'), preferred_time: str('When they want the call.') },
+    'Pass the caller to a human: a staff member will phone them. Use it when you cannot handle the situation yourself (emergency, complaint, medical question, the booking system failing, anything the tools cannot answer, or the caller asks for a person). Collect name, phone and reason first.',
+    { name: str('Caller name.'), phone: str(PHONE), reason: str('What happened and what the caller needs, in one or two clear English sentences for the staff.'), preferred_time: str('When they want the call.'), urgent: { type: 'boolean', description: 'True for pain emergencies, swelling, bleeding, accidents or an upset caller: staff call these first.' } },
     ['name', 'phone', 'reason'],
   ),
   tool('end_call', 'End the call. Call it only after you said goodbye and summarised what was agreed.'),
