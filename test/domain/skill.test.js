@@ -19,20 +19,15 @@ describe('Skill', () => {
   });
 });
 
-describe('Skill kind and keywords', () => {
-  it('defaults to a service with no keywords', () => {
+describe('Skill kind', () => {
+  it('defaults to a service', () => {
     const s = new Skill({ title: 'Whitening', description: 'Brighter' });
-    assert.deepEqual([s.kind, s.keywords], ['service', '']);
+    assert.equal(s.kind, 'service');
   });
 
   it('accepts every kind and rejects others', () => {
     for (const kind of SKILL_KINDS) assert.equal(skill('Title', 'ok', '', true, { kind }).kind, kind);
     assert.throws(() => skill('Title', 'ok', '', true, { kind: 'blog' }), (e) => e.code === 'skill_kind_invalid');
-  });
-
-  it('trims keywords and limits them to 300 characters', () => {
-    assert.equal(skill('Title', 'ok', '', true, { keywords: '  a, b  ' }).keywords, 'a, b');
-    assert.throws(() => skill('Title', 'ok', '', true, { keywords: 'k'.repeat(301) }), (e) => e.code === 'skill_keywords_too_long');
   });
 
   it('compares titles ignoring case and spaces', () => {
@@ -50,7 +45,7 @@ describe('Skill in either language', () => {
 
   it('search finds Bangla text written in the normal fields', () => {
     const list = [
-      new Skill({ title: 'Tooth extraction', description: 'Removal of teeth', keywords: 'দাঁত তোলা' }),
+      new Skill({ title: 'Tooth extraction', description: 'Removal of teeth', content: 'দাঁত তোলা' }),
       new Skill({ title: 'ফিলিং', description: 'গর্ত ভরাট করা' }),
     ];
     assert.equal(rankSkills(list, 'ফিলিং')[0].title, 'ফিলিং');
@@ -83,10 +78,10 @@ describe('titleIndex', () => {
 });
 
 describe('rankSkills', () => {
-  it('finds a skill by its keywords, in Bangla and English', () => {
+  it('finds a skill by its details, in Bangla and English', () => {
     const list = [
-      skill('Tooth extraction', 'Removal of teeth', 'Fee 1000', true, { keywords: 'wisdom, দাঁত তোলা, আক্কেল দাঁত' }),
-      skill('Fillings', 'Cavity repair', 'Fee 1200', true, { keywords: 'ফিলিং, গর্ত' }),
+      skill('Tooth extraction', 'Removal of teeth', 'Fee 1000. wisdom, দাঁত তোলা, আক্কেল দাঁত'),
+      skill('Fillings', 'Cavity repair', 'Fee 1200. ফিলিং, গর্ত'),
     ];
     assert.equal(rankSkills(list, 'আক্কেল দাঁত')[0].title, 'Tooth extraction');
     assert.equal(rankSkills(list, 'গর্ত হয়েছে')[0].title, 'Fillings');
@@ -95,9 +90,9 @@ describe('rankSkills', () => {
 
   it('matches Bangla words that carry an ending: the field has the stem, the caller says the inflected form', () => {
     const list = [
-      skill('Tooth extraction', 'Removal of teeth', '', true, { keywords: 'দাঁত তোলা' }),
-      skill('Treating children', 'Kids', '', true, { keywords: 'শিশু, বাচ্চা' }),
-      skill('Parking', 'Where to park', '', true, { keywords: 'গাড়ি' }),
+      skill('Tooth extraction', 'Removal of teeth', 'দাঁত তোলা'),
+      skill('Treating children', 'Kids', 'শিশু, বাচ্চা'),
+      skill('Parking', 'Where to park', 'গাড়ি'),
     ];
     assert.equal(rankSkills(list, 'তোলার পর')[0].title, 'Tooth extraction');
     assert.equal(rankSkills(list, 'বাচ্চাদের দেখেন')[0].title, 'Treating children');
@@ -105,15 +100,15 @@ describe('rankSkills', () => {
   });
 
   it('does not treat very short field words as stems', () => {
-    const list = [skill('Parking', 'Where to park', '', true, { keywords: 'গা' })];
+    const list = [skill('Parking', 'Where to park', 'গা')];
     assert.deepEqual(rankSkills(list, 'গাড়িতে'), []);
   });
 
-  it('weights a keyword above the description and below the title', () => {
+  it('weights the title above the description and the description above the details', () => {
     const inTitle = skill('Braces', 'x1', '', true);
-    const inKeywords = skill('Alignment', 'x2', '', true, { keywords: 'braces' });
     const inDescription = skill('Orthodontics', 'About braces', '', true);
-    assert.deepEqual(rankSkills([inDescription, inKeywords, inTitle], 'braces').map((s) => s.title), ['Braces', 'Alignment', 'Orthodontics']);
+    const inDetails = skill('Alignment', 'x2', 'We fit braces', true);
+    assert.deepEqual(rankSkills([inDetails, inDescription, inTitle], 'braces').map((s) => s.title), ['Braces', 'Orthodontics', 'Alignment']);
   });
 
   it('ignores filler words that say nothing about the topic', () => {

@@ -256,15 +256,16 @@ describe('admin API', () => {
     assert.equal((await request('GET', '/api/admin/calls/nope', { headers: h })).status, 404);
   });
 
-  it('skills carry a kind and keywords, report the title cap, and refuse duplicate titles', async () => {
-    const created = await request('POST', '/api/admin/skills', { body: { title: 'Where to park', description: 'Parking info', content: 'Behind the building.', kind: 'faq', keywords: 'parking, গাড়ি' }, headers: h });
+  it('skills carry a kind, report the title cap, and refuse duplicate titles', async () => {
+    const created = await request('POST', '/api/admin/skills', { body: { title: 'Where to park', description: 'Parking info', content: 'Behind the building.', kind: 'faq' }, headers: h });
     assert.equal(created.status, 201);
     const skill = await created.json();
-    assert.deepEqual([skill.kind, skill.keywords], ['faq', 'parking, গাড়ি']);
+    assert.equal(skill.kind, 'faq');
+    assert.equal('keywords' in skill, false);
 
     const list = await (await request('GET', '/api/admin/skills', { headers: h })).json();
     assert.equal(list.title_index_cap, 40);
-    assert.ok(list.items.every((i) => ['service', 'faq', 'policy'].includes(i.kind) && typeof i.keywords === 'string'));
+    assert.ok(list.items.every((i) => ['service', 'faq', 'policy'].includes(i.kind)));
 
     const dup = await request('POST', '/api/admin/skills', { body: { title: ' where TO park ', description: 'again' }, headers: h });
     assert.equal(dup.status, 409);

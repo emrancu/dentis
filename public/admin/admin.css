@@ -152,8 +152,6 @@ dialog:has(.prompt-pre) { width: min(760px, calc(100vw - 24px)); }
 .chip.kind-service { background: var(--mint); color: var(--teal-d); }
 .chip.kind-faq { background: var(--info-bg); color: var(--info); }
 .chip.kind-policy { background: var(--warn-bg); color: var(--warn); }
-.keywords { margin: 0; font-size: 12.5px; color: var(--muted); }
-.keywords::before { content: 'Keywords: '; font-weight: 600; }
 @media (max-width: 900px) { textarea[name='instructions'] { min-height: 200px; } }
 .chip.warn-bn { background: var(--warn-bg); color: var(--warn); }
 

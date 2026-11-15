@@ -65,25 +65,15 @@ describe('Bangla text', () => {
   });
 });
 
-describe('lookup_skill with keywords', () => {
-  it('finds a skill by a Bangla keyword that is not in its title or details', async () => {
-    await add({ title: 'Tooth extraction', content: 'Fee: 1000 taka.', keywords: 'wisdom, দাঁত তোলা, আক্কেল দাঁত' });
-    const r = await run('lookup_skill', { query: 'আক্কেল দাঁত ব্যথা করছে' });
-    assert.equal(r.skills[0].title, 'Tooth extraction');
-  });
-});
-
-describe('SkillCatalog kind, keywords and titles', () => {
-  it('stores the kind and keywords, defaulting to a service with none', async () => {
+describe('SkillCatalog kind and titles', () => {
+  it('stores the kind, defaulting to a service', async () => {
     const a = await add({ title: 'Plain skill' });
-    const b = await add({ title: 'Parking', kind: 'faq', keywords: 'park, গাড়ি' });
-    assert.deepEqual([a.kind, a.keywords], ['service', '']);
-    assert.deepEqual([b.kind, b.keywords], ['faq', 'park, গাড়ি']);
+    const b = await add({ title: 'Parking', kind: 'faq' });
+    assert.deepEqual([a.kind, b.kind], ['service', 'faq']);
   });
 
-  it('rejects an unknown kind and over-long keywords', async () => {
+  it('rejects an unknown kind', async () => {
     await assert.rejects(add({ title: 'Bad kind', kind: 'blog' }), code('skill_kind_invalid'));
-    await assert.rejects(add({ title: 'Long words', keywords: 'k'.repeat(301) }), code('skill_keywords_too_long'));
   });
 
   it('refuses a duplicate title, ignoring case, on create and on update', async () => {

@@ -9,16 +9,14 @@ export const TITLE_INDEX_CAP = 40;
  * (a service, a price note, a policy, an FAQ…). The voice agent knows every enabled entry. None of it is shown on the website.
  */
 export class Skill {
-  constructor({ id = null, title, description, content = '', kind = 'service', keywords = '', enabled = true, updatedAt = null }) {
+  constructor({ id = null, title, description, content = '', kind = 'service', enabled = true, updatedAt = null }) {
     const t = String(title ?? '').trim();
     const d = String(description ?? '').trim();
-    const k = String(keywords ?? '').trim();
     if (t.length < 2 || t.length > 80) throw new ValidationError('skill_title_invalid', 'Title must be 2–80 characters.');
     if (d.length < 2 || d.length > 400) throw new ValidationError('skill_description_invalid', 'Description must be 2–400 characters.');
     if (String(content).length > 4000) throw new ValidationError('skill_content_too_long', 'Details must be at most 4000 characters.');
     if (!SKILL_KINDS.includes(kind)) throw new ValidationError('skill_kind_invalid', `Type must be one of: ${SKILL_KINDS.join(', ')}.`);
-    if (k.length > 300) throw new ValidationError('skill_keywords_too_long', 'Keywords must be at most 300 characters.');
-    Object.assign(this, { id, title: t, description: d, content: String(content).trim(), kind, keywords: k, enabled: Boolean(enabled), updatedAt });
+    Object.assign(this, { id, title: t, description: d, content: String(content).trim(), kind, enabled: Boolean(enabled), updatedAt });
   }
 }
 
@@ -50,14 +48,13 @@ export function rankSkills(skills, query, limit = 3) {
   const tokens = tokenize(q);
   if (!tokens.length) return [];
   const scored = skills.filter((s) => s.enabled).map((s) => {
-    const [title, words, desc, body] = [s.title, s.keywords, s.description, s.content].map((f) => {
+    const [title, desc, body] = [s.title, s.description, s.content].map((f) => {
       const text = String(f ?? '').toLowerCase();
       return { text, words: tokenize(text) };
     });
-    let score = (title.text.includes(q) ? 10 : 0) + (words.text.includes(q) ? 8 : 0);
+    let score = (title.text.includes(q) ? 10 : 0);
     for (const t of tokens) {
       if (mentions(title.text, title.words, t)) score += 5;
-      if (mentions(words.text, words.words, t)) score += 4;
       if (mentions(desc.text, desc.words, t)) score += 3;
       if (mentions(body.text, body.words, t)) score += 1;
     }

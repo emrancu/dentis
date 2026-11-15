@@ -44,8 +44,8 @@ Admin routes need the cookie `dentis_admin` (HttpOnly, SameSite=Strict, `Secure`
 | `GET /api/admin/patients` | `q` | `{ items: [{id,full_name,phone,created_at}] }` |
 | `GET /api/admin/callbacks` | `status` | `{ items: [{id,call_id,name,phone,reason,preferred_time,urgent,status,created_at}] }`. Open items first, urgent first, newest first. |
 | `PATCH /api/admin/callbacks/:id/resolve` | | updated item |
-| `GET /api/admin/skills` | | `{ items: [{id,title,description,content,kind,keywords,enabled,updated_at}], title_index_cap }`. `title_index_cap` is how many enabled titles the agent can be shown (40) |
-| `POST /api/admin/skills` | `{ title, description, content?, kind?, keywords?, enabled? }`. Text can be English or Bangla. `kind` is `service` (default), `faq` or `policy`. `keywords` up to 300 characters. 409 `skill_title_taken` when another skill has the same title (case-insensitive) | 201 skill |
+| `GET /api/admin/skills` | | `{ items: [{id,title,description,content,kind,enabled,updated_at}], title_index_cap }`. `title_index_cap` is how many enabled titles the agent can be shown (40) |
+| `POST /api/admin/skills` | `{ title, description, content?, kind?, enabled? }`. Text can be English or Bangla. `kind` is `service` (default), `faq` or `policy`. 409 `skill_title_taken` when another skill has the same title (case-insensitive) | 201 skill |
 | `PUT /api/admin/skills/:id` | same as POST | skill |
 | `DELETE /api/admin/skills/:id` | | 204 |
 | `GET /api/admin/agent` | | `{ instructions, greeting, closing, default_instructions, default_greeting, default_closing }`. `instructions`, `greeting` and `closing` are the text the agent really uses: the saved text, or the default when nothing is saved. `{clinic}` is left in so staff edit the template |

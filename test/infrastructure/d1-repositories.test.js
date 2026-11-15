@@ -270,14 +270,13 @@ describe('bilingual content', () => {
     assert.equal((await doctors.findById(d.id)).specialtyBn, 'ব্রেসেস');
   });
 
-  it('seed: titles and descriptions are English, keywords carry the Bangla words', async () => {
+  it('seed: titles and descriptions are English only', async () => {
     const seeded = createD1({ seed: true });
     const everything = await new D1SkillRepository(seeded).list();
     const services = everything.filter((s) => s.kind === 'service');
     assert.ok(services.length >= 8);
     for (const s of everything) {
       assert.doesNotMatch(s.title + s.description, BANGLA, `English fields of "${s.title}" contain Bangla`);
-      assert.match(s.keywords, BANGLA, `${s.title} has no Bangla keywords`);
     }
     for (const d of await new D1DoctorRepository(seeded).list()) {
       assert.doesNotMatch(d.specialty, BANGLA);
@@ -319,31 +318,28 @@ describe('migrations', () => {
     assert.deepEqual(await counts(), before);
   });
 
-  it('a skill round-trips kind and keywords through the real SQL', async () => {
+  it('a skill round-trips kind through the real SQL', async () => {
     const repo = new D1SkillRepository(createD1());
-    const s = await repo.insert(new Skill({ title: 'Parking', description: 'Parking info', content: 'c', kind: 'faq', keywords: 'park, car', updatedAt: 't' }));
+    const s = await repo.insert(new Skill({ title: 'Parking', description: 'Parking info', content: 'c', kind: 'faq', updatedAt: 't' }));
     assert.equal((await repo.findById(s.id)).kind, 'faq');
     s.kind = 'policy';
-    s.keywords = 'park, গাড়ি';
     await repo.save(s);
     const [back] = await repo.list();
     assert.equal(back.kind, 'policy');
-    assert.equal(back.keywords, 'park, গাড়ি');
   });
 
-  it('the seed gives every skill keywords, with faq and policy entries', async () => {
+  it('the seed has faq and policy entries', async () => {
     const skills = await new D1SkillRepository(createD1({ seed: true })).list();
-    assert.ok(skills.every((s) => s.keywords.length > 0));
     assert.ok(skills.some((s) => s.kind === 'faq'));
     assert.ok(skills.some((s) => s.kind === 'policy'));
     assert.equal(skills.find((s) => s.title === 'Booking and cancellation policy').kind, 'policy');
   });
 
-  it('the knowledge seed and demo seed can be run again without duplicates', async () => {
+  it('the demo seed can be run again without duplicates', async () => {
     const seeded = createD1({ seed: true });
     const count = async () => [(await new D1SkillRepository(seeded).list()).length, (await new D1DoctorRepository(seeded).list()).length];
     const before = await count();
-    for (const f of ['0004_knowledge_seed.sql', '0002_seed.sql']) seeded.exec(readFileSync(new URL(`../../migrations/${f}`, import.meta.url), 'utf8'));
+    seeded.exec(readFileSync(new URL('../../migrations/0002_seed.sql', import.meta.url), 'utf8'));
     assert.deepEqual(await count(), before);
   });
 
