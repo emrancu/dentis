@@ -5,7 +5,7 @@
 - Contracts: none (front end only)
 - PR plan: one for all
 - Branch: `feature/knob-buttons` (stacked on `feature/website-polish`, PR #2)
-- Pull request: none yet
+- Pull request: https://github.com/emrancu/dentis/pull/3
 
 ## Goal
 Every call-to-action button uses one slide-knob style. At rest a knob with a pixel chevron sits at the start of the pill. On hover or keyboard focus the knob slides to the end and the label shifts the other way, in 600ms with `cubic-bezier(.76,0,.24,1)`, animating `transform` only.
@@ -68,4 +68,4 @@ None.
 - The call panel's "Call again" and "Try again" use the small light variant. Mute, end call, close, the language toggle, the menu and the hero tabs were left alone on purpose.
 
 ## Feature pull requests
-- [ ] Pull request opened after the premortem
+- [!] Pull request opened after the premortem: https://github.com/emrancu/dentis/pull/3 (waiting on merge)
