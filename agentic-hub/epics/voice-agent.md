@@ -15,3 +15,4 @@ A receptionist that sounds natural in colloquial Bangla, books real appointments
 - [ ] Every fact the agent states traces to a tool result.
 - [ ] Editing a skill changes the next call without a deploy.
 - Silence: after 15 seconds with no speech the agent asks "হ্যালো, আপনি কি লাইনে আছেন?" once. After 30 seconds it says the closing line and the call ends (reason `idle`, saved as an ordinary incomplete call). A deliberate mute restarts the clock. The times are constants in `public/js/idle.js`.
+- Time limit: a call ends at 5 minutes (300 s). The agent is interrupted, says the closing line and the call hangs up (reason `timeout`); if the line does not play it stops 10 s later. The server also answers every tool call with `call_time_limit` once a call is older than 315 s, so a client that ignores the timer cannot keep booking.

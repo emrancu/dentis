@@ -1,6 +1,9 @@
 import { ConflictError, DomainError, NotFoundError } from '../../domain/shared/errors.js';
+import { MAX_CALL_SECONDS } from '../call-records.js';
 import { WEEKDAYS_BN, WEEKDAYS_EN, dhakaParts } from '../../domain/shared/time.js';
 
+
+const TIME_LIMIT_GRACE_SECONDS = 15;
 
 const text = (v) => (v === undefined || v === null ? undefined : String(v));
 
@@ -11,6 +14,7 @@ const text = (v) => (v === undefined || v === null ? undefined : String(v));
 export class ToolExecutor {
   constructor({ calls, clock, clinic, doctors, knowledge, checkAvailability, bookAppointment, rescheduleAppointment, cancelAppointment, saveCallDetails, requestCallback }) {
     this.calls = calls;
+    this.clock = clock;
     this.handlers = {
       get_current_datetime: async () => {
         const n = dhakaParts(clock.now());
@@ -67,6 +71,10 @@ export class ToolExecutor {
     const call = await this.calls.findById(callId);
     if (!call) throw new NotFoundError('call_not_found', 'Call not found.');
     if (call.isFinished) throw new ConflictError('call_finished', 'This call has ended.');
+    // The browser ends the call at the limit. This is the server's own check, in case a client does not.
+    if ((this.clock.now() - new Date(call.startedAt)) / 1000 > MAX_CALL_SECONDS + TIME_LIMIT_GRACE_SECONDS) {
+      return { ok: false, error: 'call_time_limit', message: 'The call time limit has passed. Say goodbye politely and end the call.' };
+    }
     try {
       return { ok: true, ...(await handler(args && typeof args === 'object' ? args : {}, callId)) };
     } catch (error) {

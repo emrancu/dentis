@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { closingOnlyMessage, nudgeMessage } from '../../public/js/call-messages.js';
+import { closingOnlyMessage, interruptMessages, nudgeMessage } from '../../public/js/call-messages.js';
 import { IDLE, IdleWatch } from '../../public/js/idle.js';
 
 describe('IdleWatch', () => {
@@ -50,5 +50,11 @@ describe('silence messages', () => {
     const m = closingOnlyMessage('ধন্যবাদ।');
     assert.equal(m.type, 'response.create');
     assert.ok(m.response.instructions.includes('ধন্যবাদ।'));
+  });
+});
+
+describe('time limit', () => {
+  it('cuts the agent off before the closing line', () => {
+    assert.deepEqual(interruptMessages().map((m) => m.type), ['response.cancel', 'output_audio_buffer.clear']);
   });
 });

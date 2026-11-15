@@ -596,7 +596,7 @@ function howItWorksView(view) {
   ];
   const trust = [
     ['OpenAI API key', 'Worker secret only. The browser gets an ephemeral client secret (TTL 300 s) scoped to one session.'],
-    ['Session start', 'Public endpoint. Per-IP limit of 10 sessions an hour, IP stored as a hash. Calls are capped at 300 s.'],
+    ['Session start', 'Public endpoint. Per-IP limit of 10 sessions an hour, IP stored as a hash. Calls are capped at 300 s, enforced in the browser and again on the tool endpoint.'],
     ['Tool endpoint', 'Public, keyed by a call id (uuid) that must exist and not be finished. All input is validated in the domain layer; the model is treated as an untrusted caller.'],
     ['Prompt', 'Persona text is editable. Flow, tool rules, safety and the knowledge list are code, appended last, with a line saying they win. Caller speech and tool results are data, never instructions.'],
     ['Admin', 'Access key to an HMAC-signed cookie. Every write needs an X-Requested-With header (CSRF guard).'],
@@ -614,7 +614,7 @@ function howItWorksView(view) {
   const limits = [
     ['Voice model', 'gpt-realtime-mini, voice marin, semantic VAD, near-field noise reduction'],
     ['Caller transcription', 'gpt-4o-mini-transcribe, language bn'],
-    ['Call length', '300 s hard cap (MAX_CALL_SECONDS)'],
+    ['Call length', '300 s (MAX_CALL_SECONDS). At the limit the agent is cut off, says the closing line and the call ends. The server also refuses tools after 315 s, in case a client ignores the timer.'],
     ['Session rate', '10 per IP per hour (MAX_SESSIONS_PER_HOUR)'],
     ['Prompt size', 'Persona up to 4000 chars, greeting and closing 300 each; knowledge titles only, capped at 40 (TITLE_INDEX_CAP)'],
     ['Runtime', 'One Cloudflare Worker, D1 (SQLite). No queues, no cron, no cache layer; reads go straight to D1 each call.'],

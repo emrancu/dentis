@@ -15,6 +15,9 @@ export const nudgeMessage = () => sayExactly('হ্যালো, আপনি �
 /** Speaks the closing line with no tool call to answer (used when the caller went silent). */
 export const closingOnlyMessage = (closing) => sayExactly(closing, 'Do not ask anything and do not add anything.');
 
+/** Stops whatever the agent is saying, so the closing line can be spoken right away. */
+export const interruptMessages = () => [{ type: 'response.cancel' }, { type: 'output_audio_buffer.clear' }];
+
 /** Answers end_call and then speaks the scripted closing line. Send it after the current response is done. */
 export const closingMessages = (callId, closing) => [
   { type: 'conversation.item.create', item: { type: 'function_call_output', call_id: callId, output: JSON.stringify({ ok: true }) } },

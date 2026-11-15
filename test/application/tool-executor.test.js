@@ -130,3 +130,17 @@ describe('ToolExecutor guards', () => {
     await assert.rejects(run('end_call'), (e) => e.code === 'call_finished');
   });
 });
+
+describe('call time limit', () => {
+  it('refuses tools after the call has run past the limit, so a client that ignores the timer cannot keep working', async () => {
+    assert.equal((await run('get_clinic_info')).ok, true);
+    world.clock.set(new Date(world.clock.now().getTime() + (300 + 16) * 1000).toISOString());
+    const r = await run('get_clinic_info');
+    assert.deepEqual([r.ok, r.error], [false, 'call_time_limit']);
+  });
+
+  it('still allows tools inside the grace period', async () => {
+    world.clock.set(new Date(world.clock.now().getTime() + 310 * 1000).toISOString());
+    assert.equal((await run('get_clinic_info')).ok, true);
+  });
+});
