@@ -64,7 +64,8 @@ None.
 | A keyboard user gets no effect | `:focus-visible` triggers the same slide. Covered by a test of the CSS selector, **not by a real Tab key press**. |
 
 ### Spec changes
-- The floating button on phones (≤520px) shows a phone icon in a circle and does not slide, because there is no room. This is the only place the arrow is not used.
+- **Button radius is 4px** (owner request), one token `--btn-radius` used by every public button. With a 4px shell and a 4 or 5px inset the knob radius (radius − inset) clamps to 0, so the knob has square corners and stays concentric with the shell. The admin portal is unchanged.
+- **The floating "Talk to us" button is not a slide-knob button** (owner request): it is a solid teal button with the call icon and the label, no knob and no sliding, 48px high on desktop and a 56px square with only the icon on phones. The arrow is therefore on the other seven buttons only.
 - The call panel's "Call again" and "Try again" use the small light variant. Mute, end call, close, the language toggle, the menu and the hero tabs were left alone on purpose.
 
 ## Feature pull requests
