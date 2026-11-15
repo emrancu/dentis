@@ -68,4 +68,4 @@ None. (The 6% ink light instead of 18% white follows the owner's own rule for li
 - UI polish shipped: shared soft surface with a hairline on the service, step and doctor cards, a gradient accent bar, a soft teal wash behind Services, a larger teal-tinted shadow for the near state. Only the service cards are magnetic.
 
 ## Feature pull requests
-- [ ] Pull request opened after the premortem
+- [!] Pull request opened: https://github.com/emrancu/dentis/pull/4 (waiting on merge)
