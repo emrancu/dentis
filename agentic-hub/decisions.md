@@ -17,6 +17,7 @@
 | Website content | The Services section shows `service` entries only. FAQs are not on the website yet. |
 | Migrations | Numbered files in `migrations/`, applied once and tracked by `wrangler d1 migrations apply`. Demo seeds are also safe to run twice. Optional sample calls live in `seed/`. |
 | Default language | **Bangla.** English is one tap away and remembered. `?lang=` in the link wins over the saved choice. The static HTML is Bangla so there is no flash of English. |
+| Call language | **Bangla only.** The voice agent always speaks Bangla, even if the caller uses English. Only phone numbers are said as English digit words. Transcription is set to Bangla. |
 | Bilingual content | Each display field has a Bangla twin (see the data model). Fields never mix languages. The exception is Agent knowledge (`skills`): it is for the agent only, so it has no Bangla twins and staff write it in English or Bangla. |
 | Display formats | Times 12-hour (`10:00 am`, `সকাল ১০:০০`), Bangla digits in the Bangla page, day ranges (`Sat–Thu`), phone as a `tel:` link. |
 | Voice button naming | The floating button is "Talk to us" / "কথা বলুন". It is a voice call in the browser, not a phone call. The clinic's phone number is a separate `tel:` link. |

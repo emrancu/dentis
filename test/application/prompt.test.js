@@ -34,6 +34,8 @@ describe('buildInstructions', () => {
     assert.match(text, /^You are the virtual receptionist of Dentis Dental Care/);
     assert.match(text, /colloquial Dhaka Bangla/);
     assert.match(text, /Keep common English words in English/);
+    assert.match(text, /Always speak Bangla/);
+    assert.doesNotMatch(text, /continue in English/);
     assert.match(text, /Say phone numbers in English only, using the phone_spoken text/);
   });
 
