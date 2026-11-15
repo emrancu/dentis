@@ -5,13 +5,16 @@ import { DatabaseSync } from 'node:sqlite';
  * A Cloudflare D1 look-alike on node:sqlite, so the real migrations and the real SQL of the
  * D1 repositories run in tests. Implements only what the repositories use.
  */
+/** Migrations that only change the schema. The others add demo data. */
+const SCHEMA_ONLY = ['0001_init.sql', '0003_skill_kind_keywords.sql', '0005_bilingual_columns.sql'];
+
 export function createD1({ seed = false } = {}) {
   const db = new DatabaseSync(':memory:');
   db.exec('PRAGMA foreign_keys = ON');
-  // seed:false = schema only (0001, 0003). seed:true = every migration in order.
+  // seed:false = schema only (the files below). seed:true = every migration in order.
   const files = readdirSync(new URL('../../migrations/', import.meta.url)).filter((f) => f.endsWith('.sql')).sort();
   for (const f of files) {
-    if (!seed && !['0001_init.sql', '0003_skill_kind_keywords.sql'].includes(f)) continue;
+    if (!seed && !SCHEMA_ONLY.includes(f)) continue;
     db.exec(readFileSync(new URL(`../../migrations/${f}`, import.meta.url), 'utf8'));
   }
 

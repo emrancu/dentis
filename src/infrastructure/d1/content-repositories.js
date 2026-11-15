@@ -17,8 +17,8 @@ export class D1SkillRepository {
 
   async insert(s) {
     const { meta } = await this.db
-      .prepare('INSERT INTO skills (title, description, content, kind, keywords, enabled, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
-      .bind(s.title, s.description, s.content, s.kind, s.keywords, s.enabled ? 1 : 0, s.updatedAt)
+      .prepare('INSERT INTO skills (title, description, title_bn, description_bn, content, kind, keywords, enabled, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(s.title, s.description, s.titleBn, s.descriptionBn, s.content, s.kind, s.keywords, s.enabled ? 1 : 0, s.updatedAt)
       .run();
     s.id = meta.last_row_id;
     return s;
@@ -26,8 +26,8 @@ export class D1SkillRepository {
 
   async save(s) {
     await this.db
-      .prepare('UPDATE skills SET title = ?, description = ?, content = ?, kind = ?, keywords = ?, enabled = ?, updated_at = ? WHERE id = ?')
-      .bind(s.title, s.description, s.content, s.kind, s.keywords, s.enabled ? 1 : 0, s.updatedAt, s.id)
+      .prepare('UPDATE skills SET title = ?, description = ?, title_bn = ?, description_bn = ?, content = ?, kind = ?, keywords = ?, enabled = ?, updated_at = ? WHERE id = ?')
+      .bind(s.title, s.description, s.titleBn, s.descriptionBn, s.content, s.kind, s.keywords, s.enabled ? 1 : 0, s.updatedAt, s.id)
       .run();
   }
 

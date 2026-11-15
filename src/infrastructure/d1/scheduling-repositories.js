@@ -109,8 +109,8 @@ export class D1DoctorRepository {
 
   async insert(d) {
     const { meta } = await this.db
-      .prepare('INSERT INTO doctors (name_en, name_bn, specialty, days, start_time, end_time, active) VALUES (?, ?, ?, ?, ?, ?, ?)')
-      .bind(d.nameEn, d.nameBn, d.specialty, JSON.stringify(d.days), d.startTime, d.endTime, d.active ? 1 : 0)
+      .prepare('INSERT INTO doctors (name_en, name_bn, specialty, specialty_bn, days, start_time, end_time, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(d.nameEn, d.nameBn, d.specialty, d.specialtyBn, JSON.stringify(d.days), d.startTime, d.endTime, d.active ? 1 : 0)
       .run();
     d.id = meta.last_row_id;
     return d;
@@ -118,8 +118,8 @@ export class D1DoctorRepository {
 
   async save(d) {
     await this.db
-      .prepare('UPDATE doctors SET name_en = ?, name_bn = ?, specialty = ?, days = ?, start_time = ?, end_time = ?, active = ? WHERE id = ?')
-      .bind(d.nameEn, d.nameBn, d.specialty, JSON.stringify(d.days), d.startTime, d.endTime, d.active ? 1 : 0, d.id)
+      .prepare('UPDATE doctors SET name_en = ?, name_bn = ?, specialty = ?, specialty_bn = ?, days = ?, start_time = ?, end_time = ?, active = ? WHERE id = ?')
+      .bind(d.nameEn, d.nameBn, d.specialty, d.specialtyBn, JSON.stringify(d.days), d.startTime, d.endTime, d.active ? 1 : 0, d.id)
       .run();
   }
 

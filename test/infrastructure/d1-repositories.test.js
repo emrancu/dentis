@@ -242,6 +242,59 @@ describe('D1 content repositories', () => {
   });
 });
 
+describe('bilingual content', () => {
+  const BANGLA = /[\u0980-\u09FF]/;
+  const LATIN_WORD = /[A-Za-z]{3,}/;
+
+  it('a skill and a doctor round-trip their Bangla fields through the real SQL', async () => {
+    const db2 = createD1();
+    const skills = new D1SkillRepository(db2);
+    const s = await skills.insert(new Skill({ title: 'Whitening', description: 'Brighter', titleBn: 'দাঁত সাদা করা', descriptionBn: 'উজ্জ্বল হাসি', updatedAt: now.toISOString() }));
+    s.titleBn = 'সাদা করা';
+    await skills.save(s);
+    const [loaded] = await skills.list();
+    assert.deepEqual([loaded.titleBn, loaded.descriptionBn], ['সাদা করা', 'উজ্জ্বল হাসি']);
+    const doctors = new D1DoctorRepository(db2);
+    const d = await doctors.insert(new Doctor({ nameEn: 'Dr. Nusrat', specialty: 'Braces', specialtyBn: 'ব্রেসেস' }));
+    assert.equal((await doctors.findById(d.id)).specialtyBn, 'ব্রেসেস');
+  });
+
+  it('seed: English fields are English only and Bangla fields are Bangla only, so no string mixes languages', async () => {
+    const seeded = createD1({ seed: true });
+    const services = (await new D1SkillRepository(seeded).list()).filter((s) => s.kind === 'service');
+    assert.ok(services.length >= 8);
+    for (const s of services) {
+      assert.doesNotMatch(s.title + s.description, BANGLA, `English fields of "${s.title}" contain Bangla`);
+      assert.match(s.titleBn, BANGLA, `${s.title} has no Bangla title`);
+      assert.match(s.descriptionBn, BANGLA, `${s.title} has no Bangla description`);
+      assert.doesNotMatch(s.titleBn + s.descriptionBn, LATIN_WORD, `Bangla fields of "${s.title}" contain English words`);
+    }
+    for (const d of await new D1DoctorRepository(seeded).list()) {
+      assert.doesNotMatch(d.specialty, BANGLA);
+      assert.match(d.specialtyBn, BANGLA);
+      assert.doesNotMatch(d.specialtyBn, LATIN_WORD);
+    }
+    const p = ClinicProfile.fromMap(await new D1SettingsRepository(seeded).all());
+    for (const f of ['address', 'hours', 'directions', 'prepNotes']) {
+      assert.doesNotMatch(p[f], BANGLA, `${f} contains Bangla`);
+      assert.match(p[`${f}Bn`], BANGLA, `${f}Bn is not Bangla`);
+      assert.doesNotMatch(p[`${f}Bn`], LATIN_WORD, `${f}Bn contains English words`);
+    }
+  });
+
+  it('seed: the clinic offers implants, because the hero shows them', async () => {
+    const titles = (await new D1SkillRepository(createD1({ seed: true })).list()).map((s) => s.title);
+    assert.ok(titles.includes('Dental implants'));
+  });
+
+  it('seed: hours use one time style in both languages', async () => {
+    const p = ClinicProfile.fromMap(await new D1SettingsRepository(createD1({ seed: true })).all());
+    assert.match(p.hours, /10:00 am to 8:00 pm/);
+    assert.doesNotMatch(p.hours, /AM|PM|\b\d{1,2}(am|pm)\b/);
+    assert.match(p.hoursBn, /সকাল ১০:০০.*রাত ৮:০০/);
+  });
+});
+
 describe('migrations', () => {
   it('the demo seed can be run again without duplicating doctors, skills or settings', async () => {
     const seeded = createD1({ seed: true });

@@ -42,6 +42,27 @@ describe('Skill kind and keywords', () => {
   });
 });
 
+describe('Skill Bangla fields', () => {
+  it('defaults to empty Bangla title and description, trims them, and limits their length', () => {
+    const s = new Skill({ title: 'Whitening', description: 'Brighter' });
+    assert.deepEqual([s.titleBn, s.descriptionBn], ['', '']);
+    const b = new Skill({ title: 'Whitening', description: 'Brighter', titleBn: '  দাঁত সাদা করা ', descriptionBn: ' উজ্জ্বল হাসি ' });
+    assert.deepEqual([b.titleBn, b.descriptionBn], ['দাঁত সাদা করা', 'উজ্জ্বল হাসি']);
+    assert.throws(() => new Skill({ title: 'Whitening', description: 'Brighter', titleBn: 'ক'.repeat(81) }), (e) => e.code === 'skill_title_bn_too_long');
+    assert.throws(() => new Skill({ title: 'Whitening', description: 'Brighter', descriptionBn: 'ক'.repeat(401) }), (e) => e.code === 'skill_description_bn_too_long');
+  });
+
+  it('search matches the Bangla title and description too', () => {
+    const list = [
+      new Skill({ title: 'Tooth extraction', description: 'Removal of teeth', titleBn: 'দাঁত তোলা', descriptionBn: 'ক্ষতিগ্রস্ত দাঁত অপসারণ' }),
+      new Skill({ title: 'Fillings', description: 'Cavity repair', titleBn: 'ফিলিং', descriptionBn: 'গর্ত ভরাট করা' }),
+    ];
+    assert.equal(rankSkills(list, 'ফিলিং')[0].title, 'Fillings');
+    assert.equal(rankSkills(list, 'অপসারণ')[0].title, 'Tooth extraction');
+    assert.equal(rankSkills(list, 'দাঁত তোলা')[0].title, 'Tooth extraction');
+  });
+});
+
 describe('titleIndex', () => {
   const many = (n, enabled = true) => Array.from({ length: n }, (_, i) => skill(`Skill ${String(i).padStart(3, '0')}`, 'ok', '', enabled));
 
