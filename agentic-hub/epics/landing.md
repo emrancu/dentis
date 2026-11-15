@@ -12,7 +12,14 @@ A visitor sees a dental centre, understands in five seconds that they can book a
 - Bangla and English toggle, remembered.
 - Dentis SVG logo and favicon.
 
+- **Complete in both languages:** every field has a Bangla and an English text, with one time, digit and day-range style per language. Bangla is the default and `?lang=` selects a language in a link.
+- **Hero:** four treatment cards that use the same names as the Services section, a first frame before the fallback tooth hides, and nothing loaded from another host.
+- **SEO:** Open Graph and Twitter tags with an image, `Dentist` JSON-LD, `hreflang`.
+
 ## Acceptance
+- [ ] No visible string or clinic field mixes Bangla and English, in either language.
+- [ ] Tap targets are at least 44px and nothing overlaps at 360, 768 and 1440 px.
+- [ ] The page makes no request to a host other than itself.
 - [ ] No horizontal scroll at 360px. The Book an appointment button is visible without scrolling on a phone, and the floating call button is reachable everywhere.
 - [ ] Contrast meets WCAG AA. All controls work by keyboard.
 - [ ] A skill changed in admin shows in Services on reload.

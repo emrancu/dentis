@@ -50,12 +50,12 @@ None.
 
 ## Subtasks
 
-- [ ] 1. Hub: contracts, decisions, principles, epic
+- [x] 1. Hub: contracts, decisions, principles, epic
   - parallel: no
   - what: bilingual fields and format policy in the contracts and decisions; new principles; landing epic
   - files: `agentic-hub/**`
   - done when: every field, route and rule in this spec is in a contract
-- [ ] 2. Bilingual data in domain, migration and repositories
+- [~] 2. Bilingual data in domain, migration and repositories
   - parallel: no (after 1)
   - what: Bangla twin fields, migration `0005`, ranking uses Bangla titles, D1 repositories
   - files: `src/domain/**`, `migrations/0005_*.sql`, `src/infrastructure/d1/*`, `test/domain`, `test/infrastructure`, `test/support`
