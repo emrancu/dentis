@@ -8,7 +8,7 @@ function knowledgeSection(skills) {
   const { overCap, titles } = titleIndex(skills);
   if (overCap) return 'There are too many topics to list here. Use lookup_skill with the caller\'s own words (Bangla or English).';
   if (!titles.length) return '(none yet) Use lookup_skill if the caller asks about a service, fee or policy.';
-  return `${titles.map((t) => `- ${t}`).join('\n')}\n\nWhen the caller asks about these topics, fetch each one they need with get_skill using the exact title. A question can need several, for example a service and the booking policy, so call get_skill once per topic. If none fits, use lookup_skill with the caller's words.`;
+  return `${titles.map((t) => `- ${t}`).join('\n')}\n\nDecide from these titles which topics the question needs. Often it is one, sometimes two to four. Fetch only those, with get_skill using the exact title, once per topic. If none fits, use lookup_skill with the caller's words.`;
 }
 
 /**
