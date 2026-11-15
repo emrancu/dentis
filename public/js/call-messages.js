@@ -9,6 +9,12 @@ const sayExactly = (text, extra) => ({
 /** The scripted greeting, spoken as soon as the data channel opens. */
 export const greetingMessage = (greeting) => sayExactly(greeting, 'Then wait for the caller.');
 
+/** The "are you there?" prompt after the caller has been silent for a while. */
+export const nudgeMessage = () => sayExactly('হ্যালো, আপনি কি লাইনে আছেন?', 'Then wait for the caller.');
+
+/** Speaks the closing line with no tool call to answer (used when the caller went silent). */
+export const closingOnlyMessage = (closing) => sayExactly(closing, 'Do not ask anything and do not add anything.');
+
 /** Answers end_call and then speaks the scripted closing line. Send it after the current response is done. */
 export const closingMessages = (callId, closing) => [
   { type: 'conversation.item.create', item: { type: 'function_call_output', call_id: callId, output: JSON.stringify({ ok: true }) } },

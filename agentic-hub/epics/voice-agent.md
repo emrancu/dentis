@@ -14,3 +14,4 @@ A receptionist that sounds natural in colloquial Bangla, books real appointments
 - [ ] A Bangla caller books an appointment end to end.
 - [ ] Every fact the agent states traces to a tool result.
 - [ ] Editing a skill changes the next call without a deploy.
+- Silence: after 15 seconds with no speech the agent asks "হ্যালো, আপনি কি লাইনে আছেন?" once. After 30 seconds it says the closing line and the call ends (reason `idle`, saved as an ordinary incomplete call). A deliberate mute restarts the clock. The times are constants in `public/js/idle.js`.

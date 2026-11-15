@@ -1,4 +1,5 @@
-import { closingMessages, errorKindOf, greetingMessage, toolCallFrom, toolOutputMessages } from './call-messages.js';
+import { closingMessages, closingOnlyMessage, errorKindOf, greetingMessage, nudgeMessage, toolCallFrom, toolOutputMessages } from './call-messages.js';
+import { IdleWatch } from './idle.js';
 import { TranscriptBuilder } from './transcript.js';
 
 const REALTIME_CALLS_URL = 'https://api.openai.com/v1/realtime/calls';
@@ -37,6 +38,7 @@ export class BanglaCall extends EventTarget {
   #closingCallId = null;
   #closingSent = false;
   #closingHeard = false;
+  #idle = null;
 
   /** Voice activity of both sides, 0..1, for the waveform. */
   levels() {
@@ -119,6 +121,7 @@ export class BanglaCall extends EventTarget {
     dc.onmessage = (e) => this.#onMessage(e.data);
     dc.onopen = () => {
       this.#startedAt = Date.now();
+      this.#idle = new IdleWatch(Date.now());
       this.#timer = setInterval(() => this.#tick(), 1000);
       this.#set('live');
       if (this.#greeting) this.#send(greetingMessage(this.#greeting));
@@ -163,7 +166,10 @@ export class BanglaCall extends EventTarget {
   #tick() {
     const seconds = Math.floor((Date.now() - this.#startedAt) / 1000);
     this.dispatchEvent(new CustomEvent('tick', { detail: { seconds } }));
-    if (seconds >= this.#maxSeconds) this.#finish('timeout');
+    if (seconds >= this.#maxSeconds) return this.#finish('timeout');
+    const idle = this.#idle?.check(Date.now());
+    if (idle === 'nudge') this.#send(nudgeMessage());
+    if (idle === 'hangup') this.#hangUpSilent();
   }
 
   #onMessage(data) {
@@ -179,6 +185,8 @@ export class BanglaCall extends EventTarget {
       this.#closingSent = true;
       closingMessages(this.#closingCallId, this.#closing).forEach((m) => this.#send(m));
     }
+    if (event.type === 'input_audio_buffer.speech_started') this.#idle?.callerSpoke(Date.now());
+    if (event.type === 'output_audio_buffer.stopped' && !this.#closingSent) this.#idle?.agentFinished(Date.now());
     if (event.type === 'output_audio_buffer.started' && this.#closingSent) this.#closingHeard = true;
     if (event.type === 'output_audio_buffer.stopped' && this.#closingHeard) {
       clearTimeout(this.#endTimer);
@@ -210,8 +218,19 @@ export class BanglaCall extends EventTarget {
     toolOutputMessages(callId, result).forEach((m) => this.#send(m));
   }
 
+  /** The caller said nothing for too long: say the closing line, then hang up. */
+  #hangUpSilent() {
+    if (this.#closingSent || this.#finishing) return;
+    this.#closingSent = true;
+    this.#idle = null;
+    this.#endTimer = setTimeout(() => this.#finish('idle'), END_FALLBACK_MS);
+    if (this.#closing) this.#send(closingOnlyMessage(this.#closing));
+    else this.#finish('idle');
+  }
+
   toggleMute() {
     this.muted = !this.muted;
+    this.#idle?.callerSpoke(Date.now()); // a deliberate mute is not silence to be cut off
     this.#mic?.getAudioTracks().forEach((t) => (t.enabled = !this.muted));
     return this.muted;
   }
@@ -287,6 +306,7 @@ export class BanglaCall extends EventTarget {
     this.#closingCallId = null;
     this.#closingSent = false;
     this.#closingHeard = false;
+    this.#idle = null;
     this.#finishing = false;
     this.#transcript = new TranscriptBuilder();
     this.#analysers = {};
