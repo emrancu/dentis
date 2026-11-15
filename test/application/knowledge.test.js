@@ -20,7 +20,7 @@ describe('get_skill', () => {
   it('returns the full details for an exact title, ignoring case and extra spaces', async () => {
     const r = await run('get_skill', { title: '  root CANAL treatment ' });
     assert.equal(r.ok, true);
-    assert.deepEqual(r.skill, { title: 'Root canal treatment', description: 'Saves an infected tooth.', content: 'Fee: 6000 to 12000 taka.' });
+    assert.deepEqual(r.skill, { title: 'Root canal treatment', description: 'Saves an infected tooth.', title_bn: '', description_bn: '', content: 'Fee: 6000 to 12000 taka.' });
   });
 
   it('fails with a code and guidance for an unknown title', async () => {
@@ -44,6 +44,32 @@ describe('get_skill', () => {
   it('shows an edit made in admin on the very next call', async () => {
     await s.skillCatalog.update(1, { title: 'Scaling and polishing', description: 'Cleaning', content: 'Fee: 1800 taka.' });
     assert.equal((await run('get_skill', { title: 'Scaling and polishing' })).skill.content, 'Fee: 1800 taka.');
+  });
+});
+
+describe('Bangla display fields', () => {
+  it('get_skill and lookup_skill return the Bangla title and description for the agent to use', async () => {
+    await s.skillCatalog.update(1, { title: 'Scaling and polishing', description: 'Cleaning', titleBn: 'স্কেলিং ও পলিশিং', descriptionBn: 'দাঁত পরিষ্কার', content: 'Fee: 1500 taka.' });
+    const got = (await run('get_skill', { title: 'Scaling and polishing' })).skill;
+    assert.deepEqual([got.title_bn, got.description_bn], ['স্কেলিং ও পলিশিং', 'দাঁত পরিষ্কার']);
+    const found = (await run('lookup_skill', { query: 'স্কেলিং' })).skills[0];
+    assert.equal(found.title, 'Scaling and polishing');
+    assert.equal(found.title_bn, 'স্কেলিং ও পলিশিং');
+  });
+
+  it('the public site carries both languages for services, with empty strings when a Bangla text is missing', async () => {
+    await s.skillCatalog.update(1, { title: 'Scaling and polishing', description: 'Cleaning', titleBn: 'স্কেলিং ও পলিশিং', descriptionBn: 'দাঁত পরিষ্কার' });
+    const site = await s.getPublicSite.execute();
+    assert.deepEqual(site.skills[0], { id: 1, title: 'Scaling and polishing', description: 'Cleaning', title_bn: 'স্কেলিং ও পলিশিং', description_bn: 'দাঁত পরিষ্কার' });
+    assert.deepEqual([site.skills[1].title_bn, site.skills[1].description_bn], ['', '']);
+  });
+
+  it('the public site carries the Bangla specialty of doctors and the Bangla clinic fields', async () => {
+    await s.doctorDirectory.update(1, { nameEn: 'Dr. Nusrat Jahan', nameBn: 'ডা. নুসরাত জাহান', specialty: 'General', specialtyBn: 'সাধারণ সেবা', days: [6], startTime: '10:00', endTime: '17:00' });
+    await s.clinic.update({ address_bn: 'ধানমন্ডি', hours_bn: 'শনি–বৃহ' });
+    const site = await s.getPublicSite.execute();
+    assert.equal(site.doctors[0].specialty_bn, 'সাধারণ সেবা');
+    assert.deepEqual([site.clinic.address_bn, site.clinic.hours_bn], ['ধানমন্ডি', 'শনি–বৃহ']);
   });
 });
 

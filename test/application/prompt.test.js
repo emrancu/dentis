@@ -51,6 +51,12 @@ describe('buildInstructions', () => {
     assert.doesNotMatch(buildInstructions(base), /pressed "Book an appointment"/);
   });
 
+  it('gives the Bangla hours too when there are some', () => {
+    const t = buildInstructions({ ...base, profile: new ClinicProfile({ nameEn: 'Dentis Dental Care', hours: 'Sat-Thu 10-8', hoursBn: 'শনি–বৃহ ১০–৮' }) });
+    assert.match(t, /Hours: Sat-Thu 10-8\nHours in Bangla: শনি–বৃহ ১০–৮/);
+    assert.doesNotMatch(buildInstructions(base), /Hours in Bangla/);
+  });
+
   it('copes with no doctors', () => {
     assert.match(buildInstructions({ ...base, doctors: [] }), /none listed: use list_doctors/);
   });

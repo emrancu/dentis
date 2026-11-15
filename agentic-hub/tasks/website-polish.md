@@ -60,17 +60,17 @@ None.
   - what: Bangla twin fields, migration `0005`, ranking uses Bangla titles, D1 repositories
   - files: `src/domain/**`, `migrations/0005_*.sql`, `src/infrastructure/d1/*`, `test/domain`, `test/infrastructure`, `test/support`
   - done when: the real SQL round-trips every new field and the retrieval eval still passes
-- [~] 3. Bilingual data in application and HTTP
+- [x] 3. Bilingual data in application and HTTP
   - parallel: no (after 2)
   - what: catalog, directory, clinic profile and public site carry the Bangla fields; agent tools return them
   - files: `src/application/**`, `src/interface/**`, `test/application`, `test/interface`
   - done when: tests prove save, read, fallback and the public payload
-- [ ] 4. Admin UI for the Bangla fields
+- [~] 4. Admin UI for the Bangla fields
   - parallel: yes (after 3)
   - what: Bangla inputs in the skill, doctor and clinic forms, a "no Bangla" marker on service cards
   - files: `public/admin/**`
   - done when: a screenshot check at desktop and phone width shows the forms and the marker
-- [ ] 5. Site copy, formats and labels
+- [~] 5. Site copy, formats and labels
   - parallel: yes (after 3)
   - what: new copy in both languages, format helpers, render by language, tel link, talk button, consent line
   - files: `public/index.html`, `public/js/i18n.js`, `public/js/util.js`, `public/js/main.js`, `test/frontend`

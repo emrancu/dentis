@@ -5,8 +5,8 @@ import { json, noContent, readJson } from './router.js';
 
 export const COOKIE = 'dentis_admin';
 
-const doctorInput = (b) => ({ nameEn: b.name_en, nameBn: b.name_bn, specialty: b.specialty, days: b.days, startTime: b.start_time, endTime: b.end_time, active: b.active });
-const skillInput = (b) => ({ title: b.title, description: b.description, content: b.content, kind: b.kind, keywords: b.keywords, enabled: b.enabled });
+const doctorInput = (b) => ({ nameEn: b.name_en, nameBn: b.name_bn, specialty: b.specialty, specialtyBn: b.specialty_bn, days: b.days, startTime: b.start_time, endTime: b.end_time, active: b.active });
+const skillInput = (b) => ({ title: b.title, description: b.description, titleBn: b.title_bn, descriptionBn: b.description_bn, content: b.content, kind: b.kind, keywords: b.keywords, enabled: b.enabled });
 const promptInput = (b) => ({ instructions: b.instructions, greeting: b.greeting });
 const id = (params) => Number(params.id);
 

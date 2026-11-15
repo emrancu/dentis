@@ -384,4 +384,26 @@ describe('admin agent prompt', () => {
     assert.equal(res.status, 401);
     assert.equal((await res.json()).error.code, 'csrf_rejected');
   });
+
+  it('Bangla fields round-trip through skills, doctors and settings, and reach the public site', async () => {
+    const skill = await (await request('POST', '/api/admin/skills', { body: { title: 'Implants', description: 'Replacement for a missing tooth', title_bn: 'ইমপ্ল্যান্ট', description_bn: 'হারানো দাঁতের বিকল্প', kind: 'service' }, headers: h })).json();
+    assert.deepEqual([skill.title_bn, skill.description_bn], ['ইমপ্ল্যান্ট', 'হারানো দাঁতের বিকল্প']);
+
+    const doctor = await (await request('PUT', '/api/admin/doctors/1', { body: { name_en: 'Dr. Nusrat Jahan', name_bn: 'ডা. নুসরাত জাহান', specialty: 'General', specialty_bn: 'সাধারণ সেবা', days: [6, 0], start_time: '10:00', end_time: '17:00' }, headers: h })).json();
+    assert.equal(doctor.specialty_bn, 'সাধারণ সেবা');
+
+    const settings = await (await request('PUT', '/api/admin/settings', { body: { hours_bn: 'শনি–বৃহ', address_bn: 'ধানমন্ডি', directions_bn: 'লেকের পাশে', prep_notes_bn: 'আগে আসুন' }, headers: h })).json();
+    assert.deepEqual([settings.hours_bn, settings.address_bn, settings.directions_bn, settings.prep_notes_bn], ['শনি–বৃহ', 'ধানমন্ডি', 'লেকের পাশে', 'আগে আসুন']);
+
+    const site = await (await request('GET', '/api/public/site')).json();
+    assert.equal(site.skills.find((k) => k.title === 'Implants').title_bn, 'ইমপ্ল্যান্ট');
+    assert.equal(site.doctors.find((d) => d.id === 1).specialty_bn, 'সাধারণ সেবা');
+    assert.equal(site.clinic.hours_bn, 'শনি–বৃহ');
+  });
+
+  it('rejects over-long Bangla text with a coded 400', async () => {
+    const res = await request('POST', '/api/admin/skills', { body: { title: 'Odd', description: 'x1', title_bn: 'ক'.repeat(81) }, headers: h });
+    assert.equal(res.status, 400);
+    assert.equal((await res.json()).error.code, 'skill_title_bn_too_long');
+  });
 });

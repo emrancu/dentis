@@ -47,7 +47,7 @@ ${intent === 'booking' ? `# This call\nThe caller pressed "Book an appointment" 
 
 # Clinic
 Name: ${profile.nameEn} (${profile.nameBn})
-Hours: ${profile.hours || '(use get_clinic_info)'}
+Hours: ${profile.hours || '(use get_clinic_info)'}${profile.hoursBn ? `\nHours in Bangla: ${profile.hoursBn}` : ''}
 Doctors:
 ${doctorLines}
 

@@ -15,12 +15,12 @@ export class AgentKnowledge {
   async get({ title }) {
     const skill = (await this.skills.list()).find((s) => s.enabled && sameTitle(s.title, title));
     if (!skill) throw new NotFoundError('skill_not_found', 'No topic with that title. Use lookup_skill with the caller\'s own words.');
-    return { found: true, skill: { title: skill.title, description: skill.description, content: skill.content } };
+    return { found: true, skill: { title: skill.title, description: skill.description, title_bn: skill.titleBn, description_bn: skill.descriptionBn, content: skill.content } };
   }
 
   async lookup({ query }) {
     const found = rankSkills(await this.skills.list(), query);
-    return { found: found.length > 0, skills: found.map((s) => ({ title: s.title, description: s.description, content: s.content })) };
+    return { found: found.length > 0, skills: found.map((s) => ({ title: s.title, description: s.description, title_bn: s.titleBn, description_bn: s.descriptionBn, content: s.content })) };
   }
 }
 
