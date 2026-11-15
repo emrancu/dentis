@@ -83,6 +83,10 @@ a { color: inherit; }
 
 .fab { position: fixed; z-index: 55; right: 20px; bottom: max(20px, env(safe-area-inset-bottom)); display: inline-flex; align-items: center; gap: 10px; height: 48px; padding: 0 20px 0 16px; border: 0; border-radius: var(--btn-radius); background: var(--teal-600); color: #fff; font: inherit; font-size: 1rem; font-weight: 600; line-height: 1; white-space: nowrap; cursor: pointer; box-shadow: 0 14px 30px -12px rgb(14 116 144 / 0.6); -webkit-tap-highlight-color: transparent; }
 .fab:hover { background: var(--teal-700); box-shadow: 0 18px 34px -12px rgb(14 116 144 / 0.7); }
+.fab { box-shadow: 0 0 0 2px rgb(255 255 255 / 0.9), 0 18px 36px -10px rgb(14 116 144 / 0.75); }
+.fab::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: 0 0 0 0 rgb(14 116 144 / 0.55); animation: fab-ring 2.4s ease-out infinite; pointer-events: none; }
+@keyframes fab-ring { to { box-shadow: 0 0 0 14px rgb(14 116 144 / 0); } }
+@media (prefers-reduced-motion: reduce) { .fab::after { animation: none; } }
 .fab__icon { width: 22px; height: 22px; flex: none; }
 .lang-btn { font: inherit; font-weight: 600; font-size: 0.92rem; color: var(--ink); background: #fff; border: 1px solid var(--line); border-radius: var(--btn-radius); padding: 8px 16px; cursor: pointer; transition: background 0.2s; min-height: 44px; }
 .lang-btn:hover { background: var(--mint-50); }
