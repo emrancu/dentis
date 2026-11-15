@@ -68,3 +68,16 @@ describe('OpenAICallAnalyzer', () => {
     await assert.rejects(new OpenAICallAnalyzer({ apiKey: 'sk', fetchFn: reply({}, 500) }).analyze({ turns }), /500/);
   });
 });
+
+describe('default fetch', () => {
+  it('is called without the adapter as `this` (Workers throw "Illegal invocation" otherwise)', async () => {
+    const original = globalThis.fetch;
+    let thisSeen;
+    globalThis.fetch = function () { thisSeen = this; return Promise.resolve({ ok: true, status: 200, json: async () => ({ value: 'ek' }) }); };
+    try {
+      await new OpenAIRealtimeGateway({ apiKey: 'k' }).createClientSecret({ instructions: '', tools: [] });
+      await new OpenAICallAnalyzer({ apiKey: 'k' }).analyze?.({ transcript: [], intent: 'general' }).catch(() => {});
+    } finally { globalThis.fetch = original; }
+    assert.ok(thisSeen === undefined || thisSeen === globalThis, 'fetch must not be bound to the adapter');
+  });
+});

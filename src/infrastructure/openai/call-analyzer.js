@@ -29,7 +29,7 @@ Return JSON with:
 
 /** Post-call English summary, translation and extraction with a small chat model. */
 export class OpenAICallAnalyzer {
-  constructor({ apiKey, model = 'gpt-4.1-mini', fetchFn = fetch }) {
+  constructor({ apiKey, model = 'gpt-4.1-mini', fetchFn = (...args) => fetch(...args) }) {
     Object.assign(this, { apiKey, model, fetchFn });
   }
 
