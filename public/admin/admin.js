@@ -631,6 +631,7 @@ function howItWorksView(view) {
 
   const rules = [
     ['Facts come from code', 'The model asks 13 server tools. Prices, hours, slots and bookings come from D1 and are checked in the domain layer, so the agent cannot invent them.'],
+    ['Knowledge is chosen by title', 'The prompt lists only the entry titles. The model picks the ones a question needs and fetches their details. Staff write each entry in one plain form, in English or Bangla.'],
     ['Persona is editable, rules are not', 'Staff edit tone, greeting and closing. Flow, safety and scope are code, added last, and win over the persona.'],
     ['Secrets stay on the server', 'The browser only gets a short-lived key. Audio goes browser to OpenAI and never through the Worker.'],
     ['Bounded', 'A call ends at 5 minutes; silence gets a nudge at 15 s and a hang-up at 30 s. 10 calls per IP per hour.'],
@@ -648,7 +649,7 @@ function howItWorksView(view) {
   ];
   // Every path a caller's sentence can take: what triggers it, which tools run, what the agent says, where it ends.
   const paths = [
-    { tone: 'answer', title: 'A question the clinic can answer', trigger: 'Fees, hours, address, doctors, services, FAQs.', tools: 'get_skill · lookup_skill · get_clinic_info · list_doctors', says: 'Answers from the tool result, in short Bangla. Prices and hours are read, never recalled.', ends: 'Back to "anything else?". No result found: goes to a human.' },
+    { tone: 'answer', title: 'A question the clinic can answer', trigger: 'Fees, hours, address, doctors, services, FAQs.', tools: 'get_skill (one call per topic) · lookup_skill · get_clinic_info · list_doctors', says: 'Reads the knowledge titles in its prompt and decides which topics the question needs: usually one, sometimes two to four. Fetches only those, then answers from the results in short Bangla. Prices and hours are read, never recalled.', ends: 'Back to "anything else?". No title fits or there are too many titles: lookup_skill searches. Nothing found: goes to a human.' },
     { tone: 'book', title: 'Booking, change or cancel', trigger: '"I need an appointment", "move it to Sunday".', tools: 'check_availability → book / reschedule / cancel_appointment, save_patient_details', says: 'Asks one thing at a time, offers only real free slots, reads name, phone and time back.', ends: 'Confirms only after the tool says ok. Slot taken: offers other times.' },
     { tone: 'human', title: 'It cannot handle it: pass to a human', trigger: 'Emergency, complaint, asks for a person, no answer in the data, or a tool fails.', tools: 'request_human_callback (urgent = true for emergencies)', says: 'Stays calm, asks name, phone and what happened, then says: "the team will call you on this number".', ends: 'The request appears under Callbacks. Staff phone the caller and mark it done.' },
     { tone: 'off', title: 'Off topic or medical advice', trigger: 'Politics, small talk, "what medicine should I take?", "what is wrong with my tooth?"', tools: 'none', says: 'One polite line: it can only help with the clinic. No diagnosis, no medicine. Offers a booking instead.', ends: 'Returns to dental topics. Keeps the call short.' },
