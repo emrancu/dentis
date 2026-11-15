@@ -552,53 +552,110 @@ async function clinicView(view) {
 }
 
 /* ---------- how data is stored ---------- */
+/** Engineering reference for reviewers: architecture, sequence, trust boundaries, tool surface, failure modes, limits. */
 function howItWorksView(view) {
-  const nodes = [
-    ['Caller', 'Speaks Bangla or English in the browser. Audio goes straight to the voice model.'],
-    ['Voice model', 'Listens, understands and speaks. It follows the prompt you edit under Agent prompt.'],
-    ['Dentis server', 'Runs the tools the model asks for. Checks every input before it is used.'],
-    ['Your data', 'Knowledge, doctors, hours, free slots and bookings. The only source of facts.'],
+  // Sequence diagram: lifelines left to right, then messages top to bottom. [from, to, label, dashed?]
+  const lanes = ['Browser', 'Worker', 'OpenAI Realtime', 'D1 / R2'];
+  const msgs = [
+    [0, 1, '1  POST /api/session {intent}'],
+    [1, 3, '2  read settings, doctors, skills'],
+    [1, 2, '3  POST /v1/realtime/client_secrets (prompt + tools)'],
+    [2, 1, '4  ephemeral key (TTL 300 s)', true],
+    [1, 0, '5  {call_id, key, greeting, closing}', true],
+    [0, 2, '6  WebRTC: SDP offer, mic audio, data channel'],
+    [2, 0, '7  audio out, events, function_call', true],
+    [0, 1, '8  POST /api/agent/tools/:name {call_id, args}'],
+    [1, 3, '9  validate, read or write'],
+    [1, 0, '10  {ok, ...} result', true],
+    [0, 2, '11  function_call_output + response.create'],
+    [0, 1, '12  POST /api/calls/:id/finish {turns, reason}'],
+    [0, 1, '13  PUT /api/calls/:id/recording (webm, 10 MB cap)'],
+    [1, 3, '14  status derived, turns saved, audio to R2'],
   ];
-  const steps = [
-    ['The call starts', 'The server builds the prompt from what you saved, adds today\'s date, the doctors and the list of knowledge titles, and hands the browser a short-lived key. The real API key never leaves the server.'],
-    ['The caller speaks', 'The model hears the question and decides what kind it is: something the clinic knows, something for a doctor, or something off topic.'],
-    ['It asks the data, not its memory', 'For a fee, an hour, a doctor or a policy it calls a tool (<code>get_skill</code>, <code>lookup_skill</code>, <code>get_clinic_info</code>, <code>list_doctors</code>). For a booking it calls <code>check_availability</code> and offers only real free slots.'],
-    ['It answers from what came back', 'The reply is built from the tool result. If the data has no answer, it says so and offers a colleague\'s call back. It does not guess.'],
-    ['It does the work', 'Booking, rescheduling and cancelling go through the same checked code the staff use. A slot cannot be double booked, a phone number must be valid, a date must be real.'],
-    ['It reads details back', 'Name, phone, date, time and doctor are repeated and confirmed before the booking is made.'],
-    ['Everything is kept', 'At hang-up the transcript, the captured details, the appointment and the recording are saved and appear in this portal.'],
+  const W = 960, left = 80, gap = 266, top = 54, row = 34;
+  const x = (n) => left + n * gap;
+  const H = top + msgs.length * row + 24;
+  const svg = `<svg class="seq" viewBox="0 0 ${W} ${H}" role="img" aria-label="Sequence of one call across browser, worker, OpenAI and storage">
+    <defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L8 4L0 8z" fill="currentColor"/></marker></defs>
+    ${lanes.map((l, n) => `<text x="${x(n)}" y="22" text-anchor="middle" class="seq-lane">${l}</text><line x1="${x(n)}" y1="34" x2="${x(n)}" y2="${H - 10}" class="seq-line"/>`).join('')}
+    ${msgs.map(([a, b, label, dashed], k) => {
+      const y = top + k * row;
+      const x1 = x(a), x2 = x(b);
+      const mid = (x1 + x2) / 2;
+      return `<line x1="${x1}" y1="${y}" x2="${x2 + (x2 > x1 ? -4 : 4)}" y2="${y}" class="seq-msg${dashed ? ' back' : ''}" marker-end="url(#ah)"/><text x="${mid}" y="${y - 6}" text-anchor="middle" class="seq-text">${esc(label)}</text>`;
+    }).join('')}
+  </svg>`;
+
+  const tools = [
+    ['get_current_datetime, get_clinic_info, list_doctors', 'read', 'settings, doctors', 'none needed, read only'],
+    ['list_skills, get_skill, lookup_skill', 'read', 'skills (enabled only)', 'exact title match, ranked search with Bangla endings'],
+    ['check_availability', 'read', 'doctors, appointments', 'real date, not past, within 60 days, inside doctor hours'],
+    ['book_appointment', 'write', 'patients, appointments, extractions', 'valid BD mobile, unique index on (doctor, slot) while booked, name cleaned'],
+    ['reschedule_appointment, cancel_appointment', 'write', 'appointments', 'matched by phone and date, only the caller\'s own upcoming booking'],
+    ['save_patient_details', 'write', 'patients, call_extractions', 'phone normalised (Bangla digits, +880), partial saves allowed'],
+    ['request_human_callback', 'write', 'callbacks', 'valid phone, reason required'],
+    ['end_call', 'control', 'none', 'browser speaks the closing line, then hangs up'],
   ];
-  const lanes = [
-    ['ok', 'The clinic knows it', 'Fees, hours, directions, doctors, services, parking, what to bring.', 'The agent looks it up and answers in the caller\'s language, using the saved text.'],
-    ['doctor', 'Only a doctor can answer', '"What is wrong with my tooth?" "Which medicine should I take?"', 'No diagnosis and no medicine advice. It explains that the dentist must examine them and offers a booking. Severe swelling, bleeding or trouble breathing: it sends them to emergency care.'],
-    ['off', 'Not about the clinic', 'Politics, general chat, other businesses, anything unrelated.', 'It stays polite, says it can only help with the clinic, and brings the call back to dental care.'],
+  const trust = [
+    ['OpenAI API key', 'Worker secret only. The browser gets an ephemeral client secret (TTL 300 s) scoped to one session.'],
+    ['Session start', 'Public endpoint. Per-IP limit of 10 sessions an hour, IP stored as a hash. Calls are capped at 300 s.'],
+    ['Tool endpoint', 'Public, keyed by a call id (uuid) that must exist and not be finished. All input is validated in the domain layer; the model is treated as an untrusted caller.'],
+    ['Prompt', 'Persona text is editable. Flow, tool rules, safety and the knowledge list are code, appended last, with a line saying they win. Caller speech and tool results are data, never instructions.'],
+    ['Admin', 'Access key to an HMAC-signed cookie. Every write needs an X-Requested-With header (CSRF guard).'],
+    ['Secrets', '.dev.vars locally, Wrangler secrets in production. Nothing in the repo. Fake patient data only.'],
   ];
-  const why = [
-    ['Answers come from your data', 'Prices, hours and policies are fetched live from what you wrote here. Change an entry and the next call uses it, with no deploy and no retraining.'],
-    ['It stays on the clinic', 'The scope and safety rules are locked in code and always added after the editable persona, followed by a line saying they win. Staff cannot edit them away by accident.'],
-    ['It does not play doctor', 'A frightened caller with a toothache gets a booking and kindness, not a guess. That protects patients and the clinic.'],
-    ['It really completes the task', 'It does not just talk. It books through validated tools, so what the caller hears is what is in the calendar.'],
-    ['Small and quick', 'The prompt holds only the titles of the knowledge, never the details. The agent fetches one entry only when it needs it, which keeps the call fast and the cost low.'],
-    ['You can check its work', 'Every call keeps its transcript, recording and captured fields. Listening to a few calls is the best test of any change.'],
+  const failures = [
+    ['OpenAI session create fails', 'The call row is marked failed, the visitor sees a retry panel. Nothing is billed.'],
+    ['Mic denied or missing', 'Mapped to a specific message before any server work is wasted.'],
+    ['Connection drops mid-call', 'The browser reports reason "error". The call is saved with what was said so far.'],
+    ['Tool endpoint unreachable or errors', 'The model receives {ok:false, error:"tool_unavailable"} and is told to offer a human callback. It cannot confirm a booking that did not happen.'],
+    ['Page closed mid-call', 'sendBeacon sends the transcript. If it never arrives the call shows as incomplete.'],
+    ['Caller goes silent', 'Nudge at 15 s, closing line and hang-up at 30 s (public/js/idle.js).'],
+    ['Slot taken between check and book', 'The unique index rejects the second insert; the tool returns slot_unavailable with alternatives and the agent offers other times.'],
+    ['Recording upload fails', 'Best effort. The call, transcript and details are already saved.'],
   ];
-  view.innerHTML = `${head('How the agent works', 'The full path of a call, and why callers get reliable answers')}
-    <section class="card"><h2>The full flow</h2>
-      <div class="diagram" role="img" aria-label="Caller, voice model, Dentis server and data, with answers returning the same way">
-        ${nodes.map(([t, d], i) => `<div class="node"><strong>${t}</strong><span>${d}</span></div>${i < nodes.length - 1 ? '<span class="arrow" aria-hidden="true">⇄</span>' : ''}`).join('')}
+  const limits = [
+    ['Voice model', 'gpt-realtime-mini, voice marin, semantic VAD, near-field noise reduction'],
+    ['Caller transcription', 'gpt-4o-mini-transcribe, language bn'],
+    ['Call length', '300 s hard cap (MAX_CALL_SECONDS)'],
+    ['Session rate', '10 per IP per hour (MAX_SESSIONS_PER_HOUR)'],
+    ['Prompt size', 'Persona up to 4000 chars, greeting and closing 300 each; knowledge titles only, capped at 40 (TITLE_INDEX_CAP)'],
+    ['Recording', 'webm, up to 10 MB, private R2 bucket'],
+    ['Runtime', 'One Cloudflare Worker, D1 (SQLite), R2. No queues, no cron, no cache layer; reads go straight to D1 each call.'],
+  ];
+  const gaps = [
+    'The transcript and the recording are produced in the browser and reported by it. The server cannot verify them against OpenAI. They are for staff review, not for evidence.',
+    'The tool endpoint trusts the call id as its only credential. It is a random uuid and stops working once the call finishes, but it is not a signed token. Binding tools to the ephemeral session would be the next hardening step.',
+    'The "stays on topic, no medical advice" behaviour is prompt-enforced, so it is probabilistic. Facts and bookings are code-enforced. Review real recordings; there is no automated conversation eval yet, only a retrieval eval for knowledge lookup.',
+    'Latency, token cost per call and behaviour under concurrent load are not measured. The mini model was chosen for cost, and its Bangla quality has not been benchmarked against the full model.',
+    'There is no post-call analysis. Anything the agent did not save through a tool is only in the transcript.',
+  ];
+  const table = (heads, rows) => `<div class="table-wrap"><table><thead><tr>${heads.map((h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((c, k) => `<td${k === 0 ? ' class="mono"' : ''}>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+
+  view.innerHTML = `${head('How the agent works', 'Engineering reference: architecture, one call end to end, trust boundaries, failure modes')}
+    <section class="card"><h2>Architecture</h2>
+      <div class="arch">
+        <div class="arch-col"><h3>Browser</h3><ul><li>Vanilla JS, <code>BanglaCall</code></li><li>RTCPeerConnection to OpenAI for audio and a data channel for events</li><li>MediaRecorder for the recording</li><li>Relays tool calls to the Worker</li></ul></div>
+        <div class="arch-col arch-main"><h3>Cloudflare Worker</h3>
+          <div class="layers">
+            <div><b>interface</b> routes, auth, JSON, error mapping</div>
+            <div><b>application</b> use cases: StartCall, ToolExecutor, BookAppointment, FinishCall</div>
+            <div><b>domain</b> Slot, PhoneNumber, Skill, AgentPrompt, Call (no I/O)</div>
+            <div><b>infrastructure</b> D1 repositories, R2, OpenAI gateway, WebCrypto</div>
+          </div>
+          <p>Dependencies point inward. A layering test fails the build if a domain file imports from outside.</p>
+        </div>
+        <div class="arch-col"><h3>External</h3><ul><li><b>OpenAI Realtime</b> speech in, speech out, tool calls</li><li><b>D1</b> relational data</li><li><b>R2</b> private recordings</li></ul></div>
       </div>
-      <p class="muted diagram-note">Questions travel to the right. Facts travel back to the left. The voice model only says what the server returned.</p>
     </section>
-    <div class="grid two" style="margin-top:16px">
-      <section class="card"><h2>Step by step</h2><ol class="flow">${steps.map(([t, d]) => `<li><span><strong>${t}.</strong> ${d}</span></li>`).join('')}</ol></section>
-      <section class="card"><h2>What happens to each question</h2>
-        <div class="lanes">${lanes.map(([k, t, e, d]) => `<div class="lane lane-${k}"><strong>${t}</strong><em>${e}</em><span>${d}</span></div>`).join('')}</div>
-      </section>
-    </div>
-    <h2 style="margin:24px 0 12px">Why this is a good support agent</h2>
-    <div class="why">${why.map(([t, d]) => `<div class="card"><h3>${t}</h3><p>${d}</p></div>`).join('')}</div>
-    <section class="card" style="margin-top:16px"><h2>Know the limits</h2>
-      <p class="muted" style="margin:0">Staying on topic and refusing medical advice are rules in the prompt. The model follows them very well but no prompt is a guarantee, so review recordings of real calls. Facts and bookings are different: those are enforced by code and cannot be invented.</p>
-    </section>`;
+    <section class="card" style="margin-top:16px"><h2>One call, end to end</h2>${svg}
+      <p class="muted diagram-note">Solid arrows are requests, dashed arrows are replies. Audio never touches the Worker: it goes browser to OpenAI directly. The Worker only sees text, over HTTPS.</p>
+    </section>
+    <h2 class="eng-h">Tool surface</h2>${table(['Tool', 'Type', 'Touches', 'Guards'], tools)}
+    <h2 class="eng-h">Trust boundaries</h2>${table(['Area', 'How it is handled'], trust)}
+    <h2 class="eng-h">Failure modes</h2>${table(['Failure', 'Behaviour'], failures)}
+    <h2 class="eng-h">Models, limits and cost knobs</h2>${table(['Item', 'Value'], limits)}
+    <section class="card" style="margin-top:16px"><h2>Known gaps</h2><ul class="gaps">${gaps.map((g) => `<li>${esc(g)}</li>`).join('')}</ul></section>`;
 }
 
 /* ---------- boot ---------- */

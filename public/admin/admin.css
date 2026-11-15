@@ -195,3 +195,24 @@ dialog:has(.prompt-pre) { width: min(760px, calc(100vw - 24px)); }
 .slot-booked { background: #ecfdf8; display: table-cell; }
 .slot-booked span { display: block; font-size: 13px; color: var(--muted); }
 .slot-booked.completed { background: #f1f5f9; }
+
+/* engineering page */
+.seq { width: 100%; height: auto; color: #0e7490; }
+.seq-lane { font: 600 13px Inter, system-ui, sans-serif; fill: #0b1f2a; }
+.seq-line { stroke: #cfd8dc; stroke-dasharray: 4 4; }
+.seq-msg { stroke: currentColor; stroke-width: 1.5; }
+.seq-msg.back { stroke-dasharray: 5 4; color: #64748b; }
+.seq-text { font: 12px ui-monospace, Menlo, monospace; fill: #1f2f3a; }
+.eng-h { margin: 24px 0 10px; }
+td.mono { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+.arch { display: grid; grid-template-columns: 1fr 1.6fr 1fr; gap: 14px; }
+.arch-col { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: #f9fbfb; }
+.arch-main { background: linear-gradient(180deg, #f0fbf9, #fff); border-color: #99e0d4; }
+.arch-col h3 { font-size: 1rem; margin-bottom: 8px; }
+.arch-col ul { margin: 0; padding-left: 18px; font-size: 13.5px; color: var(--muted); display: grid; gap: 4px; }
+.arch-col p { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+.layers { display: grid; gap: 6px; }
+.layers div { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 8px 10px; font-size: 13px; color: var(--muted); }
+.layers b { color: #0b1f2a; font-family: ui-monospace, Menlo, monospace; margin-right: 6px; }
+.gaps { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 14px; color: #33454f; line-height: 1.55; }
+@media (max-width: 860px) { .arch { grid-template-columns: 1fr; } }
