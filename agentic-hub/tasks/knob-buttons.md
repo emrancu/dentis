@@ -32,12 +32,12 @@ On phones (≤520px) the floating button is a circle with no label, so a slide h
 None.
 
 ## Subtasks
-- [ ] 1. The component: CSS, the travel measurement, tests
+- [x] 1. The component: CSS, the travel measurement, tests
   - parallel: no
   - what: `.kb` styles, `knob-button.js` (pure travel function + runtime measuring), unit tests
   - files: `public/css/site.css`, `public/js/knob-button.js`, `public/js/main.js`, `test/frontend`
   - done when: tests cover the arrow signature, timing, transform-only, reduced motion and the travel maths
-- [ ] 2. Apply it to every call-to-action button
+- [~] 2. Apply it to every call-to-action button
   - parallel: no (after 1)
   - what: replace the old button markup and styles
   - files: `public/index.html`, `public/css/site.css`
