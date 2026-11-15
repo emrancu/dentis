@@ -1,5 +1,6 @@
 import { BanglaCall } from './voice.js';
 import { initKnobButtons } from './knob-button.js';
+import { initMagnetic } from './magnetic.js';
 import { DEFAULT_LANG, LANGUAGES, daysLabel, t } from './i18n.js';
 import { esc, formatClockRange, localDigits, pick, telHref } from './util.js';
 
@@ -238,3 +239,4 @@ $$('.reveal:not(.in)').forEach((el) => reveal.observe(el));
 applyLanguage();
 
 initKnobButtons(); // after the language is applied, so the labels have their final width
+initMagnetic(); // the service cards; off for reduced motion

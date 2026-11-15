@@ -33,11 +33,11 @@ Making the cards do something when clicked, the doctor and step cards moving mag
 None. (The 6% ink light instead of 18% white follows the owner's own rule for light-coloured elements.)
 
 ## Subtasks
-- [~] 1. The effect: pure maths, controller, tests
+- [x] 1. The effect: pure maths, controller, tests
   - parallel: no
   - files: `public/js/magnetic.js`, `public/js/main.js`, `test/frontend`
   - done when: tests cover range, pull, caps, depth, light size, and the reduced-motion and touch rules
-- [ ] 2. Service card markup and styles, plus the UI polish
+- [~] 2. Service card markup and styles, plus the UI polish
   - parallel: no (after 1)
   - files: `public/css/site.css`, `public/js/main.js`
   - done when: tests cover the structure and the CSS rules, and the static page tests stay green
