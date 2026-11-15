@@ -32,7 +32,7 @@
       <a href="#doctors" data-i18n="nav.doctors">আমাদের ডেন্টিস্ট</a>
       <a href="#visit" data-i18n="nav.visit">আমাদের ঠিকানা</a>
     </nav>
-    <button class="btn-book" type="button" data-start-booking data-i18n="nav.book">অ্যাপয়েন্টমেন্ট বুক করুন</button>
+    <button class="btn-book kb kb--sm" type="button" data-start-booking><span class="kb__knob" aria-hidden="true"><svg class="kb__arrow" viewBox="0 0 6 10" width="9" height="15" aria-hidden="true"><path fill="currentColor" d="M0 0h2v2H0zM2 2h2v2H2zM4 4h2v2H4zM2 6h2v2H2zM0 8h2v2H0z"/></svg></span><span class="kb__label" data-i18n="nav.book">অ্যাপয়েন্টমেন্ট বুক করুন</span></button>
     <button class="lang-btn" id="lang-btn" type="button" data-i18n="lang.switch" lang="en">English</button>
     <button class="menu-btn" id="menu-btn" type="button" aria-expanded="false" aria-controls="nav" data-i18n-aria="nav.menu" aria-label="মেনু"><span></span><span></span></button>
   </header>
@@ -71,13 +71,8 @@
         <h1 data-i18n-html="hero.title">সুস্থ দাঁত, <em>আত্মবিশ্বাসী হাসি</em>।</h1>
         <p class="lead" data-i18n="hero.lead">পুরো পরিবারের জন্য আরামদায়ক ও আধুনিক ডেন্টাল সেবা, সাধারণ চেকআপ থেকে জটিল চিকিৎসা পর্যন্ত।</p>
         <div class="cta-row">
-          <button class="btn-call" id="book-btn" type="button" data-start-booking>
-            <span class="btn-call-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3"/><path d="M8 2.5v4M16 2.5v4M3 10h18M9 15l2 2 4-4"/></svg>
-            </span>
-            <span data-i18n="cta.book">অ্যাপয়েন্টমেন্ট বুক করুন</span>
-          </button>
-          <a class="btn-ghost" href="#services"><span class="play" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span><span data-i18n="cta.services">আমাদের সেবা</span></a>
+          <button class="kb" id="book-btn" type="button" data-start-booking><span class="kb__knob" aria-hidden="true"><svg class="kb__arrow" viewBox="0 0 6 10" width="9" height="15" aria-hidden="true"><path fill="currentColor" d="M0 0h2v2H0zM2 2h2v2H2zM4 4h2v2H4zM2 6h2v2H2zM0 8h2v2H0z"/></svg></span><span class="kb__label" data-i18n="cta.book">অ্যাপয়েন্টমেন্ট বুক করুন</span></button>
+          <a class="kb kb--light" href="#services"><span class="kb__knob" aria-hidden="true"><svg class="kb__arrow" viewBox="0 0 6 10" width="9" height="15" aria-hidden="true"><path fill="currentColor" d="M0 0h2v2H0zM2 2h2v2H2zM4 4h2v2H4zM2 6h2v2H2zM0 8h2v2H0z"/></svg></span><span class="kb__label" data-i18n="cta.services">আমাদের সেবা</span></a>
         </div>
         <p class="cta-note" data-i18n="cta.note">বাংলা বা ইংরেজিতে কথা বলেই বুক করুন। কল ক্লিনিক টিমের জন্য রেকর্ড হয়।</p>
       </div>
@@ -101,14 +96,14 @@
           <h2 class="call-title" data-i18n="call.done.title">ডেন্টিসে কল করার জন্য ধন্যবাদ</h2>
           <p data-i18n="call.done.text">আপনার তথ্য সংরক্ষণ করা হয়েছে। ক্লিনিক স্টাফ পোর্টালে এই কল, ট্রান্সক্রিপ্ট ও আপনার বুকিং দেখতে পাবেন।</p>
           <div class="call-actions">
-            <button type="button" class="ctl ctl-primary" data-restart data-i18n="call.again">আবার কল করুন</button>
+            <button type="button" class="kb kb--sm kb--light" data-restart><span class="kb__knob" aria-hidden="true"><svg class="kb__arrow" viewBox="0 0 6 10" width="9" height="15" aria-hidden="true"><path fill="currentColor" d="M0 0h2v2H0zM2 2h2v2H2zM4 4h2v2H4zM2 6h2v2H2zM0 8h2v2H0z"/></svg></span><span class="kb__label" data-i18n="call.again">আবার কল করুন</span></button>
             <a class="ctl" href="/admin/" target="_blank" rel="noopener" data-i18n="call.portal">স্টাফ পোর্টালে দেখুন</a>
           </div>
         </div>
         <div class="call-body when-error">
           <p class="call-error" id="call-error" role="alert"></p>
           <div class="call-actions">
-            <button type="button" class="ctl ctl-primary" data-restart data-i18n="call.retry">আবার চেষ্টা করুন</button>
+            <button type="button" class="kb kb--sm kb--light" data-restart><span class="kb__knob" aria-hidden="true"><svg class="kb__arrow" viewBox="0 0 6 10" width="9" height="15" aria-hidden="true"><path fill="currentColor" d="M0 0h2v2H0zM2 2h2v2H2zM4 4h2v2H4zM2 6h2v2H2zM0 8h2v2H0z"/></svg></span><span class="kb__label" data-i18n="call.retry">আবার চেষ্টা করুন</span></button>
             <button type="button" class="ctl" data-close data-i18n="call.close">বন্ধ করুন</button>
           </div>
         </div>
@@ -179,8 +174,8 @@
           <h2 data-i18n="visit.title">ধানমন্ডিতে আমাদের খুঁজে নিন</h2>
           <dl class="facts" id="visit-facts"></dl>
           <div class="cta-row">
-            <button class="btn-call btn-call-light" type="button" data-start-booking><span data-i18n="visit.cta">অ্যাপয়েন্টমেন্ট বুক করুন</span></button>
-            <a class="btn-outline" id="visit-tel" href="#" data-i18n="visit.phoneBtn" hidden>ক্লিনিকে ফোন করুন</a>
+            <button class="kb" type="button" data-start-booking><span class="kb__knob" aria-hidden="true"><svg class="kb__arrow" viewBox="0 0 6 10" width="9" height="15" aria-hidden="true"><path fill="currentColor" d="M0 0h2v2H0zM2 2h2v2H2zM4 4h2v2H4zM2 6h2v2H2zM0 8h2v2H0z"/></svg></span><span class="kb__label" data-i18n="visit.cta">অ্যাপয়েন্টমেন্ট বুক করুন</span></button>
+            <a class="kb kb--light" id="visit-tel" href="#" hidden><span class="kb__knob" aria-hidden="true"><svg class="kb__arrow" viewBox="0 0 6 10" width="9" height="15" aria-hidden="true"><path fill="currentColor" d="M0 0h2v2H0zM2 2h2v2H2zM4 4h2v2H4zM2 6h2v2H2zM0 8h2v2H0z"/></svg></span><span class="kb__label" data-i18n="visit.phoneBtn">ক্লিনিকে ফোন করুন</span></a>
           </div>
         </div>
         <div class="visit-art reveal" aria-hidden="true"><img src="/logo-mark.svg" alt="" width="180" height="180"></div>
@@ -188,10 +183,7 @@
     </section>
   </main>
 
-  <button class="fab" id="fab-call" type="button" data-i18n-aria="fab.aria" aria-label="ব্রাউজারেই আমাদের রিসেপশনিস্টের সাথে কথা বলুন">
-    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg>
-    <span class="fab-label" data-i18n="fab.label">কথা বলুন</span>
-  </button>
+  <button class="fab" id="fab-call" type="button" data-i18n-aria="fab.aria" aria-label="ব্রাউজারেই আমাদের রিসেপশনিস্টের সাথে কথা বলুন"><svg class="fab__icon" aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg><span class="fab__label" data-i18n="fab.label">কথা বলুন</span></button>
 
   <footer class="site-footer">
     <div class="wrap footer-grid">
