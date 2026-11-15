@@ -21,6 +21,7 @@ export const appointmentDto = (a, patient, doctor) => ({
   call_id: a.callId,
   patient_name: patient?.fullName ?? null,
   phone: patient?.phone ?? null,
+  doctor_id: a.doctorId,
   doctor_name: doctor?.nameEn ?? null,
 });
 

@@ -41,7 +41,7 @@ Admin routes need the cookie `dentis_admin` (HttpOnly, SameSite=Strict, `Secure`
 | `GET /api/admin/calls` | `q`, `status`, `limit`, `offset` | `{ items: [{id,started_at,duration_s,status,patient_name,phone,reason_for_visit}] }` |
 | `GET /api/admin/calls/:id` | | `{ call, extraction, turns, appointments, callbacks }` |
 | `GET /api/admin/calls/:id/recording` | | audio bytes. 404 `recording_not_found` |
-| `GET /api/admin/appointments` | `status` | `{ items: [{id,slot,status,service,patient_name,phone,doctor_name,call_id}] }` |
+| `GET /api/admin/appointments` | `status` | `{ items: [{id,slot,status,service,patient_name,phone,doctor_id,doctor_name,call_id}] }` |
 | `PATCH /api/admin/appointments/:id` | `{ status: "cancelled"\|"completed" }` | updated item |
 | `GET /api/admin/patients` | `q` | `{ items: [{id,full_name,phone,created_at}] }` |
 | `GET /api/admin/callbacks` | `status` | `{ items: [{id,call_id,name,phone,reason,preferred_time,status,created_at}] }` |

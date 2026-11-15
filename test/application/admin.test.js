@@ -129,6 +129,7 @@ describe('AdminQueries', () => {
   it('lists appointments with patient and doctor names, and patients', async () => {
     await makeCall({ book: true });
     const { items } = await s.adminQueries.listAppointments({ status: 'booked' });
+    assert.equal(typeof items[0].doctor_id, 'number');
     assert.deepEqual([items[0].patient_name, items[0].doctor_name, items[0].status], ['Rahim Uddin', 'Dr. Nusrat Jahan', 'booked']);
     assert.equal((await s.adminQueries.listAppointments({ status: 'cancelled' })).items.length, 0);
     assert.equal((await s.adminQueries.listPatients({ q: 'Rahim' })).items[0].phone, VALID_PHONE);

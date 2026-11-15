@@ -7,6 +7,7 @@ Staff log in at `/admin` and see each call, its transcript and the structured da
 - Access-key login.
 - Overview: totals, status mix, last 7 days, open follow-ups.
 - Call list with search and status filter. Columns: date, time, caller, duration, status.
+- Schedule: one day at a time, a column per doctor, every slot booked or free, day arrows and a date picker.
 - Call detail: extracted fields, audio player, transcript (speaker, time, Bangla), appointment and callback.
 - Appointments and patients lists.
 - A short "how data is stored" view of the schema.
