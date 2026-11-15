@@ -42,9 +42,9 @@ describe('ToolExecutor results', () => {
   });
 
   it('get_clinic_info gives the English and the Bangla text of every field', async () => {
-    await world.services.clinic.update({ hours_bn: 'শনি–বৃহ, সকাল ১০টা থেকে রাত ৮টা', address_bn: 'ধানমন্ডি', directions_bn: 'লেকের পাশে', prep_notes_bn: 'আগে আসুন' });
+    await world.services.clinic.update({ hours_bn: 'শনি–বৃহ, সকাল ১০টা থেকে রাত ৮টা', address_bn: 'ধানমন্ডি', directions_bn: 'লেকের পাশে' });
     const r = await run('get_clinic_info');
-    assert.deepEqual([r.hours_bn, r.address_bn, r.directions_bn, r.prep_notes_bn], ['শনি–বৃহ, সকাল ১০টা থেকে রাত ৮টা', 'ধানমন্ডি', 'লেকের পাশে', 'আগে আসুন']);
+    assert.deepEqual([r.hours_bn, r.address_bn, r.directions_bn], ['শনি–বৃহ, সকাল ১০টা থেকে রাত ৮টা', 'ধানমন্ডি', 'লেকের পাশে']);
     assert.equal(r.hours, 'Sat-Thu 10am-8pm');
   });
 

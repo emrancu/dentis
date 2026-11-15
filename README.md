@@ -10,7 +10,7 @@ A dental centre website: the hero's main action is **Book an appointment** (book
 ## The website: Bangla first, complete in both languages
 
 - **Bangla is the default.** English is one tap away, remembered, and a link can carry it: `/?lang=en` or `/?lang=bn` wins over the saved choice. The static HTML is Bangla, so there is no flash of English.
-- **Nothing mixes languages.** Every display field has a Bangla twin (skill title and description, doctor specialty, clinic address, hours, directions, prep notes). English fields hold English only, Bangla fields Bangla only. The site shows the visitor's language and falls back to the other only when a field is empty. Admin marks services that have no Bangla text.
+- **Nothing mixes languages.** Every display field has a Bangla twin (skill title and description, doctor specialty, clinic address, hours, directions). English fields hold English only, Bangla fields Bangla only. The site shows the visitor's language and falls back to the other only when a field is empty. Admin marks services that have no Bangla text.
 - **One style per language.** Times are 12-hour: `10:00 am` in English and `সকাল ১০:০০` in Bangla, with Bangla digits. Working days read `Sat–Thu` / `শনি–বৃহ`. The phone number is a tappable `tel:` link.
 - **Names are consistent.** The navigation label is the section label, every booking button says the same, and the hero treatment cards use exactly the Services names (a test enforces it).
 - **The floating button is "Talk to us" / "কথা বলুন"**: a voice call in the browser. The clinic's phone number is a separate link.

@@ -72,7 +72,6 @@ function renderSite() {
     ['visit.hours', esc(pick(lang, clinic.hours, clinic.hours_bn))],
     ['visit.phone', phoneLink],
     ['visit.directions', esc(pick(lang, clinic.directions, clinic.directions_bn))],
-    ['visit.prep', esc(pick(lang, clinic.prep_notes, clinic.prep_notes_bn))],
   ].filter(([, value]) => value);
   $('#visit-facts').innerHTML = rows.map(([key, value]) => `<div><dt>${esc(t(lang, key))}</dt><dd>${value}</dd></div>`).join('');
 

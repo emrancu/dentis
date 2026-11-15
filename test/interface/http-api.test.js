@@ -386,8 +386,8 @@ describe('admin agent prompt', () => {
     const doctor = await (await request('PUT', '/api/admin/doctors/1', { body: { name_en: 'Dr. Nusrat Jahan', name_bn: 'ডা. নুসরাত জাহান', specialty: 'General', specialty_bn: 'সাধারণ সেবা', days: [6, 0], start_time: '10:00', end_time: '17:00' }, headers: h })).json();
     assert.equal(doctor.specialty_bn, 'সাধারণ সেবা');
 
-    const settings = await (await request('PUT', '/api/admin/settings', { body: { hours_bn: 'শনি–বৃহ', address_bn: 'ধানমন্ডি', directions_bn: 'লেকের পাশে', prep_notes_bn: 'আগে আসুন' }, headers: h })).json();
-    assert.deepEqual([settings.hours_bn, settings.address_bn, settings.directions_bn, settings.prep_notes_bn], ['শনি–বৃহ', 'ধানমন্ডি', 'লেকের পাশে', 'আগে আসুন']);
+    const settings = await (await request('PUT', '/api/admin/settings', { body: { hours_bn: 'শনি–বৃহ', address_bn: 'ধানমন্ডি', directions_bn: 'লেকের পাশে' }, headers: h })).json();
+    assert.deepEqual([settings.hours_bn, settings.address_bn, settings.directions_bn], ['শনি–বৃহ', 'ধানমন্ডি', 'লেকের পাশে']);
 
     const site = await (await request('GET', '/api/public/site')).json();
     assert.equal(site.doctors.find((d) => d.id === 1).specialty_bn, 'সাধারণ সেবা');

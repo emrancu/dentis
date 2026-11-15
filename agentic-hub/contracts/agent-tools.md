@@ -10,7 +10,7 @@ Dates are `YYYY-MM-DD`, times are 24-hour `HH:MM`, clinic-local. Phone numbers m
 | Tool | Args | Success fields | Failure codes |
 |---|---|---|---|
 | `get_current_datetime` | | `date, time, weekday_en, weekday_bn` | |
-| `get_clinic_info` | | `name_en, name_bn, phone, address, address_bn, directions, directions_bn, hours, hours_bn, prep_notes, prep_notes_bn` | |
+| `get_clinic_info` | | `name_en, name_bn, phone, address, address_bn, directions, directions_bn, hours, hours_bn` | |
 | `list_doctors` | | `doctors: [{name_en,name_bn,specialty,specialty_bn,days,start_time,end_time}]` | |
 | `list_skills` | | `skills: [{title,description}]` | |
 | `lookup_skill` | `query` (the caller's words, Bangla or English; matches title, keywords, description and details) | `found, skills: [{title,description,title_bn,description_bn,content}]` (top 3) | |

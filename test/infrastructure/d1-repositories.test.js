@@ -276,7 +276,7 @@ describe('bilingual content', () => {
       assert.doesNotMatch(d.specialtyBn, LATIN_WORD);
     }
     const p = ClinicProfile.fromMap(await new D1SettingsRepository(seeded).all());
-    for (const f of ['address', 'hours', 'directions', 'prepNotes']) {
+    for (const f of ['address', 'hours', 'directions']) {
       assert.doesNotMatch(p[f], BANGLA, `${f} contains Bangla`);
       assert.match(p[`${f}Bn`], BANGLA, `${f}Bn is not Bangla`);
       assert.doesNotMatch(p[`${f}Bn`], LATIN_WORD, `${f}Bn contains English words`);

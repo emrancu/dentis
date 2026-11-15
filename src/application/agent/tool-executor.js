@@ -28,8 +28,6 @@ export class ToolExecutor {
           directions_bn: p.directionsBn,
           hours: p.hours,
           hours_bn: p.hoursBn,
-          prep_notes: p.prepNotes,
-          prep_notes_bn: p.prepNotesBn,
         };
       },
       list_doctors: async () => ({

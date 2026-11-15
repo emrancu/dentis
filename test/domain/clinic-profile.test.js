@@ -32,12 +32,12 @@ describe('ClinicProfile', () => {
     assert.throws(() => new ClinicProfile({ address: 'x'.repeat(1001) }), (e) => e.code === 'field_too_long');
   });
 
-  it('has Bangla twins for address, hours, directions and prep notes, empty by default', () => {
+  it('has Bangla twins for address, hours and directions, empty by default', () => {
     const p = new ClinicProfile();
-    assert.deepEqual([p.addressBn, p.hoursBn, p.directionsBn, p.prepNotesBn], ['', '', '', '']);
-    const q = ClinicProfile.fromMap({ address_bn: 'ধানমন্ডি', hours_bn: 'শনি–বৃহ', directions_bn: 'লেকের পাশে', prep_notes_bn: 'আগে আসুন' });
-    assert.deepEqual([q.addressBn, q.hoursBn, q.directionsBn, q.prepNotesBn], ['ধানমন্ডি', 'শনি–বৃহ', 'লেকের পাশে', 'আগে আসুন']);
-    assert.deepEqual(Object.keys(q.toJSON()).sort(), ['address', 'address_bn', 'directions', 'directions_bn', 'hours', 'hours_bn', 'name_bn', 'name_en', 'phone', 'prep_notes', 'prep_notes_bn', 'slot_minutes']);
+    assert.deepEqual([p.addressBn, p.hoursBn, p.directionsBn], ['', '', '']);
+    const q = ClinicProfile.fromMap({ address_bn: 'ধানমন্ডি', hours_bn: 'শনি–বৃহ', directions_bn: 'লেকের পাশে' });
+    assert.deepEqual([q.addressBn, q.hoursBn, q.directionsBn], ['ধানমন্ডি', 'শনি–বৃহ', 'লেকের পাশে']);
+    assert.deepEqual(Object.keys(q.toJSON()).sort(), ['address', 'address_bn', 'directions', 'directions_bn', 'hours', 'hours_bn', 'name_bn', 'name_en', 'phone', 'slot_minutes']);
   });
 
   it('applies Bangla changes from the admin form and limits their length', () => {

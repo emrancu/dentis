@@ -13,7 +13,7 @@ const PHONE = 'Bangladeshi mobile number, exactly as the caller said it (Bangla 
 /** Tool definitions sent to the Realtime session. Keep in sync with contracts/agent-tools.md. */
 export const AGENT_TOOLS = [
   tool('get_current_datetime', 'Get the current date, time and weekday in Dhaka. Use it to turn "next Sunday" or "tomorrow" into a real date.'),
-  tool('get_clinic_info', 'Get the clinic name, phone, address, directions, opening hours and visit-preparation notes. Always use this for hours or location questions.'),
+  tool('get_clinic_info', 'Get the clinic name, phone, address, directions, and opening hours. Always use this for hours or location questions.'),
   tool('list_doctors', 'List the doctors with their specialty, working days and hours.'),
   tool('list_skills', 'List the topics the clinic has information about (services, fees, policies, FAQs).'),
   tool('get_skill', 'Get the full details of one knowledge topic by its exact title from the list in the prompt. Use this first when the caller asks about a listed service, fee, policy or FAQ.', { title: str('The exact title, as listed in the prompt.') }, ['title']),

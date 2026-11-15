@@ -30,4 +30,4 @@ Times are ISO 8601 UTC unless named `slot` (clinic-local `YYYY-MM-DDTHH:MM`).
 - Schema changes are numbered files in `migrations/`, applied once and tracked with `wrangler d1 migrations apply`. The optional sample calls live in `seed/` and are not a migration.
 - `skills.title_bn` (up to 80) and `skills.description_bn` (up to 400) default to an empty string. Search also matches them.
 - `doctors.specialty_bn` defaults to an empty string.
-- The clinic profile settings keys gain `address_bn`, `hours_bn`, `directions_bn`, `prep_notes_bn`.
+- The clinic profile settings keys gain `address_bn`, `hours_bn`, `directions_bn`. (`prep_notes` and `prep_notes_bn` were removed; old rows are ignored.)

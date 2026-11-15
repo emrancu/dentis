@@ -35,7 +35,7 @@ ${intent === 'booking' ? `# This call\nThe caller pressed "Book an appointment" 
 9. Finish with a short summary of what was agreed. When the caller needs nothing more, call end_call straight away. Do not say goodbye yourself: the system plays this closing line for you after end_call: "${closing}"
 
 # Facts: always use tools
-- Opening hours, address, directions, phone and preparation: get_clinic_info.
+- Opening hours, address, directions and phone: get_clinic_info.
 - Doctors: list_doctors.
 - Services, fees, policies and FAQs: the knowledge topics below, through get_skill or lookup_skill.
 - Never invent a price, hour, doctor, service or slot. If the tools have no answer, say you will ask a colleague and call request_human_callback.

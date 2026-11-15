@@ -60,7 +60,7 @@ Admin routes need the cookie `dentis_admin` (HttpOnly, SameSite=Strict, `Secure`
 | `GET /api/admin/settings` | | clinic profile (snake_case keys) |
 | `PUT /api/admin/settings` | partial clinic profile | clinic profile |
 
-Clinic profile keys: `name_en, name_bn, phone, address, address_bn, directions, directions_bn, hours, hours_bn, prep_notes, prep_notes_bn, slot_minutes`. The `_bn` keys hold the Bangla text of the field next to them. Each English field holds English only and each Bangla field Bangla only, so no string mixes the two languages.
+Clinic profile keys: `name_en, name_bn, phone, address, address_bn, directions, directions_bn, hours, hours_bn, slot_minutes`. The `_bn` keys hold the Bangla text of the field next to them. Each English field holds English only and each Bangla field Bangla only, so no string mixes the two languages.
 Times are clinic-local (Asia/Dhaka). Timestamps (`started_at`, `ts`, `created_at`) are ISO 8601 UTC.
 
 ## Agent prompt
