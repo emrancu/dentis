@@ -85,12 +85,12 @@ None.
   - what: fonts and Three.js served from this site, social image, meta tags, JSON-LD, `hreflang`, `?lang=`
   - files: `public/fonts/**`, `public/vendor/**`, `public/index.html`, `public/css/`, `public/js/main.js`, `public/og.png`
   - done when: the page loads with no request to another host, and the link-preview tags are present
-- [~] 8. Docs
+- [x] 8. Docs
   - parallel: no (after 7)
   - what: README, test counts
   - files: `README.md`
   - done when: README matches what was built
-- [ ] 9. Premortem & spec re-evaluation
+- [~] 9. Premortem & spec re-evaluation
   - parallel: no (after all above)
   - premortem: <to fill>
   - spec changes: <to fill>
