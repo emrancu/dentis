@@ -29,6 +29,7 @@ function buildApp(env) {
       clock: new SystemClock(),
       accessKey,
     }),
+    { assets: env.ASSETS },
   );
 }
 

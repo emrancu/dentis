@@ -80,12 +80,12 @@ None.
   - what: Bangla type scale and serif, wordmark, tap targets, centred grids, header button and floating button behaviour, fallback until first frame
   - files: `public/css/site.css`, `public/js/main.js`, `public/js/hero3d.js` (first frame only)
   - done when: re-run of the audit shows no overlap, targets of at least 44px, no overflow at 360, 768 and 1440 px in both languages
-- [~] 7. Self-hosting and SEO
+- [x] 7. Self-hosting and SEO
   - parallel: no (after 6)
   - what: fonts and Three.js served from this site, social image, meta tags, JSON-LD, `hreflang`, `?lang=`
   - files: `public/fonts/**`, `public/vendor/**`, `public/index.html`, `public/css/`, `public/js/main.js`, `public/og.png`
   - done when: the page loads with no request to another host, and the link-preview tags are present
-- [ ] 8. Docs
+- [~] 8. Docs
   - parallel: no (after 7)
   - what: README, test counts
   - files: `README.md`

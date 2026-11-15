@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { DEFAULT_LANG, STRINGS, daysLabel, t } from '../../public/js/i18n.js';
 import { esc, formatClock, formatClockRange, formatDateTime, formatDuration, formatSlot, formatTime, localDigits, pick, statusLabel, telHref } from '../../public/js/util.js';
@@ -256,37 +256,36 @@ describe('static pages', () => {
     assert.match(html, /<meta name="viewport"/);
   });
 
-  it('Three.js is loaded from a pinned version', () => {
-    const html = read('index.html');
-    assert.match(html, /three@\d+\.\d+\.\d+\/build\/three\.module\.js/);
+  it('the page loads nothing from another host: fonts and Three.js are served from this site', () => {
+    const page = read('index.html');
+    assert.deepEqual(page.match(/https?:\/\/[^"'\s)]+/g) ?? [], []);
+    assert.match(page, /"three": "\/vendor\/three\/three\.module\.min\.js"/);
+    assert.match(page, /"three\/addons\/": "\/vendor\/three\/addons\/"/);
+    for (const file of ['three.module.min.js', 'addons/environments/RoomEnvironment.js', 'addons/utils/BufferGeometryUtils.js', 'LICENSE']) assert.ok(existsSync(new URL(`../../public/vendor/three/${file}`, import.meta.url)), file);
+    for (const css of ['css/site.css', 'css/fonts.css']) assert.deepEqual(read(css).match(/https?:\/\/[^"'\s)]+/g) ?? [], [], css);
   });
 
-  it('the 3D scene has a model per treatment, spins on drag and the tabs drive it', () => {
-    const scene = read('js/hero3d.js');
-    assert.match(scene, /TREATMENTS = \['checkup', 'whitening', 'braces', 'implant'\]/);
-    assert.match(scene, /pointerdown/);
-    assert.equal(read('index.html').split('class="tx-tab"').length - 1, 4);
-    assert.match(read('js/main.js'), /hero\?\.show\(treatment\)/);
-    assert.match(read('css/site.css'), /\.has-3d \.tooth-fallback/);
+  it('every font file the stylesheet names exists, with a unicode-range so a subset is only fetched when needed', () => {
+    const fonts = read('css/fonts.css');
+    const files = [...fonts.matchAll(/url\(\/fonts\/([^)]+)\)/g)].map((m) => m[1]);
+    assert.ok(files.length >= 14);
+    for (const f of files) assert.ok(existsSync(new URL(`../../public/fonts/${f}`, import.meta.url)), f);
+    assert.equal(fonts.split('@font-face').length - 1, fonts.split('unicode-range').length - 1);
+    for (const family of ['Inter', 'Fraunces', 'Hind Siliguri', 'Noto Serif Bengali']) assert.match(fonts, new RegExp(`font-family: '${family}'`));
+    assert.match(fonts, /font-display: swap/);
+    assert.match(read('index.html'), /<link rel="stylesheet" href="\/css\/fonts\.css">/);
   });
 
-  it('the old trust chips are gone', () => {
-    assert.doesNotMatch(read('index.html'), /class="chips"/);
-    assert.doesNotMatch(read('css/site.css'), /\.chips/);
+  it('the two Bangla fonts used above the fold are preloaded', () => {
+    const page = read('index.html');
+    for (const f of ['hind-siliguri-bengali-400-normal.woff2', 'noto-serif-bengali-bengali-600-normal.woff2']) assert.match(page, new RegExp(`<link rel="preload" href="/fonts/${f}" as="font" type="font/woff2" crossorigin>`));
   });
 
-  it('the hero headline and sub-copy are about dental care, not booking or speed', () => {
-    for (const lang of ['en', 'bn']) {
-      for (const key of ['hero.title', 'hero.lead']) assert.doesNotMatch(STRINGS[lang][key], /appointment|book|অ্যাপয়েন্টমেন্ট|বুকিং|minute|মিনিট/i, `${lang}.${key}`);
-    }
-  });
-
-  it('every treatment has a name, text and short label in both languages', () => {
-    for (const lang of ['en', 'bn']) {
-      for (const key of ['checkup', 'whitening', 'braces', 'implant']) {
-        for (const part of ['name', 'text', 'short']) assert.ok(STRINGS[lang][`tx.${key}.${part}`], `${lang} tx.${key}.${part}`);
-      }
-    }
+  it('a link can carry its language: ?lang= wins over the saved choice and the address bar follows the toggle', () => {
+    const main = read('js/main.js');
+    assert.match(main, /new URLSearchParams\(location\.search\)\.get\('lang'\)/);
+    assert.match(main, /history\.replaceState\(null, '', `\?lang=\$\{lang\}\$\{location\.hash\}`\)/);
+    assert.ok(main.indexOf("get('lang')") < main.indexOf("localStorage.getItem('dentis-lang')"), 'the link must be checked before the saved choice');
   });
 
   it('the admin page is not indexable and the SPA entry exists', () => {

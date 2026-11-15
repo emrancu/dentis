@@ -7,6 +7,8 @@ const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
 /* ---------- language ---------- */
 let lang = (() => {
+  const fromLink = new URLSearchParams(location.search).get('lang'); // a shared link carries its language
+  if (LANGUAGES.includes(fromLink)) return fromLink;
   try {
     const saved = localStorage.getItem('dentis-lang');
     if (LANGUAGES.includes(saved)) return saved;
@@ -38,6 +40,7 @@ $('#lang-btn').addEventListener('click', () => {
   } catch {
     // not persisted; still works for this visit
   }
+  history.replaceState(null, '', `?lang=${lang}${location.hash}`); // keep the address bar shareable in the chosen language
   applyLanguage();
 });
 
