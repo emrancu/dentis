@@ -65,7 +65,7 @@ None.
   - what: catalog, directory, clinic profile and public site carry the Bangla fields; agent tools return them
   - files: `src/application/**`, `src/interface/**`, `test/application`, `test/interface`
   - done when: tests prove save, read, fallback and the public payload
-- [~] 4. Admin UI for the Bangla fields
+- [x] 4. Admin UI for the Bangla fields
   - parallel: yes (after 3)
   - what: Bangla inputs in the skill, doctor and clinic forms, a "no Bangla" marker on service cards
   - files: `public/admin/**`
