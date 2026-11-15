@@ -26,7 +26,13 @@ describe('PhoneNumber', () => {
     }
   });
 
-  it('reads digits one by one', () => {
-    assert.equal(PhoneNumber.parse('01712345678').spoken(), '0 1 7 1 2 3 4 5 6 7 8');
+  it('speaks the number as English digit words in groups of 3, 4 and 4', () => {
+    assert.equal(PhoneNumber.parse('01712345678').spoken(), 'zero one seven, one two three four, five six seven eight');
+  });
+
+  it('speak() takes any phone text, Bangla digits included, and keeps only the digits', () => {
+    assert.equal(PhoneNumber.speak('+880 1712-345678'), 'eight eight zero, one seven one, two three four, five six seven, eight');
+    assert.equal(PhoneNumber.speak('০১৭১২৩৪৫৬৭৮'), 'zero one seven, one two three four, five six seven eight');
+    assert.equal(PhoneNumber.speak(''), '');
   });
 });

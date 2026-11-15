@@ -34,11 +34,14 @@ describe('buildInstructions', () => {
     assert.match(text, /^You are the virtual receptionist of Dentis Dental Care/);
     assert.match(text, /colloquial Dhaka Bangla/);
     assert.match(text, /Keep common English words in English/);
-    assert.match(text, /Say phone numbers in English, digit by digit/);
+    assert.match(text, /Say phone numbers in English only, using the phone_spoken text/);
   });
 
-  it('tells the model to read the phone back digit by digit and confirm before booking', () => {
-    assert.match(text, /digit by digit/);
+  it('tells the model to save the phone first, read back phone_spoken and confirm before booking', () => {
+    assert.match(text, /call save_patient_details with the number/);
+    assert.match(text, /exactly the phone_spoken text/);
+    assert.match(text, /Tell the caller it is booked only after the tool returns ok/);
+    assert.match(text, /ask the caller to confirm. Only then use reschedule_appointment or cancel_appointment/);
     assert.match(text, /Only after the caller agrees, call book_appointment/);
   });
 

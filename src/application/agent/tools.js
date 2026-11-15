@@ -8,12 +8,12 @@ const tool = (name, description, properties = {}, required = []) => ({
 
 const DATE = 'Date as YYYY-MM-DD (clinic local time).';
 const TIME = 'Time as 24-hour HH:MM.';
-const PHONE = 'Bangladeshi mobile number, exactly as the caller said it (Bangla or English digits).';
+const PHONE = 'Bangladeshi mobile number, exactly as the caller said it (Bangla or English digits). Write it with digits.';
 
 /** Tool definitions sent to the Realtime session. Keep in sync with contracts/agent-tools.md. */
 export const AGENT_TOOLS = [
   tool('get_current_datetime', 'Get the current date, time and weekday in Dhaka. Use it to turn "next Sunday" or "tomorrow" into a real date.'),
-  tool('get_clinic_info', 'Get the clinic name, phone, address, directions, and opening hours. Always use this for hours or location questions.'),
+  tool('get_clinic_info', 'Get the clinic name, phone (and phone_spoken, the way to say it aloud), address, directions, and opening hours. Always use this for hours or location questions.'),
   tool('list_doctors', 'List the doctors with their specialty, working days and hours.'),
   tool('list_skills', 'List the topics the clinic has information about (services, fees, policies, FAQs).'),
   tool('get_skill', 'Get the full details of one knowledge topic by its exact title from the list in the prompt. Use this first when the caller asks about a listed service, fee, policy or FAQ. Call it once for each topic the question needs: one is common, a few when the question spans several.', { title: str('The exact title, as listed in the prompt.') }, ['title']),
@@ -39,7 +39,7 @@ export const AGENT_TOOLS = [
   tool('cancel_appointment', 'Cancel the caller\'s upcoming appointment.', { phone: str(PHONE), date: str('Appointment date, only if the caller has several.') }, ['phone']),
   tool(
     'save_patient_details',
-    'Save details as you learn them during the call, even when no booking is made.',
+    'Save details as you learn them during the call, even when no booking is made. When you save a phone number, the result has phone_spoken: read the number back to the caller with exactly that text.',
     {
       patient_name: str('Full name.'),
       phone: str(PHONE),
@@ -55,5 +55,5 @@ export const AGENT_TOOLS = [
     { name: str('Caller name.'), phone: str(PHONE), reason: str('What happened and what the caller needs, in one or two clear English sentences for the staff.'), preferred_time: str('When they want the call.'), urgent: { type: 'boolean', description: 'True for pain emergencies, swelling, bleeding, accidents or an upset caller: staff call these first.' } },
     ['name', 'phone', 'reason'],
   ),
-  tool('end_call', 'End the call. Call it only after you said goodbye and summarised what was agreed.'),
+  tool('end_call', 'End the call. Call it when the caller needs nothing more, after you summarised what was agreed. Do not say goodbye yourself: the system speaks the closing line.'),
 ];

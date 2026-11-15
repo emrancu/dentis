@@ -50,7 +50,7 @@ describe('BookAppointment', () => {
     const r = await book();
     assert.equal(r.slot, '2026-11-15T11:00');
     assert.equal(r.doctor_name_en, 'Dr. Nusrat Jahan');
-    assert.equal(r.phone_spoken, '0 1 7 1 2 3 4 5 6 7 8');
+    assert.equal(r.phone_spoken, 'zero one seven, one two three four, five six seven eight');
 
     const patient = await world.ports.patients.findByPhone(VALID_PHONE);
     assert.equal(patient.fullName, 'Rahim Uddin');

@@ -1,4 +1,5 @@
 import { ConflictError, DomainError, NotFoundError } from '../../domain/shared/errors.js';
+import { PhoneNumber } from '../../domain/scheduling/phone-number.js';
 import { MAX_CALL_SECONDS } from '../call-records.js';
 import { WEEKDAYS_BN, WEEKDAYS_EN, dhakaParts } from '../../domain/shared/time.js';
 
@@ -26,6 +27,7 @@ export class ToolExecutor {
           name_en: p.nameEn,
           name_bn: p.nameBn,
           phone: p.phone,
+          phone_spoken: PhoneNumber.speak(p.phone),
           address: p.address,
           address_bn: p.addressBn,
           directions: p.directions,

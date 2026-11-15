@@ -70,7 +70,7 @@ export class SaveCallDetails {
       const patient = await this.patientRegistry.ensure({ fullName: name, phone: number });
       await this.notes.attachPatient(callId, patient.id);
     }
-    return { saved: Object.keys(fields) };
+    return { saved: Object.keys(fields), ...(number ? { phone_spoken: PhoneNumber.speak(number) } : {}) };
   }
 }
 
@@ -83,7 +83,7 @@ export class RequestCallback {
     const request = CallbackRequest.create({ callId, name, phone, reason, preferredTime, urgent, now: this.clock.now() });
     const saved = await this.callbacks.insert(request);
     await this.notes.record(callId, { intent: 'callback', patientName: request.name, phone: request.phone }, Outcome.CALLBACK);
-    return { callback_id: saved.id };
+    return { callback_id: saved.id, phone_spoken: PhoneNumber.speak(request.phone) };
   }
 }
 

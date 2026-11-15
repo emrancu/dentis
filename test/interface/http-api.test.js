@@ -312,7 +312,7 @@ describe('admin agent prompt', () => {
     assert.equal(session.closing, 'Dhonnobad for calling Dentis Dental Care.');
     const prompt = world.ports.gateway.sessions.at(-1).instructions;
     assert.match(prompt, /Dhonnobad for calling Dentis Dental Care\./);
-    assert.match(prompt, /read it back in English/);
+    assert.match(prompt, /exactly the phone_spoken text/);
   });
 
   it('saves the text, and the next call uses it while keeping the locked rules', async () => {

@@ -632,6 +632,7 @@ function howItWorksView(view) {
   const rules = [
     ['Facts come from code', 'The model asks 13 server tools. Prices, hours, slots and bookings come from D1 and are checked in the domain layer, so the agent cannot invent them.'],
     ['Knowledge is chosen by title', 'The prompt lists only the entry titles. The model picks the ones a question needs and fetches their details. Staff write each entry in one plain form, in English or Bangla.'],
+    ['Numbers are spoken by the server', 'Every phone number is saved first and read back from the tool result as English digit words, so it is never said in Bangla and a wrong number is caught at once.'],
     ['Persona is editable, rules are not', 'Staff edit tone, greeting and closing. Flow, safety and scope are code, added last, and win over the persona.'],
     ['Secrets stay on the server', 'The browser only gets a short-lived key. Audio goes browser to OpenAI and never through the Worker.'],
     ['Bounded', 'A call ends at 5 minutes; silence gets a nudge at 25 s and a hang-up at 50 s. 10 calls per IP per hour.'],

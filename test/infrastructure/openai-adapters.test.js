@@ -29,7 +29,7 @@ describe('OpenAIRealtimeGateway', () => {
     await new OpenAIRealtimeGateway({ apiKey: 'k', fetchFn: reply({ value: 'ek' }) }).createClientSecret({ instructions: '', tools: [] });
     const input = reply.last.body.session.audio.input;
     assert.deepEqual(input.transcription, { model: 'gpt-4o-mini-transcribe', language: 'bn' });
-    assert.equal(input.turn_detection.type, 'semantic_vad');
+    assert.deepEqual(input.turn_detection, { type: 'semantic_vad', eagerness: 'low' });
   });
 
   it('fails clearly without leaking the key when OpenAI refuses', async () => {

@@ -41,6 +41,16 @@ describe('ToolExecutor results', () => {
     assert.equal(r.address, 'Dhanmondi, Dhaka');
   });
 
+  it('every tool that handles a phone number returns phone_spoken in English digit words', async () => {
+    const spoken = 'zero one seven, one two three four, five six seven eight';
+    const saved = await run('save_patient_details', { patient_name: 'Rahim Uddin', phone: '০১৭১২৩৪৫৬৭৮' });
+    assert.equal(saved.phone_spoken, spoken);
+    assert.equal((await run('save_patient_details', { notes: 'no phone here' })).phone_spoken, undefined);
+    const callback = await run('request_human_callback', { name: 'Karim', phone: '01712345678', reason: 'Needs a doctor to call' });
+    assert.equal(callback.phone_spoken, spoken);
+    assert.match((await run('get_clinic_info')).phone_spoken, /^[a-z ,]*$/);
+  });
+
   it('get_clinic_info gives the English and the Bangla text of every field', async () => {
     await world.services.clinic.update({ hours_bn: 'শনি–বৃহ, সকাল ১০টা থেকে রাত ৮টা', address_bn: 'ধানমন্ডি', directions_bn: 'লেকের পাশে' });
     const r = await run('get_clinic_info');

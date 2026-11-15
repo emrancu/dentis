@@ -22,7 +22,8 @@ export class OpenAIRealtimeGateway {
           audio: {
             input: {
               transcription: { model: 'gpt-4o-mini-transcribe', language: 'bn' },
-              turn_detection: { type: 'semantic_vad' },
+              // Low eagerness: callers pause between digits of a phone number and must not be cut off.
+              turn_detection: { type: 'semantic_vad', eagerness: 'low' },
               noise_reduction: { type: 'near_field' },
             },
             output: { voice: this.voice },
