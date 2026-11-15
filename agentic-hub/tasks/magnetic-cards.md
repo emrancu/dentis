@@ -33,7 +33,7 @@ Making the cards do something when clicked, the doctor and step cards moving mag
 None. (The 6% ink light instead of 18% white follows the owner's own rule for light-coloured elements.)
 
 ## Subtasks
-- [ ] 1. The effect: pure maths, controller, tests
+- [~] 1. The effect: pure maths, controller, tests
   - parallel: no
   - files: `public/js/magnetic.js`, `public/js/main.js`, `test/frontend`
   - done when: tests cover range, pull, caps, depth, light size, and the reduced-motion and touch rules
