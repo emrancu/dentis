@@ -21,15 +21,14 @@ export class ClinicService {
 
 /** Public data for the landing page. */
 export class GetPublicSite {
-  constructor({ clinic, skills, doctors }) {
-    Object.assign(this, { clinic, skills, doctors });
+  constructor({ clinic, doctors }) {
+    Object.assign(this, { clinic, doctors });
   }
 
   async execute() {
-    const [profile, skills, doctors] = await Promise.all([this.clinic.profile(), this.skills.list(), this.doctors.list()]);
+    const [profile, doctors] = await Promise.all([this.clinic.profile(), this.doctors.list()]);
     return {
       clinic: profile.toJSON(),
-      skills: skills.filter((s) => s.enabled && s.kind === 'service').map(({ id, title, description, titleBn, descriptionBn }) => ({ id, title, description, title_bn: titleBn, description_bn: descriptionBn })),
       doctors: doctors.filter((d) => d.active).map(doctorDto),
     };
   }

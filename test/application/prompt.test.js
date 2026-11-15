@@ -26,7 +26,8 @@ describe('buildInstructions', () => {
   it('starts with the default persona: colloquial Bangla and code-switching', () => {
     assert.match(text, /^You are the virtual receptionist of Dentis Dental Care/);
     assert.match(text, /colloquial Dhaka Bangla/);
-    assert.match(text, /Callers mix English words/);
+    assert.match(text, /Keep common English words in English/);
+    assert.match(text, /Say phone numbers in English, digit by digit/);
   });
 
   it('tells the model to read the phone back digit by digit and confirm before booking', () => {

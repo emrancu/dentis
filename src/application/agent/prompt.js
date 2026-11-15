@@ -16,7 +16,7 @@ function knowledgeSection(skills) {
  * @param {{profile: import('../../domain/clinic/clinic-profile.js').ClinicProfile, doctors: object[], skills: object[], now: {date:string,time:string,weekday:number}, intent?: 'booking'|'general', agentPrompt?: AgentPrompt}} p
  */
 export function buildInstructions({ profile, doctors, skills, now, intent = 'general', agentPrompt = new AgentPrompt() }) {
-  const { instructions, greeting } = agentPrompt.resolve(profile.nameEn);
+  const { instructions, greeting, closing } = agentPrompt.resolve(profile.nameEn);
   const doctorLines = doctors.length ? doctors.map((d) => `- ${d.nameEn}${d.nameBn ? ` (${d.nameBn})` : ''}, ${d.specialty || 'dentist'}: ${dayNames(d.days)} ${d.startTime}-${d.endTime}`).join('\n') : '- (none listed: use list_doctors)';
   return `${instructions}
 
@@ -26,13 +26,13 @@ ${WEEKDAYS_EN[now.weekday]} (${WEEKDAYS_BN[now.weekday]}), ${now.date}, ${now.ti
 ${intent === 'booking' ? `# This call\nThe caller pressed "Book an appointment" on the website. After the greeting, go straight to booking: ask for their name first, then follow the call flow. Still answer any question they ask on the way.\n\n` : ''}# Call flow
 1. Greet: "${greeting}"
 2. For a booking, ask the patient's full name and confirm it back.
-3. Ask the phone number and read it back digit by digit in small groups, then ask if it is correct.
+3. Ask the phone number and read it back in English, digit by digit in small groups, then ask if it is correct.
 4. Ask the reason for the visit (toothache, cleaning, check-up, follow-up…).
 5. Ask the preferred date and time. Use check_availability, offer real slots, never guess.
 6. Read back name, phone, date, time and doctor. Only after the caller agrees, call book_appointment.
 7. For reschedule or cancel, ask the phone number, then use reschedule_appointment or cancel_appointment.
 8. Call save_patient_details whenever you learn the name, phone or reason, even if no booking happens.
-9. Finish with a short summary of what was agreed, say goodbye, then call end_call.
+9. Finish with a short summary of what was agreed. When the caller needs nothing more, call end_call straight away. Do not say goodbye yourself: the system plays this closing line for you after end_call: "${closing}"
 
 # Facts: always use tools
 - Opening hours, address, directions, phone and preparation: get_clinic_info.

@@ -27,19 +27,19 @@ beforeEach(async () => {
 });
 
 describe('public API', () => {
-  it('GET /api/public/site returns the clinic, enabled skills and doctors', async () => {
+  it('GET /api/public/site returns the clinic and doctors, and no agent knowledge', async () => {
     const res = await request('GET', '/api/public/site');
     assert.equal(res.status, 200);
     const site = await res.json();
     assert.equal(site.clinic.name_en, 'Dentis Dental Care');
-    assert.deepEqual(site.skills.map((s) => s.title), ['Scaling and polishing', 'Root canal treatment']);
+    assert.equal('skills' in site, false);
     assert.equal(site.doctors.length, 2);
   });
 
   it('POST /api/session starts a call and returns only the short-lived key', async () => {
     const res = await request('POST', '/api/session', { headers: { 'CF-Connecting-IP': '203.0.113.5' } });
     assert.equal(res.status, 201);
-    assert.deepEqual(await res.json(), { call_id: 'call-1', client_secret: 'ek_test', model: 'gpt-realtime', max_seconds: 300 });
+    assert.deepEqual(await res.json(), { call_id: 'call-1', client_secret: 'ek_test', model: 'gpt-realtime-mini', max_seconds: 300, greeting: 'আসসালামু আলাইকুম, Dentis Dental Care-এ আপনাকে স্বাগতম। আমি কীভাবে আপনাকে সাহায্য করতে পারি?', closing: 'কল করার জন্য আপনাকে ধন্যবাদ। আপনার দিনটি ভালো কাটুক। আল্লাহ হাফেজ।' });
   });
 
   it('POST /api/session takes an optional intent in a JSON body, and an empty body still works', async () => {
@@ -105,18 +105,8 @@ describe('public API', () => {
     assert.equal(detail.call.status, 'booked');
     assert.equal(detail.extraction.phone, VALID_PHONE);
     assert.equal(detail.turns.length, 2);
-    assert.equal(detail.turns[0].text_en, 'EN: আসসালামু আলাইকুম');
+    assert.equal(detail.turns[0].text_bn, 'আসসালামু আলাইকুম');
     assert.equal(detail.appointments[0].slot, '2026-11-15T11:00');
-  });
-
-  it('finish starts the analysis in the background and survives its failure', async () => {
-    await request('POST', '/api/session');
-    world.ports.analyzer.fail = true;
-    const res = await request('POST', '/api/calls/call-1/finish', { body: { reason: 'hangup', turns: [{ speaker: 'patient', text: 'hi', ts: '2026-11-14T04:00:01Z' }] } });
-    assert.equal(res.status, 200);
-    assert.equal(waiting.length, 1);
-    await Promise.all(waiting);
-    assert.equal(world.ports.analyzer.calls, 1);
   });
 
   it('finish answers 404 for an unknown call', async () => {
@@ -305,13 +295,6 @@ describe('admin API', () => {
     assert.equal((await badKind.json()).error.code, 'skill_kind_invalid');
   });
 
-  it('the public site shows services only, so a new FAQ does not appear on the website', async () => {
-    await request('POST', '/api/admin/skills', { body: { title: 'Where to park', description: 'Parking info', kind: 'faq' }, headers: h });
-    const site = await (await request('GET', '/api/public/site')).json();
-    assert.ok(!site.skills.some((k) => k.title === 'Where to park'));
-    assert.equal(site.skills.length, 2);
-  });
-
   it('an FAQ added in admin is answered by the agent through get_skill on the next call', async () => {
     await request('POST', '/api/admin/skills', { body: { title: 'Where to park', description: 'Parking info', content: 'Behind the building.', kind: 'faq' }, headers: h });
     await request('POST', '/api/session');
@@ -335,9 +318,20 @@ describe('admin agent prompt', () => {
 
   it('shows the default text with its defaults', async () => {
     const r = await (await request('GET', '/api/admin/agent', { headers: h })).json();
-    assert.deepEqual(Object.keys(r).sort(), ['default_greeting', 'default_instructions', 'greeting', 'instructions']);
+    assert.deepEqual(Object.keys(r).sort(), ['closing', 'default_closing', 'default_greeting', 'default_instructions', 'greeting', 'instructions']);
     assert.equal(r.instructions, r.default_instructions);
     assert.match(r.instructions, /\{clinic\}/);
+  });
+
+  it('a saved greeting and closing are returned to the next call and the closing is in the prompt', async () => {
+    const saved = await request('PUT', '/api/admin/agent', { body: { instructions: '', greeting: 'Salam from {clinic}.', closing: 'Dhonnobad for calling {clinic}.' }, headers: h });
+    assert.equal(saved.status, 200);
+    const session = await (await request('POST', '/api/session', { headers: { 'CF-Connecting-IP': '203.0.113.9' } })).json();
+    assert.equal(session.greeting, 'Salam from Dentis Dental Care.');
+    assert.equal(session.closing, 'Dhonnobad for calling Dentis Dental Care.');
+    const prompt = world.ports.gateway.sessions.at(-1).instructions;
+    assert.match(prompt, /Dhonnobad for calling Dentis Dental Care\./);
+    assert.match(prompt, /read it back in English/);
   });
 
   it('saves the text, and the next call uses it while keeping the locked rules', async () => {
@@ -396,7 +390,6 @@ describe('admin agent prompt', () => {
     assert.deepEqual([settings.hours_bn, settings.address_bn, settings.directions_bn, settings.prep_notes_bn], ['শনি–বৃহ', 'ধানমন্ডি', 'লেকের পাশে', 'আগে আসুন']);
 
     const site = await (await request('GET', '/api/public/site')).json();
-    assert.equal(site.skills.find((k) => k.title === 'Implants').title_bn, 'ইমপ্ল্যান্ট');
     assert.equal(site.doctors.find((d) => d.id === 1).specialty_bn, 'সাধারণ সেবা');
     assert.equal(site.clinic.hours_bn, 'শনি–বৃহ');
   });

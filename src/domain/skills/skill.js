@@ -6,7 +6,7 @@ export const TITLE_INDEX_CAP = 40;
 
 /**
  * Entity: a piece of dental-clinic knowledge the voice agent can fetch by tool call
- * (a service, a price note, a policy, an FAQ…). Only `service` entries appear on the website.
+ * (a service, a price note, a policy, an FAQ…). The voice agent knows every enabled entry. None of it is shown on the website.
  */
 export class Skill {
   constructor({ id = null, title, description, titleBn = '', descriptionBn = '', content = '', kind = 'service', keywords = '', enabled = true, updatedAt = null }) {

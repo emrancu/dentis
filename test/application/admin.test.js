@@ -92,13 +92,11 @@ describe('AdminQueries', () => {
 
   it('returns the whole call: extraction, ordered transcript, appointment and callbacks', async () => {
     const callId = await makeCall({ book: true, turns: [turn('agent', 'আসসালামু আলাইকুম'), turn('patient', 'আমি অ্যাপয়েন্টমেন্ট চাই')] });
-    await s.analyzeCall.execute({ callId });
     const d = await s.adminQueries.getCall(callId);
     assert.equal(d.call.status, 'booked');
     assert.equal(d.call.has_recording, false);
-    assert.equal(d.call.summary, 'The patient asked for a toothache appointment.');
     assert.equal(d.extraction.outcome, 'booked');
-    assert.deepEqual(d.turns.map((t) => [t.speaker, t.text_bn, t.text_en]), [['agent', 'আসসালামু আলাইকুম', 'EN: আসসালামু আলাইকুম'], ['patient', 'আমি অ্যাপয়েন্টমেন্ট চাই', 'EN: আমি অ্যাপয়েন্টমেন্ট চাই']]);
+    assert.deepEqual(d.turns.map((t) => [t.speaker, t.text_bn, t.text_en]), [['agent', 'আসসালামু আলাইকুম', null], ['patient', 'আমি অ্যাপয়েন্টমেন্ট চাই', null]]);
     assert.deepEqual([d.appointments[0].slot, d.appointments[0].doctor_name, d.appointments[0].patient_name], ['2026-11-15T11:00', 'Dr. Nusrat Jahan', 'Rahim Uddin']);
     assert.deepEqual(d.callbacks, []);
   });
@@ -131,6 +129,7 @@ describe('AdminQueries', () => {
   it('lists appointments with patient and doctor names, and patients', async () => {
     await makeCall({ book: true });
     const { items } = await s.adminQueries.listAppointments({ status: 'booked' });
+    assert.equal(typeof items[0].doctor_id, 'number');
     assert.deepEqual([items[0].patient_name, items[0].doctor_name, items[0].status], ['Rahim Uddin', 'Dr. Nusrat Jahan', 'booked']);
     assert.equal((await s.adminQueries.listAppointments({ status: 'cancelled' })).items.length, 0);
     assert.equal((await s.adminQueries.listPatients({ q: 'Rahim' })).items[0].phone, VALID_PHONE);
@@ -228,13 +227,11 @@ describe('ClinicService and GetPublicSite', () => {
     assert.deepEqual(r.slots.slice(0, 3).map((x) => x.time), ['10:00', '11:00', '12:00']);
   });
 
-  it('public site shows enabled skills and active doctors only', async () => {
+  it('public site shows active doctors only', async () => {
     const doctor = await world.ports.doctors.findById(2);
     doctor.active = false;
     await world.ports.doctors.save(doctor);
     const site = await s.getPublicSite.execute();
-    assert.deepEqual(site.skills.map((k) => k.title), ['Scaling and polishing', 'Root canal treatment']);
-    assert.equal('content' in site.skills[0], false);
     assert.deepEqual(site.doctors.map((d) => d.name_en), ['Dr. Nusrat Jahan']);
     assert.equal(site.clinic.name_en, 'Dentis Dental Care');
   });

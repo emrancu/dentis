@@ -1,8 +1,8 @@
-import { errorKindOf, sessionUpdateGreeting, toolCallFrom, toolOutputMessages } from './call-messages.js';
+import { closingMessages, errorKindOf, greetingMessage, toolCallFrom, toolOutputMessages } from './call-messages.js';
 import { TranscriptBuilder } from './transcript.js';
 
 const REALTIME_CALLS_URL = 'https://api.openai.com/v1/realtime/calls';
-const END_FALLBACK_MS = 6000;
+const END_FALLBACK_MS = 20000; // the closing line must finish before we hang up; this only catches a stuck call
 
 /** Fails with a `kind` the UI maps to a message. */
 const fail = (kind, cause) => Object.assign(new Error(kind), { kind, cause });
@@ -32,6 +32,11 @@ export class BanglaCall extends EventTarget {
   #endTimer;
   #finishing = false;
   #pendingEnd = false;
+  #greeting = '';
+  #closing = '';
+  #closingCallId = null;
+  #closingSent = false;
+  #closingHeard = false;
 
   /** Voice activity of both sides, 0..1, for the waveform. */
   levels() {
@@ -64,6 +69,8 @@ export class BanglaCall extends EventTarget {
       const session = await this.#createSession();
       this.#callId = session.call_id;
       this.#maxSeconds = session.max_seconds ?? 300;
+      this.#greeting = session.greeting ?? '';
+      this.#closing = session.closing ?? '';
       await this.#connect(session.client_secret);
     } catch (error) {
       await this.#abort(error);
@@ -114,7 +121,7 @@ export class BanglaCall extends EventTarget {
       this.#startedAt = Date.now();
       this.#timer = setInterval(() => this.#tick(), 1000);
       this.#set('live');
-      this.#send(sessionUpdateGreeting());
+      if (this.#greeting) this.#send(greetingMessage(this.#greeting));
     };
 
     await pc.setLocalDescription(await pc.createOffer());
@@ -167,7 +174,13 @@ export class BanglaCall extends EventTarget {
       return;
     }
     if (this.#transcript.handle(event)) this.dispatchEvent(new CustomEvent('caption', { detail: { text: this.#transcript.lastAgentText() } }));
-    if (event.type === 'output_audio_buffer.stopped' && this.#pendingEnd) {
+    // end_call: wait until the model's own reply is finished, then speak the scripted closing line, then hang up.
+    if (event.type === 'response.done' && this.#closingCallId && !this.#closingSent) {
+      this.#closingSent = true;
+      closingMessages(this.#closingCallId, this.#closing).forEach((m) => this.#send(m));
+    }
+    if (event.type === 'output_audio_buffer.started' && this.#closingSent) this.#closingHeard = true;
+    if (event.type === 'output_audio_buffer.stopped' && this.#closingHeard) {
       clearTimeout(this.#endTimer);
       this.#endTimer = setTimeout(() => this.#finish('hangup'), 700);
     }
@@ -188,8 +201,9 @@ export class BanglaCall extends EventTarget {
       result = { ok: false, error: 'tool_unavailable', message: 'The system could not do that right now. Offer a human callback.' };
     }
     if (name === 'end_call') {
-      // The goodbye is already spoken; hang up once the audio has played out.
       this.#pendingEnd = true;
+      this.#closingCallId = callId;
+      if (!this.#closing) this.#closingSent = this.#closingHeard = true; // no closing text: hang up after the model's own words
       this.#endTimer = setTimeout(() => this.#finish('hangup'), END_FALLBACK_MS);
       return;
     }
@@ -270,6 +284,9 @@ export class BanglaCall extends EventTarget {
     this.#chunks = [];
     this.#recorder = null;
     this.#pendingEnd = false;
+    this.#closingCallId = null;
+    this.#closingSent = false;
+    this.#closingHeard = false;
     this.#finishing = false;
     this.#transcript = new TranscriptBuilder();
     this.#analysers = {};

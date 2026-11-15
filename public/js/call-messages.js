@@ -1,9 +1,19 @@
 /** Realtime data-channel messages we send, and parsing of the model's function calls. */
 
-export const sessionUpdateGreeting = () => ({
+const sayExactly = (text, extra) => ({
   type: 'response.create',
-  response: { instructions: 'Greet the caller now with the scripted greeting from your instructions, in natural Bangla. Then wait.' },
+  // A response-level instruction replaces the session prompt for that one reply, so the exact words must be in it.
+  response: { instructions: `Say exactly the following to the caller, in the same language, and nothing else. ${extra}\n\n${text}` },
 });
+
+/** The scripted greeting, spoken as soon as the data channel opens. */
+export const greetingMessage = (greeting) => sayExactly(greeting, 'Then wait for the caller.');
+
+/** Answers end_call and then speaks the scripted closing line. Send it after the current response is done. */
+export const closingMessages = (callId, closing) => [
+  { type: 'conversation.item.create', item: { type: 'function_call_output', call_id: callId, output: JSON.stringify({ ok: true }) } },
+  sayExactly(closing, 'Do not ask anything and do not add anything.'),
+];
 
 export function toolCallFrom(event) {
   const item = event?.type === 'response.output_item.done' ? event.item : null;

@@ -23,5 +23,6 @@ Read [agentic-hub/README.md](agentic-hub/README.md) first. The hub holds everyth
 - **Tasks live in the hub.** A feature is one file in `agentic-hub/tasks/`, created with `/create-task` and run with `/task-loop`. Branch: `feature/<task-id>`.
 - **Open choices** are in `decisions.md`. Do not build on an open one without telling the user which default you used.
 - **Secrets** never go in the repo. Use `.dev.vars` locally and Wrangler secrets in production. Fake patient data only.
+- **Never overwrite, truncate or delete `.dev.vars`.** It holds the owner's real keys and cannot be recovered. To test locally pass fake values on the command line: `npx wrangler dev --var OPENAI_API_KEY:x --var ADMIN_ACCESS_KEY:local-test-key` (command-line vars win over the file, and a fake key avoids real OpenAI calls).
 - **Docs style:** short, plain sentences.
 - **Git:** small logical commits. Do not push or merge unless the user asks, except what `/task-loop` allows.

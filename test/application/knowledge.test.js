@@ -57,13 +57,6 @@ describe('Bangla display fields', () => {
     assert.equal(found.title_bn, 'স্কেলিং ও পলিশিং');
   });
 
-  it('the public site carries both languages for services, with empty strings when a Bangla text is missing', async () => {
-    await s.skillCatalog.update(1, { title: 'Scaling and polishing', description: 'Cleaning', titleBn: 'স্কেলিং ও পলিশিং', descriptionBn: 'দাঁত পরিষ্কার' });
-    const site = await s.getPublicSite.execute();
-    assert.deepEqual(site.skills[0], { id: 1, title: 'Scaling and polishing', description: 'Cleaning', title_bn: 'স্কেলিং ও পলিশিং', description_bn: 'দাঁত পরিষ্কার' });
-    assert.deepEqual([site.skills[1].title_bn, site.skills[1].description_bn], ['', '']);
-  });
-
   it('the public site carries the Bangla specialty of doctors and the Bangla clinic fields', async () => {
     await s.doctorDirectory.update(1, { nameEn: 'Dr. Nusrat Jahan', nameBn: 'ডা. নুসরাত জাহান', specialty: 'General', specialtyBn: 'সাধারণ সেবা', days: [6], startTime: '10:00', endTime: '17:00' });
     await s.clinic.update({ address_bn: 'ধানমন্ডি', hours_bn: 'শনি–বৃহ' });
@@ -111,12 +104,10 @@ describe('SkillCatalog kind, keywords and titles', () => {
 });
 
 describe('what the website and the agent see', () => {
-  it('the website shows enabled services only, not FAQs, policies or disabled entries', async () => {
+  it('the public site carries no agent knowledge at all', async () => {
     await add({ title: 'Where to park', kind: 'faq' });
-    await add({ title: 'Refund policy', kind: 'policy' });
-    await add({ title: 'Hidden service', enabled: false });
     const site = await s.getPublicSite.execute();
-    assert.deepEqual(site.skills.map((k) => k.title), ['Scaling and polishing', 'Root canal treatment']);
+    assert.deepEqual(Object.keys(site).sort(), ['clinic', 'doctors']);
   });
 
   it('the agent still sees FAQs and policies in list_skills and in the prompt', async () => {

@@ -22,7 +22,7 @@ A dental centre website: the hero's main action is **Book an appointment** (book
 Everything the agent says and knows is edited in `/admin`, with no deploy. The next call uses it.
 
 - **Agent prompt:** edit the persona and tone (`Instructions`) and the `Greeting`. Write `{clinic}` where the clinic name goes. **Show final prompt** previews the whole prompt for unsaved text, and **Reset to default** restores the built-in text. The booking steps, tool rules, "facts only from tools" and safety rules are **locked in code**. They always come after your text and win over it, so they cannot be edited away.
-- **Agent knowledge:** each entry has a type (**Service**, **FAQ** or **Policy**), a title, a description, the details the agent will say, and keywords (other words callers use, in Bangla and English). Only **services** show on the website.
+- **Agent knowledge:** each entry has a type (**Service**, **FAQ** or **Policy**), a title, a description, the details the agent will say, and keywords (other words callers use, in Bangla and English). This knowledge is for the voice agent only. The website's service list is fixed copy in `public/js/services.js`, so editing it needs a code change.
 - **How the agent finds an entry:** it is shown the titles of enabled entries (never the details), up to 40. It fetches one by exact title with `get_skill`, or searches with `lookup_skill` by the caller's own words. Past 40 entries the list is left out and the agent only searches. The page shows "N of 40 titles in the agent's index".
 - **Retrieval is tested:** `test/application/retrieval-eval.test.js` runs 32 Bangla and English phrasings through the real seed and ranking. The expected entry must be in the top 3 for at least 90 percent (today 32 of 32; 29 of 32 are first).
 
@@ -31,9 +31,9 @@ Everything the agent says and knows is edited in `/admin`, with no deploy. The n
 ```
 Browser ──POST /api/session {intent}──▶ StartCall: new call row, prompt built from clinic + doctors + skill titles,
    │                                  short-lived OpenAI key returned
-   ├─ WebRTC audio + data channel ──▶ OpenAI Realtime (gpt-realtime, Bangla)
+   ├─ WebRTC audio + data channel ──▶ OpenAI Realtime (gpt-realtime-mini, Bangla)
    ├─ model function call ──POST /api/agent/tools/:name──▶ ToolExecutor ─▶ use cases ─▶ D1
-   ├─ hang up ──POST /api/calls/:id/finish──▶ transcript saved, status derived ─▶ background analysis
+   ├─ hang up ──POST /api/calls/:id/finish──▶ transcript saved, status derived
    └─ PUT /api/calls/:id/recording ─▶ R2
 ```
 
@@ -49,7 +49,7 @@ cp .dev.vars.example .dev.vars        # put your OPENAI_API_KEY and an ADMIN_ACC
 npm run db:init:local                 # apply migrations (tracked): schema + Dentis demo clinic + knowledge
 npm run db:samples:local              # optional: 4 invented sample calls from seed/
 npm run dev                           # http://localhost:8787  (admin: /admin)
-npm test                              # 401 tests, no setup needed
+npm test                              # 452 tests, no setup needed
 ```
 
 ## Deploy
@@ -83,7 +83,7 @@ agentic-hub/         requirements, principles, epics, contracts, task commands
 
 ## Tests
 
-`npm test` runs 401 tests with Node's built-in runner:
+`npm test` runs 452 tests with Node's built-in runner:
 
 | Folder | What it proves |
 |---|---|
@@ -104,7 +104,7 @@ agentic-hub/         requirements, principles, epics, contracts, task commands
 
 
 - **A live voice call was not run end to end.** This build environment had no OpenAI key or microphone. Everything around the call is tested: session creation, tool execution, transcript handling, status derivation, the call panel states. The Realtime endpoint shapes (`/v1/realtime/client_secrets`, `/v1/realtime/calls`, GA event names) follow OpenAI's docs as I know them. **Make one real call first** and watch the browser console if anything differs.
-- **Bangla quality is not measured.** The prompt asks for colloquial Dhaka Bangla, code-switching, digit read-back and safe behaviour. Accent and number recognition depend on the model. Read-back confirmation and the post-call analysis are the safety nets.
+- **Bangla quality is not measured.** The prompt asks for colloquial Dhaka Bangla, code-switching, digit read-back and safe behaviour. Accent and number recognition depend on the model. Read-back confirmation is the safety net.
 - **Not deployed.** I had no Cloudflare account access. The steps above are tested only against `wrangler dev` with local D1.
 - **Sample calls are invented** (`seed/sample_calls.sql`). Replace them with your own test calls before submitting.
 - Single shared access key, no per-user audit, no login rate limit in code.
@@ -114,5 +114,5 @@ agentic-hub/         requirements, principles, epics, contracts, task commands
 
 1. Landing page, flip through the treatments in the hero, switch to Bangla (20 s).
 2. Press **Book an appointment**, book an appointment by voice, mixing in English words, read the phone number back (90 s).
-3. Open `/admin`, log in, show the call, transcript with English translation, captured fields, the appointment and the recording (45 s).
+3. Open `/admin`, log in, show the call, transcript, captured fields, the appointment and the recording (45 s).
 4. Edit a skill's fee in **Agent skills**, call again and ask for the price (25 s).

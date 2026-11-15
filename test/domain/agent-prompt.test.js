@@ -37,10 +37,10 @@ describe('AgentPrompt', () => {
   });
 
   it('round-trips through the settings keys', () => {
-    const p = new AgentPrompt({ instructions: 'Hello', greeting: 'Hi' });
-    assert.deepEqual(p.toSettings(), { agent_instructions: 'Hello', agent_greeting: 'Hi' });
+    const p = new AgentPrompt({ instructions: 'Hello', greeting: 'Hi', closing: 'Bye' });
+    assert.deepEqual(p.toSettings(), { agent_instructions: 'Hello', agent_greeting: 'Hi', agent_closing: 'Bye' });
     assert.deepEqual(AgentPrompt.fromSettings(p.toSettings()), p);
-    assert.deepEqual(AgentPrompt.fromSettings({}).toSettings(), { agent_instructions: '', agent_greeting: '' });
+    assert.deepEqual(AgentPrompt.fromSettings({}).toSettings(), { agent_instructions: '', agent_greeting: '', agent_closing: '' });
   });
 
   it('is immutable', () => {

@@ -35,16 +35,19 @@ export class StartCall {
     await this.calls.create(call);
     try {
       const [doctors, skills, map] = await Promise.all([this.doctors.list(), this.skills.list(), this.settings.all()]);
+      const agentPrompt = AgentPrompt.fromSettings(map);
+      const profile = ClinicProfile.fromMap(map);
       const instructions = buildInstructions({
-        profile: ClinicProfile.fromMap(map),
+        profile,
         doctors: doctors.filter((d) => d.active),
         skills,
         now: dhakaParts(now),
         intent: intent === 'booking' ? 'booking' : 'general',
-        agentPrompt: AgentPrompt.fromSettings(map),
+        agentPrompt,
       });
+      const { greeting, closing } = agentPrompt.resolve(profile.nameEn);
       const secret = await this.gateway.createClientSecret({ instructions, tools: AGENT_TOOLS });
-      return { callId: call.id, clientSecret: secret.value, model: secret.model, maxSeconds: MAX_CALL_SECONDS };
+      return { callId: call.id, clientSecret: secret.value, model: secret.model, maxSeconds: MAX_CALL_SECONDS, greeting, closing };
     } catch (error) {
       call.markFailed(now);
       await this.calls.save(call);
@@ -123,36 +126,6 @@ export class FinishCall {
     });
     await this.calls.save(call);
     return call;
-  }
-}
-
-/** After the call: English summary and translation, and fills extraction gaps. Never overrides data the tools captured. */
-export class AnalyzeCall {
-  constructor({ calls, analyzer }) {
-    Object.assign(this, { calls, analyzer });
-  }
-
-  async execute({ callId }) {
-    const call = await this.calls.findById(callId);
-    const turns = await this.calls.getTurns(callId);
-    if (!call || turns.length === 0) return;
-    const result = await this.analyzer.analyze({ turns });
-    await this.calls.saveTurns(callId, turns.map((t, i) => ({ ...t, textEn: result.english?.[i] ?? t.textEn })));
-    const current = (await this.calls.getExtraction(callId)) ?? {};
-    const guess = result.extraction ?? {};
-    const fill = {};
-    for (const key of ['patientName', 'reasonForVisit', 'preferredDatetime']) if (!current[key] && guess[key]) fill[key] = guess[key];
-    if (!current.intent && INTENTS.includes(guess.intent)) fill.intent = guess.intent;
-    if (!current.phone && guess.phone) {
-      try {
-        fill.phone = PhoneNumber.parse(guess.phone).value;
-      } catch {
-        // an unreadable guessed number is dropped rather than stored
-      }
-    }
-    await this.calls.mergeExtraction(callId, fill);
-    call.summary = result.summary || null;
-    await this.calls.save(call);
   }
 }
 

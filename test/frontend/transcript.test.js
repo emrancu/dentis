@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { errorKindOf, sessionUpdateGreeting, toolCallFrom, toolOutputMessages } from '../../public/js/call-messages.js';
+import { errorKindOf, greetingMessage, closingMessages, toolCallFrom, toolOutputMessages } from '../../public/js/call-messages.js';
 import { TranscriptBuilder } from '../../public/js/transcript.js';
 
 const clock = (() => { let n = 0; return () => `2026-11-14T04:00:${String(n++).padStart(2, '0')}.000Z`; })();
@@ -96,7 +96,16 @@ describe('call messages', () => {
   });
 
   it('starts the call by asking the model to greet', () => {
-    assert.equal(sessionUpdateGreeting().type, 'response.create');
+    const g = greetingMessage('আসসালামু আলাইকুম, Dentis-এ স্বাগতম।');
+    assert.equal(g.type, 'response.create');
+    assert.ok(g.response.instructions.includes('আসসালামু আলাইকুম, Dentis-এ স্বাগতম।'), 'the exact words must be in the response instructions');
+  });
+
+  it('the closing answers end_call and then speaks the scripted line', () => {
+    const [output, say] = closingMessages('c9', 'কল করার জন্য ধন্যবাদ।');
+    assert.deepEqual([output.type, output.item.call_id], ['conversation.item.create', 'c9']);
+    assert.equal(say.type, 'response.create');
+    assert.ok(say.response.instructions.includes('কল করার জন্য ধন্যবাদ।'));
   });
 
   it('maps browser errors to message keys', () => {

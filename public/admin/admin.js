@@ -8,13 +8,13 @@ const NAV = [
   ['', 'Overview'],
   ['calls', 'Calls'],
   ['appointments', 'Appointments'],
-  ['follow-ups', 'Follow-ups'],
+  ['schedule', 'Schedule'],
   ['patients', 'Patients'],
   ['agent', 'Agent prompt'],
   ['skills', 'Agent knowledge'],
   ['doctors', 'Doctors'],
   ['clinic', 'Clinic profile'],
-  ['data', 'How data is stored'],
+  ['how-it-works', 'How the agent works'],
 ];
 
 /* ---------- api ---------- */
@@ -92,7 +92,7 @@ async function renderShell() {
     <div class="shell">
       <aside class="side" id="side" aria-label="Sections">
         <a class="brand" href="#/"><img src="/logo-mark.svg" alt="">Dentis</a>
-        ${NAV.map(([key, label]) => `<a class="nav" href="#/${key}" ${key === base ? 'aria-current="page"' : ''}>${esc(label)}${key === 'follow-ups' ? '<span class="badge" id="fu-badge" hidden></span>' : ''}</a>`).join('')}
+        ${NAV.map(([key, label]) => `<a class="nav" href="#/${key}" ${key === base ? 'aria-current="page"' : ''}>${esc(label)}</a>`).join('')}
         <span class="spacer"></span>
         <a class="nav" href="/" target="_blank" rel="noopener">View website ↗</a>
         <button class="nav" id="logout" type="button">Log out</button>
@@ -104,23 +104,19 @@ async function renderShell() {
     await api('POST', '/logout').catch(() => {});
     showLogin();
   };
-  api('GET', '/callbacks?status=open').then(({ items }) => {
-    const badge = document.getElementById('fu-badge');
-    if (badge && items.length) Object.assign(badge, { hidden: false, textContent: items.length });
-  }).catch(() => {});
 }
 
 const views = {
   '': overview,
   calls: callsView,
   appointments: appointmentsView,
-  'follow-ups': followUpsView,
+  schedule: scheduleView,
   patients: patientsView,
   agent: agentView,
   skills: skillsView,
   doctors: doctorsView,
   clinic: clinicView,
-  data: dataView,
+  'how-it-works': howItWorksView,
 };
 
 async function route() {
@@ -148,7 +144,6 @@ async function overview(view) {
       <div class="card stat"><div class="n">${d.by_status.booked ?? 0}</div><div class="l">Calls that booked</div></div>
       <div class="card stat"><div class="n">${esc(formatDuration(d.avg_duration_s))}</div><div class="l">Average call length</div></div>
       <div class="card stat"><div class="n">${d.upcoming_appointments}</div><div class="l">Upcoming appointments</div></div>
-      <div class="card stat"><div class="n">${d.open_callbacks}</div><div class="l">Follow-ups waiting</div></div>
     </div>
     <div class="grid two">
       <section class="card"><h2>Calls, last 7 days</h2>
@@ -210,7 +205,6 @@ async function callDetail(view, id) {
         <section class="card"><h2>Captured details</h2><dl class="dl">
           ${field('Name', extraction.patient_name)}${field('Phone', extraction.phone)}${field('Reason for visit', extraction.reason_for_visit)}${field('Preferred time', /^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(extraction.preferred_datetime ?? '') ? formatSlot(extraction.preferred_datetime) : extraction.preferred_datetime)}${field('Intent', extraction.intent)}${field('Outcome', extraction.outcome)}${field('Notes', extraction.notes)}
         </dl></section>
-        ${call.summary ? `<section class="card"><h2>Summary</h2><p style="margin:0">${esc(call.summary)}</p></section>` : ''}
         ${call.has_recording ? `<section class="card"><h2>Recording</h2><audio controls preload="none" src="/api/admin/calls/${encodeURIComponent(call.id)}/recording"></audio></section>` : ''}
         ${appointments.length ? `<section class="card"><h2>Appointment</h2>${appointments.map((a) => `<dl class="dl"><dt>When</dt><dd>${esc(formatSlot(a.slot))}</dd><dt>Doctor</dt><dd>${esc(a.doctor_name)}</dd><dt>Service</dt><dd>${esc(a.service || '–')}</dd><dt>Status</dt><dd>${chip(a.status)}</dd></dl>`).join('<hr>')}</section>` : ''}
         ${callbacks.length ? `<section class="card"><h2>Follow-up requested</h2>${callbacks.map((c) => `<dl class="dl"><dt>Name</dt><dd>${esc(c.name)}</dd><dt>Phone</dt><dd>${esc(c.phone)}</dd><dt>Reason</dt><dd>${esc(c.reason)}</dd><dt>Status</dt><dd>${chip(c.status)}</dd></dl>`).join('<hr>')}</section>` : ''}
@@ -218,7 +212,7 @@ async function callDetail(view, id) {
     </div>`;
 }
 
-/* ---------- appointments, follow-ups, patients ---------- */
+/* ---------- appointments, patients ---------- */
 async function appointmentsView(view) {
   const { items } = await api('GET', '/appointments');
   view.innerHTML = `${head('Appointments', 'Bookings made by the receptionist')}${
@@ -228,27 +222,77 @@ async function appointmentsView(view) {
           .join('')}</tbody></table></div>`
       : `<div class="table-wrap">${empty('No appointments yet. Make a call from the website.')}</div>`
   }`;
+  const byId = new Map(items.map((a) => [String(a.id), a]));
   view.querySelectorAll('[data-act]').forEach((b) => (b.onclick = guard(async () => {
+    const a = byId.get(b.dataset.id);
+    const done = b.dataset.act === 'completed';
+    const who = `${a.patient_name} on ${formatSlot(a.slot)}`;
+    const ok = await confirmDialog({
+      title: done ? 'Mark this appointment as done?' : 'Cancel this appointment?',
+      text: done ? `${who} will be marked as completed.` : `${who} will be cancelled and the slot becomes free again. This cannot be undone.`,
+      confirm: done ? 'Mark done' : 'Cancel appointment',
+      cancel: done ? 'Not yet' : 'Keep it',
+      danger: !done,
+    });
+    if (!ok) return;
     await api('PATCH', `/appointments/${b.dataset.id}`, { status: b.dataset.act });
-    toast('Appointment updated');
+    toast(done ? 'Marked as done' : 'Appointment cancelled');
     route();
   })));
 }
 
-async function followUpsView(view) {
-  const { items } = await api('GET', '/callbacks');
-  view.innerHTML = `${head('Follow-ups', 'Callers who need a human to call back')}${
-    items.length
-      ? `<div class="table-wrap"><table><thead><tr><th>Requested</th><th>Caller</th><th>Reason</th><th>Best time</th><th>Status</th><th></th></tr></thead><tbody>${items
-          .map((c) => `<tr><td>${esc(formatDateTime(c.created_at))}</td><td><strong class="bn">${esc(c.name)}</strong><br><span class="muted">${esc(c.phone)}</span></td><td>${esc(c.reason)}</td><td>${esc(c.preferred_time || '–')}</td><td>${chip(c.status)}</td><td>${c.status === 'open' ? `<button class="btn btn-small" data-id="${c.id}">Mark resolved</button>` : ''} ${c.call_id ? `<a href="#/calls/${esc(c.call_id)}">Call</a>` : ''}</td></tr>`)
-          .join('')}</tbody></table></div>`
-      : `<div class="table-wrap">${empty('No follow-ups. Nobody is waiting for a callback.')}</div>`
-  }`;
-  view.querySelectorAll('button[data-id]').forEach((b) => (b.onclick = guard(async () => {
-    await api('PATCH', `/callbacks/${b.dataset.id}/resolve`);
-    toast('Marked resolved');
-    route();
-  })));
+/* ---------- schedule: one day, one column per doctor ---------- */
+const dhakaToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' }).format(new Date());
+const shiftDate = (iso, days) => new Date(Date.parse(`${iso}T00:00:00Z`) + days * 86400000).toISOString().slice(0, 10);
+const toMinutes = (hhmm) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
+const toClock = (min) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+const clock12 = (hhmm) => `${Number(hhmm.slice(0, 2)) % 12 || 12}:${hhmm.slice(3, 5)} ${Number(hhmm.slice(0, 2)) < 12 ? 'am' : 'pm'}`;
+let scheduleDate = null;
+
+async function scheduleView(view) {
+  scheduleDate ??= dhakaToday();
+  const [{ items: doctors }, { items: appointments }, clinic] = await Promise.all([api('GET', '/doctors'), api('GET', '/appointments'), api('GET', '/settings')]);
+  const date = scheduleDate;
+  const weekday = new Date(`${date}T00:00:00Z`).getUTCDay();
+  const step = Number(clinic.slot_minutes) || 30;
+  const working = doctors.filter((d) => d.active && d.days.includes(weekday));
+  const off = doctors.filter((d) => d.active && !d.days.includes(weekday));
+  const booked = new Map(); // "doctorId|HH:MM" -> appointment
+  for (const a of appointments) if (a.slot.startsWith(date) && a.status !== 'cancelled') booked.set(`${a.doctor_id}|${a.slot.slice(11, 16)}`, a);
+  const first = working.length ? Math.min(...working.map((d) => toMinutes(d.start_time))) : 0;
+  const last = working.length ? Math.max(...working.map((d) => toMinutes(d.end_time))) : 0;
+  const rows = [];
+  for (let m = first; m + step <= last; m += step) rows.push(m);
+  const open = (d, m) => m >= toMinutes(d.start_time) && m + step <= toMinutes(d.end_time);
+  const total = rows.reduce((n, m) => n + working.filter((d) => open(d, m)).length, 0);
+  const taken = [...booked.keys()].filter((k) => working.some((d) => String(d.id) === k.split('|')[0])).length;
+  const long = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${date}T00:00:00Z`));
+
+  const cell = (d, m) => {
+    if (!open(d, m)) return '<td class="slot-off" aria-label="Not working"></td>';
+    const a = booked.get(`${d.id}|${toClock(m)}`);
+    if (!a) return '<td class="slot-free"><span>Free</span></td>';
+    return `<td class="slot-booked ${esc(a.status)}"><strong class="bn">${esc(a.patient_name ?? 'Patient')}</strong><span>${esc(a.phone ?? '')}</span>${a.service ? `<span>${esc(a.service)}</span>` : ''}<span>${chip(a.status)}${a.call_id ? ` <a href="#/calls/${esc(a.call_id)}">Call</a>` : ''}</span></td>`;
+  };
+
+  view.innerHTML = `${head('Schedule', 'Every doctor, every slot, one day at a time')}
+    <div class="toolbar sched-bar">
+      <button class="btn" id="prev" type="button" aria-label="Previous day">‹</button>
+      <input type="date" id="pick" value="${date}" aria-label="Choose a day">
+      <button class="btn" id="next" type="button" aria-label="Next day">›</button>
+      <button class="btn" id="today" type="button" ${date === dhakaToday() ? 'disabled' : ''}>Today</button>
+      <strong class="sched-date">${esc(long)}</strong>
+      <span class="muted">${taken} booked · ${Math.max(total - taken, 0)} free</span>
+    </div>
+    ${working.length
+      ? `<div class="table-wrap"><table class="sched"><thead><tr><th>Time</th>${working.map((d) => `<th>${esc(d.name_en)}<small>${esc(clock12(d.start_time))} – ${esc(clock12(d.end_time))}</small></th>`).join('')}</tr></thead><tbody>${rows.map((m) => `<tr><th scope="row">${esc(clock12(toClock(m)))}</th>${working.map((d) => cell(d, m)).join('')}</tr>`).join('')}</tbody></table></div>`
+      : `<div class="table-wrap">${empty('No doctor works on this day.')}</div>`}
+    ${off.length && working.length ? `<p class="muted" style="margin-top:12px">Not working today: ${off.map((d) => esc(d.name_en)).join(', ')}.</p>` : ''}`;
+  const go = (iso) => { scheduleDate = iso; route(); };
+  view.querySelector('#prev').onclick = () => go(shiftDate(date, -1));
+  view.querySelector('#next').onclick = () => go(shiftDate(date, 1));
+  view.querySelector('#today').onclick = () => go(dhakaToday());
+  view.querySelector('#pick').onchange = (e) => e.target.value && go(e.target.value);
 }
 
 async function patientsView(view) {
@@ -268,6 +312,7 @@ async function patientsView(view) {
 /* ---------- agent prompt ---------- */
 const MAX_INSTRUCTIONS = 4000;
 const MAX_GREETING = 300;
+const MAX_CLOSING = 300;
 
 async function agentView(view) {
   const a = await api('GET', '/agent');
@@ -278,6 +323,8 @@ async function agentView(view) {
           <textarea name="instructions" rows="14" class="bn" spellcheck="false">${esc(a.instructions)}</textarea></label>
         <label class="field"><span>Greeting <small class="counter" id="count-greeting"></small></span>
           <textarea name="greeting" rows="3" class="bn" spellcheck="false">${esc(a.greeting)}</textarea></label>
+        <label class="field"><span>Closing: said when the call ends <small class="counter" id="count-closing"></small></span>
+          <textarea name="closing" rows="3" class="bn" spellcheck="false">${esc(a.closing)}</textarea></label>
         <p class="hint">Write <code>{clinic}</code> where the clinic name should go.</p>
         <p class="error-text" id="agent-error" role="alert"></p>
         <div class="toolbar" style="margin:0">
@@ -290,7 +337,7 @@ async function agentView(view) {
         <p class="muted" style="margin-top:0">These parts stay in code, come after your text, and win over it. They cannot be edited or removed here.</p>
         <ul class="locked">
           <li>Today's date and time</li>
-          <li>The call flow: name, phone read back digit by digit, reason, time, confirm before booking</li>
+          <li>The call flow: name, phone read back in English digits, reason, time, confirm before booking</li>
           <li>Facts only from the clinic's tools: never invent prices, hours or slots</li>
           <li>Safety: no medical advice, emergencies go to a doctor or hospital</li>
           <li>Clinic hours, doctors and the knowledge topic titles</li>
@@ -307,10 +354,11 @@ async function agentView(view) {
   const update = () => {
     count('instructions', MAX_INSTRUCTIONS, view.querySelector('#count-instructions'));
     count('greeting', MAX_GREETING, view.querySelector('#count-greeting'));
+    count('closing', MAX_CLOSING, view.querySelector('#count-closing'));
   };
   form.addEventListener('input', update);
   update();
-  const body = () => ({ instructions: field('instructions').value, greeting: field('greeting').value });
+  const body = () => ({ instructions: field('instructions').value, greeting: field('greeting').value, closing: field('closing').value });
   const errorEl = view.querySelector('#agent-error');
 
   form.onsubmit = async (e) => {
@@ -324,8 +372,8 @@ async function agentView(view) {
     }
   };
   view.querySelector('#reset').onclick = guard(async () => {
-    if (!confirm('Reset the instructions and the greeting to the built-in defaults?')) return;
-    await api('PUT', '/agent', { instructions: '', greeting: '' });
+    if (!confirm('Reset the instructions, greeting and closing to the built-in defaults?')) return;
+    await api('PUT', '/agent', { instructions: '', greeting: '', closing: '' });
     toast('Reset to default');
     route();
   });
@@ -354,7 +402,7 @@ async function skillsView(view) {
   const enabled = items.filter((s) => s.enabled).length;
   const over = enabled > cap;
   const shown = skillFilter === 'all' ? items : items.filter((s) => s.kind === skillFilter);
-  view.innerHTML = `${head('Agent knowledge', 'Everything here is knowledge the voice agent can look up during a call. Services also appear on the website.', '<button class="btn btn-primary" id="add">+ Add entry</button>')}
+  view.innerHTML = `${head('Agent knowledge', 'Everything here is knowledge the voice agent can look up during a call.', '<button class="btn btn-primary" id="add">+ Add entry</button>')}
     <div class="meter ${over ? 'over' : enabled >= cap * 0.9 ? 'near' : ''}" role="status">
       <strong>${enabled} of ${cap}</strong> titles in the agent's index
       <span>${over ? 'Over the limit: the agent no longer sees the list and has to search. Disable or merge some entries.' : enabled >= cap * 0.9 ? 'Close to the limit.' : 'The agent sees every enabled title and fetches the details when needed.'}</span>
@@ -363,7 +411,7 @@ async function skillsView(view) {
       ${[['all', 'All', items.length], ...KINDS.map(([k, , plural]) => [k, plural, items.filter((s) => s.kind === k).length])].map(([k, label, n]) => `<button type="button" class="tab" data-filter="${k}" aria-pressed="${skillFilter === k}">${esc(label)} <span>${n}</span></button>`).join('')}
     </div>
     ${shown.length ? `<div class="skills">${shown.map((s) => `
-      <article class="card skill ${s.enabled ? '' : 'off'}"><div><span class="chip kind-${esc(s.kind)}">${esc(kindLabel(s.kind))}</span>${s.kind === 'service' && s.enabled && !(s.title_bn && s.description_bn) ? ' <span class="chip warn-bn">No Bangla text for the website</span>' : ''}</div><h3>${esc(s.title)}</h3>${s.title_bn ? `<p class="muted bn" style="margin:-4px 0 0">${esc(s.title_bn)}</p>` : ''}<p class="muted" style="margin:0">${esc(s.description)}</p>${s.content ? `<div class="content bn">${esc(s.content)}</div>` : ''}${s.keywords ? `<p class="keywords bn">${esc(s.keywords)}</p>` : ''}
+      <article class="card skill ${s.enabled ? '' : 'off'}"><div><span class="chip kind-${esc(s.kind)}">${esc(kindLabel(s.kind))}</span></div><h3>${esc(s.title)}</h3>${s.title_bn ? `<p class="muted bn" style="margin:-4px 0 0">${esc(s.title_bn)}</p>` : ''}<p class="muted" style="margin:0">${esc(s.description)}</p>${s.content ? `<div class="content bn">${esc(s.content)}</div>` : ''}${s.keywords ? `<p class="keywords bn">${esc(s.keywords)}</p>` : ''}
         <div class="actions"><label class="switch"><input type="checkbox" data-toggle="${s.id}" ${s.enabled ? 'checked' : ''}> ${s.enabled ? 'Enabled' : 'Disabled'}</label><span style="flex:1"></span><button class="btn btn-small" data-edit="${s.id}">Edit</button><button class="btn btn-small btn-danger" data-del="${s.id}">Delete</button></div>
       </article>`).join('')}</div>` : empty(items.length ? 'Nothing of this type yet.' : 'No entries yet. Add the first one so the agent can answer questions.')}`;
   const byId = new Map(items.map((s) => [String(s.id), s]));
@@ -382,6 +430,24 @@ async function skillsView(view) {
     toast('Entry deleted');
     route();
   })));
+}
+
+/** A small yes/no modal. Resolves true on confirm, false on cancel, Escape or backdrop click. */
+function confirmDialog({ title, text, confirm: confirmLabel, cancel: cancelLabel = 'Cancel', danger = false }) {
+  return new Promise((resolve) => {
+    const dlg = document.createElement('dialog');
+    dlg.className = 'confirm';
+    dlg.setAttribute('aria-labelledby', 'confirm-title');
+    dlg.innerHTML = `<form method="dialog"><h2 id="confirm-title">${esc(title)}</h2><p class="muted" style="margin:0">${esc(text)}</p><div class="dialog-actions"><button type="button" class="btn" data-no>${esc(cancelLabel)}</button><button type="button" class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-yes>${esc(confirmLabel)}</button></div></form>`;
+    document.body.append(dlg);
+    let answer = false;
+    dlg.querySelector('[data-no]').onclick = () => dlg.close();
+    dlg.querySelector('[data-yes]').onclick = () => ((answer = true), dlg.close());
+    dlg.onclick = (e) => { if (e.target === dlg) dlg.close(); };
+    dlg.onclose = () => { dlg.remove(); resolve(answer); };
+    dlg.showModal();
+    dlg.querySelector('[data-no]').focus();
+  });
 }
 
 function dialog(html, onSubmit) {
@@ -407,12 +473,12 @@ function dialog(html, onSubmit) {
 
 function skillDialog(skill) {
   dialog(`<h2>${skill ? 'Edit entry' : 'Add entry'}</h2>
-    <label class="field"><span>Type</span><select name="kind">${KINDS.map(([k, label]) => `<option value="${k}" ${(skill?.kind ?? 'service') === k ? 'selected' : ''}>${label}${k === 'service' ? ' (shown on the website)' : ' (agent only)'}</option>`).join('')}</select></label>
+    <label class="field"><span>Type</span><select name="kind">${KINDS.map(([k, label]) => `<option value="${k}" ${(skill?.kind ?? 'service') === k ? 'selected' : ''}>${label}</option>`).join('')}</select></label>
     <label class="field"><span>Title in English: what the agent looks up</span><input type="text" name="title" value="${esc(skill?.title ?? '')}" maxlength="80" required></label>
     <label class="field"><span>Description in English</span><input type="text" name="description" value="${esc(skill?.description ?? '')}" maxlength="400" required></label>
-    <label class="field"><span>Title in Bangla (shown on the website)</span><input type="text" name="title_bn" value="${esc(skill?.title_bn ?? '')}" maxlength="80" class="bn"></label>
-    <label class="field"><span>Description in Bangla (shown on the website)</span><input type="text" name="description_bn" value="${esc(skill?.description_bn ?? '')}" maxlength="400" class="bn"></label>
-    <p class="hint">Shown on the website for services. Agent-only entries (FAQ, policy) can leave these empty.</p>
+    <label class="field"><span>Title in Bangla (helps the agent match callers)</span><input type="text" name="title_bn" value="${esc(skill?.title_bn ?? '')}" maxlength="80" class="bn"></label>
+    <label class="field"><span>Description in Bangla (helps the agent match callers)</span><input type="text" name="description_bn" value="${esc(skill?.description_bn ?? '')}" maxlength="400" class="bn"></label>
+    <p class="hint">Everything here is for the voice agent only. The website lists its services separately. Bangla text is optional.</p>
     <label class="field"><span>Details the agent will say: prices, steps, rules</span><textarea name="content" maxlength="4000" class="bn">${esc(skill?.content ?? '')}</textarea></label>
     <label class="field"><span>Keywords: other words callers use, Bangla and English, separated by commas</span><input type="text" name="keywords" value="${esc(skill?.keywords ?? '')}" maxlength="300" class="bn" placeholder="wisdom, দাঁত তোলা, আক্কেল দাঁত"></label>
     <label class="switch"><input type="checkbox" name="enabled" ${skill?.enabled ?? true ? 'checked' : ''}> Enabled</label>`, (f) => {
@@ -486,31 +552,53 @@ async function clinicView(view) {
 }
 
 /* ---------- how data is stored ---------- */
-function dataView(view) {
-  const tables = [
-    ['calls', 'One record per conversation.', 'id, started_at, ended_at, duration_s,\nstatus, patient_id → patients,\nrecording_key (R2), summary, ip_hash'],
-    ['call_extractions', 'Structured fields captured from the call. One row per call.', 'call_id → calls, patient_name, phone,\nreason_for_visit, preferred_datetime,\nintent, outcome, notes'],
-    ['transcript_turns', 'The full transcript, one row per turn.', 'call_id → calls, idx, speaker,\ntext_bn, text_en, ts'],
-    ['patients', 'The person behind the calls, unique by phone.', 'id, full_name, phone (unique), created_at'],
-    ['appointments', 'Bookings. One active booking per doctor and slot (unique index).', 'patient_id, call_id, doctor_id → doctors,\nslot, service, status'],
-    ['callbacks', 'Requests for a human to call back.', 'call_id → calls, name, phone, reason,\npreferred_time, status'],
-    ['skills', 'Agent knowledge you manage here: services, FAQs and policies.', 'title, description (English), title_bn,\ndescription_bn (Bangla, shown on the website),\ncontent, kind, keywords, enabled'],
-    ['doctors', 'Who can be booked and when.', 'name_en, name_bn, specialty, specialty_bn,\ndays, start_time, end_time, active'],
-    ['settings', 'Clinic profile and agent prompt as key/value. Text fields have Bangla twins (*_bn).', 'key, value'],
+function howItWorksView(view) {
+  const nodes = [
+    ['Caller', 'Speaks Bangla or English in the browser. Audio goes straight to the voice model.'],
+    ['Voice model', 'Listens, understands and speaks. It follows the prompt you edit under Agent prompt.'],
+    ['Dentis server', 'Runs the tools the model asks for. Checks every input before it is used.'],
+    ['Your data', 'Knowledge, doctors, hours, free slots and bookings. The only source of facts.'],
   ];
-  view.innerHTML = `${head('How data is stored', 'The path from a live call into this portal')}
-    <div class="grid two">
-      <section class="card"><h2>From call to record</h2><ol class="flow">
-        <li><span><strong>Session.</strong> The website asks the server to start a call. A <code>calls</code> row is created and a short-lived key is issued, so the API key never reaches the browser.</span></li>
-        <li><span><strong>Tools.</strong> While the caller talks, the agent calls server tools: check slots, book, save details, look up skills. Each one validates input (Bangla digits and BD phone numbers are normalised) and writes to the database.</span></li>
-        <li><span><strong>Finish.</strong> At hang-up the browser sends the ordered transcript. The server stores the turns and works out the status from what actually happened.</span></li>
-        <li><span><strong>Analysis.</strong> In the background a model writes an English summary, translates each turn and fills gaps in the extraction. It never overwrites what the tools captured.</span></li>
-        <li><span><strong>Recording.</strong> The audio is stored in a private R2 bucket, linked from the call.</span></li>
-      </ol></section>
-      <section class="card"><h2>Validation</h2><p class="muted" style="margin-top:0">Phone: 11-digit Bangladeshi mobile starting 01 (+880 and Bangla digits accepted). Date: a real calendar day, not in the past, within 60 days. Time: inside the doctor's hours on a slot boundary. Names: 2–80 characters.</p></section>
+  const steps = [
+    ['The call starts', 'The server builds the prompt from what you saved, adds today\'s date, the doctors and the list of knowledge titles, and hands the browser a short-lived key. The real API key never leaves the server.'],
+    ['The caller speaks', 'The model hears the question and decides what kind it is: something the clinic knows, something for a doctor, or something off topic.'],
+    ['It asks the data, not its memory', 'For a fee, an hour, a doctor or a policy it calls a tool (<code>get_skill</code>, <code>lookup_skill</code>, <code>get_clinic_info</code>, <code>list_doctors</code>). For a booking it calls <code>check_availability</code> and offers only real free slots.'],
+    ['It answers from what came back', 'The reply is built from the tool result. If the data has no answer, it says so and offers a colleague\'s call back. It does not guess.'],
+    ['It does the work', 'Booking, rescheduling and cancelling go through the same checked code the staff use. A slot cannot be double booked, a phone number must be valid, a date must be real.'],
+    ['It reads details back', 'Name, phone, date, time and doctor are repeated and confirmed before the booking is made.'],
+    ['Everything is kept', 'At hang-up the transcript, the captured details, the appointment and the recording are saved and appear in this portal.'],
+  ];
+  const lanes = [
+    ['ok', 'The clinic knows it', 'Fees, hours, directions, doctors, services, parking, what to bring.', 'The agent looks it up and answers in the caller\'s language, using the saved text.'],
+    ['doctor', 'Only a doctor can answer', '"What is wrong with my tooth?" "Which medicine should I take?"', 'No diagnosis and no medicine advice. It explains that the dentist must examine them and offers a booking. Severe swelling, bleeding or trouble breathing: it sends them to emergency care.'],
+    ['off', 'Not about the clinic', 'Politics, general chat, other businesses, anything unrelated.', 'It stays polite, says it can only help with the clinic, and brings the call back to dental care.'],
+  ];
+  const why = [
+    ['Answers come from your data', 'Prices, hours and policies are fetched live from what you wrote here. Change an entry and the next call uses it, with no deploy and no retraining.'],
+    ['It stays on the clinic', 'The scope and safety rules are locked in code and always added after the editable persona, followed by a line saying they win. Staff cannot edit them away by accident.'],
+    ['It does not play doctor', 'A frightened caller with a toothache gets a booking and kindness, not a guess. That protects patients and the clinic.'],
+    ['It really completes the task', 'It does not just talk. It books through validated tools, so what the caller hears is what is in the calendar.'],
+    ['Small and quick', 'The prompt holds only the titles of the knowledge, never the details. The agent fetches one entry only when it needs it, which keeps the call fast and the cost low.'],
+    ['You can check its work', 'Every call keeps its transcript, recording and captured fields. Listening to a few calls is the best test of any change.'],
+  ];
+  view.innerHTML = `${head('How the agent works', 'The full path of a call, and why callers get reliable answers')}
+    <section class="card"><h2>The full flow</h2>
+      <div class="diagram" role="img" aria-label="Caller, voice model, Dentis server and data, with answers returning the same way">
+        ${nodes.map(([t, d], i) => `<div class="node"><strong>${t}</strong><span>${d}</span></div>${i < nodes.length - 1 ? '<span class="arrow" aria-hidden="true">⇄</span>' : ''}`).join('')}
+      </div>
+      <p class="muted diagram-note">Questions travel to the right. Facts travel back to the left. The voice model only says what the server returned.</p>
+    </section>
+    <div class="grid two" style="margin-top:16px">
+      <section class="card"><h2>Step by step</h2><ol class="flow">${steps.map(([t, d]) => `<li><span><strong>${t}.</strong> ${d}</span></li>`).join('')}</ol></section>
+      <section class="card"><h2>What happens to each question</h2>
+        <div class="lanes">${lanes.map(([k, t, e, d]) => `<div class="lane lane-${k}"><strong>${t}</strong><em>${e}</em><span>${d}</span></div>`).join('')}</div>
+      </section>
     </div>
-    <h2 style="margin:24px 0 12px">Tables</h2>
-    <div class="schema">${tables.map(([n, d, c]) => `<div class="card"><h3>${n}</h3><p>${esc(d)}</p><code>${esc(c)}</code></div>`).join('')}</div>`;
+    <h2 style="margin:24px 0 12px">Why this is a good support agent</h2>
+    <div class="why">${why.map(([t, d]) => `<div class="card"><h3>${t}</h3><p>${d}</p></div>`).join('')}</div>
+    <section class="card" style="margin-top:16px"><h2>Know the limits</h2>
+      <p class="muted" style="margin:0">Staying on topic and refusing medical advice are rules in the prompt. The model follows them very well but no prompt is a guarantee, so review recordings of real calls. Facts and bookings are different: those are enforced by code and cannot be invented.</p>
+    </section>`;
 }
 
 /* ---------- boot ---------- */

@@ -3,7 +3,7 @@ const SECRET_TTL_SECONDS = 300;
 
 /** Mints a short-lived client secret so the browser can open the Realtime WebRTC session without our API key. */
 export class OpenAIRealtimeGateway {
-  constructor({ apiKey, model = 'gpt-realtime', voice = 'marin', fetchFn = fetch }) {
+  constructor({ apiKey, model = 'gpt-realtime-mini', voice = 'marin', fetchFn = (...args) => fetch(...args) }) {
     Object.assign(this, { apiKey, model, voice, fetchFn });
   }
 
@@ -21,7 +21,7 @@ export class OpenAIRealtimeGateway {
           tool_choice: 'auto',
           audio: {
             input: {
-              transcription: { model: 'gpt-4o-transcribe', language: 'bn' },
+              transcription: { model: 'gpt-4o-mini-transcribe', language: 'bn' },
               turn_detection: { type: 'semantic_vad' },
               noise_reduction: { type: 'near_field' },
             },

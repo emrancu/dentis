@@ -5,7 +5,7 @@ Times are ISO 8601 UTC unless named `slot` (clinic-local `YYYY-MM-DDTHH:MM`).
 | Table | Columns | Purpose |
 |---|---|---|
 | `settings` | `key` PK, `value` | Clinic profile and agent prompt as key/value |
-| `skills` | `id` PK, `title`, `description`, `title_bn`, `description_bn`, `content`, `kind`, `keywords`, `enabled`, `updated_at` | Agent knowledge. `title` and `description` are English, the `_bn` columns are the Bangla text shown on the website |
+| `skills` | `id` PK, `title`, `description`, `title_bn`, `description_bn`, `content`, `kind`, `keywords`, `enabled`, `updated_at` | Agent knowledge. `title` and `description` are English, the `_bn` columns are optional Bangla text the agent can match on |
 | `doctors` | `id` PK, `name_en`, `name_bn`, `specialty`, `specialty_bn`, `days` (JSON array 0=Sun…6=Sat), `start_time`, `end_time`, `active` | Who can be booked |
 | `patients` | `id` PK, `full_name`, `phone` UNIQUE, `created_at` | The person behind calls |
 | `calls` | `id` PK (uuid), `started_at`, `ended_at`, `duration_s`, `status`, `patient_id` FK, `recording_key`, `summary`, `ip_hash` | One record per call |
@@ -19,14 +19,14 @@ Times are ISO 8601 UTC unless named `slot` (clinic-local `YYYY-MM-DDTHH:MM`).
 - `call_extractions.outcome`: `booked`, `rescheduled`, `cancelled`, `callback_needed`, or null.
 - Status is derived when the call finishes: outcome first, then callback intent, then `incomplete` if the patient spoke fewer than 2 turns, else `enquiry`. `failed` when the call errored with no patient speech. A call still `in_progress` after 30 minutes becomes `incomplete`.
 - `appointments.status`: `booked`, `cancelled`, `completed`. One active appointment per doctor and slot.
-- `transcript_turns.speaker`: `agent` or `patient`. `text_en` is filled after the call by the analyzer.
+- `transcript_turns.speaker`: `agent` or `patient`. `text_en` and `calls.summary` are no longer written (there is no post-call analysis). The columns stay for old rows.
 - `patients.phone` is unique and normalised to `01XXXXXXXXX`.
 - `callbacks.status`: `open` or `resolved`.
 - Recordings live in R2 under `calls/<call_id>.<ext>`; the key is in `calls.recording_key`.
-- `skills.kind`: `service` (shown on the website), `faq` or `policy` (agent only). Default `service`.
+- `skills.kind`: `service`, `faq` or `policy`. All are agent only. Default `service`.
 - `skills.keywords`: free text up to 300 characters, Bangla and English synonyms, used when the agent searches.
 - `skills.title` is unique ignoring case (checked by the application).
-- `settings` keys for the agent: `agent_instructions` (up to 4000 characters) and `agent_greeting` (up to 300). An empty value means "use the default text in code".
+- `settings` keys for the agent: `agent_instructions` (up to 4000 characters) `agent_greeting` (up to 300) and `agent_closing` (up to 300). An empty value means "use the default text in code".
 - Schema changes are numbered files in `migrations/`, applied once and tracked with `wrangler d1 migrations apply`. The optional sample calls live in `seed/` and are not a migration.
 - `skills.title_bn` (up to 80) and `skills.description_bn` (up to 400) default to an empty string. Search also matches them.
 - `doctors.specialty_bn` defaults to an empty string.
