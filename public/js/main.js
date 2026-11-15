@@ -134,11 +134,45 @@ $('#mute-btn').addEventListener('click', () => {
 });
 addEventListener('pagehide', () => call.reportOnPageHide());
 
-/* ---------- hero 3D tooth and waveform ---------- */
-// The 3D tooth stays clean while a call is on. Without WebGL the static tooth drawing in the page is the fallback.
+/* ---------- hero: the round stage cycles through four treatments ---------- */
+const TREATMENTS = ['checkup', 'whitening', 'braces', 'implant'];
+const orb = $('#orb');
+const txTabs = $$('.tx-tab');
+let treatment = 0;
+let hero = null; // the 3D scene, once loaded (without WebGL only the cards change)
+
+function showTreatment(i) {
+  treatment = (i + TREATMENTS.length) % TREATMENTS.length;
+  const key = TREATMENTS[treatment];
+  const card = $('.fcard-a');
+  card.classList.add('swap');
+  setTimeout(() => {
+    $('#tx-name').dataset.i18n = `tx.${key}.name`;
+    $('#tx-text').dataset.i18n = `tx.${key}.text`;
+    $('#tx-name').textContent = t(lang, `tx.${key}.name`);
+    $('#tx-text').textContent = t(lang, `tx.${key}.text`);
+    card.classList.remove('swap');
+  }, 200);
+  txTabs.forEach((tab, n) => tab.setAttribute('aria-selected', String(n === treatment)));
+  hero?.show(treatment);
+}
+txTabs.forEach((tab, n) => tab.addEventListener('click', () => { showTreatment(n); restartTimer(); }));
+
+let paused = false;
+let timer;
+const restartTimer = () => {
+  clearInterval(timer);
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) timer = setInterval(() => !paused && !document.hidden && showTreatment(treatment + 1), 5000);
+};
+orb.addEventListener('pointerenter', () => (paused = true));
+orb.addEventListener('pointerleave', () => (paused = false));
+restartTimer();
+
 import('./hero3d.js')
-  .then(({ startHero }) => startHero($('#stage-canvas'), () => document.body.classList.contains('in-call')))
-  .then((hero) => hero && document.body.classList.add('has-3d'))
+  .then(({ startHero }) => {
+    hero = startHero($('#stage-canvas'), { onTap: () => { showTreatment(treatment + 1); restartTimer(); } });
+    if (hero) document.body.classList.add('has-3d');
+  })
   .catch(() => {});
 
 (function animateWave() {

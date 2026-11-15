@@ -1,6 +1,6 @@
 # Dentis: a Bangla voice receptionist for a dental centre
 
-A dental centre website: the hero's main action is **Book an appointment** (booked by voice in Bangla), with an interactive Three.js 3D tooth on the right (hover it and a toothbrush scrubs the plaque away; drag to spin) and a floating **Call Dentis** button at the bottom right. A staff portal lives at `/admin`. Built for the StrategyByte AI Engineer task brief (`StrategyByte_AI_Engineer_Task_Brief_14Nov.pdf`).
+A dental centre website: the hero's main action is **Book an appointment** (booked by voice in Bangla), with a Three.js 3D stage on the right that cycles through four dental treatments (drag to spin) and a floating **Call Dentis** button at the bottom right. A staff portal lives at `/admin`. Built for the StrategyByte AI Engineer task brief (`StrategyByte_AI_Engineer_Task_Brief_14Nov.pdf`).
 
 - **Voice:** OpenAI Realtime API over WebRTC, straight from the browser. The Worker only mints a short-lived key.
 - **Backend:** one Cloudflare Worker (vanilla JS), D1 for data, R2 for recordings. No framework, no build step, no runtime dependencies.
@@ -96,7 +96,7 @@ agentic-hub/         requirements, principles, epics, contracts, task commands
 
 ## 3-minute video outline
 
-1. Landing page, hover and spin the 3D tooth in the hero, switch to Bangla (20 s).
+1. Landing page, flip through the treatments in the hero, switch to Bangla (20 s).
 2. Press **Book an appointment**, book an appointment by voice, mixing in English words, read the phone number back (90 s).
 3. Open `/admin`, log in, show the call, transcript with English translation, captured fields, the appointment and the recording (45 s).
 4. Edit a skill's fee in **Agent skills**, call again and ask for the price (25 s).

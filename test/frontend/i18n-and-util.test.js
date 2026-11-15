@@ -100,11 +100,12 @@ describe('static pages', () => {
     assert.match(html, /three@\d+\.\d+\.\d+\/build\/three\.module\.js/);
   });
 
-  it('the 3D tooth cleans up on hover, tap and during a call, and spins on drag', () => {
+  it('the 3D scene has a model per treatment, spins on drag and the tabs drive it', () => {
     const scene = read('js/hero3d.js');
-    assert.match(scene, /hover \|\| pinned \|\| active\(\)/);
+    assert.match(scene, /TREATMENTS = \['checkup', 'whitening', 'braces', 'implant'\]/);
     assert.match(scene, /pointerdown/);
-    assert.match(read('js/main.js'), /in-call/);
+    assert.equal(read('index.html').split('class="tx-tab"').length - 1, 4);
+    assert.match(read('js/main.js'), /hero\?\.show\(treatment\)/);
     assert.match(read('css/site.css'), /\.has-3d \.tooth-fallback/);
   });
 
@@ -119,8 +120,12 @@ describe('static pages', () => {
     }
   });
 
-  it('the illustration hint exists in both languages', () => {
-    assert.ok(STRINGS.en['art.hint'] && STRINGS.bn['art.hint']);
+  it('every treatment has a name, text and short label in both languages', () => {
+    for (const lang of ['en', 'bn']) {
+      for (const key of ['checkup', 'whitening', 'braces', 'implant']) {
+        for (const part of ['name', 'text', 'short']) assert.ok(STRINGS[lang][`tx.${key}.${part}`], `${lang} tx.${key}.${part}`);
+      }
+    }
   });
 
   it('the admin page is not indexable and the SPA entry exists', () => {
