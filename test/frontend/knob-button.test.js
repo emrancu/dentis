@@ -5,7 +5,7 @@ import { knobTravel, labelShift } from '../../public/js/knob-button.js';
 
 const read = (path) => readFileSync(new URL(`../../public/${path}`, import.meta.url), 'utf8');
 const css = read('css/site.css');
-const rule = (selector) => new RegExp(`${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\{([^}]*)\\}`).exec(css)?.[1] ?? '';
+const rule = (selector) => new RegExp(`^${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\{([^}]*)\\}`, 'm').exec(css)?.[1] ?? '';
 
 describe('knob travel maths', () => {
   it('travel is the shell width minus the knob and its two insets', () => {
@@ -46,9 +46,22 @@ describe('slide-knob button styles', () => {
     assert.match(rule('.kb__knob'), /color: #fff/);
   });
 
-  it('the knob radius is the shell radius minus the inset', () => {
-    assert.match(rule('.kb'), /border-radius: calc\(var\(--kb-h\) \/ 2\)/);
-    assert.match(rule('.kb__knob'), /border-radius: calc\(var\(--kb-h\) \/ 2 - var\(--kb-inset\)\)/);
+  it('the shell uses the button radius token, and the knob radius is that radius minus the inset (never negative)', () => {
+    assert.match(rule('.kb'), /border-radius: var\(--btn-radius\)/);
+    assert.match(rule('.kb__knob'), /border-radius: max\(0px, calc\(var\(--btn-radius\) - var\(--kb-inset\)\)\)/);
+  });
+
+  it('the button radius is 4px, defined once, and used by every public button', () => {
+    assert.match(css, /--btn-radius: 4px;/);
+    for (const sel of ['.kb', '.fab', '.lang-btn', '.menu-btn', '.tx-tab', '.ctl']) assert.match(rule(sel), /border-radius: var\(--btn-radius\)/, sel);
+    for (const sel of ['.kb', '.kb__knob', '.fab', '.lang-btn', '.menu-btn', '.tx-tab', '.ctl']) assert.doesNotMatch(rule(sel), /border-radius: (999px|50%|\d+px)/, `${sel} must not set its own radius`);
+  });
+
+  it('the shell and the knob stay concentric: with a 4px radius and a 4 or 5px inset the knob has square corners', () => {
+    const knobRadius = (radius, inset) => Math.max(0, radius - inset);
+    assert.equal(knobRadius(4, 5), 0);
+    assert.equal(knobRadius(4, 4), 0);
+    assert.equal(knobRadius(12, 5), 7);
   });
 
   it('animates transform only, for 600ms with cubic-bezier(.76,0,.24,1)', () => {
@@ -79,11 +92,20 @@ describe('slide-knob button styles', () => {
     assert.match(css, /\.kb\[hidden\] \{ display: none; \}/);
   });
 
-  it('on phones the floating button is a circle with a phone icon and does not slide', () => {
-    assert.match(css, /\.fab\.kb \{ width: 56px; height: 56px; padding: 0; border-radius: 50%; \}/);
-    assert.match(css, /\.fab \.kb__arrow \{ display: none; \}/);
-    assert.match(css, /\.fab \.kb__phone \{ display: block; \}/);
-    assert.match(css, /\.fab:hover \.kb__knob, \.fab:focus-visible \.kb__knob \{ transform: none; \}/);
+  it('the floating "Talk to us" button is a solid button: one flat colour, no knob, no sliding', () => {
+    const fab = rule('.fab');
+    assert.match(fab, /background: var\(--teal-600\)/);
+    assert.match(fab, /color: #fff/);
+    assert.match(fab, /height: 48px/);
+    assert.match(fab, /border-radius: var\(--btn-radius\)/);
+    assert.doesNotMatch(fab, /gradient/);
+    assert.match(css, /^\.fab:hover \{ background: var\(--teal-700\);/m);
+    assert.doesNotMatch(css, /\.fab[^{]*kb__/);
+  });
+
+  it('on phones the solid floating button is a 56px square with only the call icon', () => {
+    assert.match(css, /\.fab \{ width: 56px; height: 56px; padding: 0; justify-content: center; \}/);
+    assert.match(css, /\.fab__label \{ display: none; \}/);
   });
 
   it('none of the old call-to-action styles is left behind', () => {
@@ -104,25 +126,24 @@ describe('slide-knob buttons in the page', () => {
   const ARROW_PATH = 'M0 0h2v2H0zM2 2h2v2H2zM4 4h2v2H4zM2 6h2v2H2zM0 8h2v2H0z';
 
   it('every call-to-action button is a slide-knob button', () => {
-    assert.equal(buttons.length, 8);
+    assert.equal(buttons.length, 7);
     const where = (re) => buttons.filter((b) => re.test(b.attrs + b.classes));
     assert.equal(where(/id="book-btn"/).length, 1, 'hero booking button');
     assert.equal(where(/href="#services"/).length, 1, 'hero secondary link');
     assert.equal(where(/btn-book/).length, 1, 'header booking button');
     assert.equal(where(/id="visit-tel"/).length, 1, 'visit phone link');
-    assert.equal(where(/id="fab-call"/).length, 1, 'floating button');
     assert.equal(where(/data-restart/).length, 2, 'call panel retry and call again');
     assert.equal(where(/data-start-booking/).length, 3, 'hero, header and visit booking');
   });
 
-  it('each one has the knob, the arrow and one label, in that order', () => {
+  it('each one has a knob with its icon, then one label', () => {
     for (const b of buttons) {
       assert.match(b.inner, /^<span class="kb__knob" aria-hidden="true">.*?<\/span><span class="kb__label" data-i18n="[A-Za-z.]+">[^<]+<\/span>$/s, b.classes + b.attrs);
       assert.equal(b.inner.split('class="kb__label"').length, 2, 'exactly one label');
     }
   });
 
-  it('the arrow is the fixed pixel chevron on every button, never another icon', () => {
+  it('the arrow is the fixed pixel chevron on every slide-knob button', () => {
     const arrows = [...html.matchAll(/<svg class="kb__arrow"([^>]*)><path([^>]*)\/><\/svg>/g)];
     assert.equal(arrows.length, buttons.length);
     for (const a of arrows) {
@@ -136,10 +157,13 @@ describe('slide-knob buttons in the page', () => {
     assert.deepEqual(squares, [[0, 0], [2, 2], [4, 4], [2, 6], [0, 8]]); // (0,0)(1,1)(2,2)(1,3)(0,4) at 2 units per cell
   });
 
-  it('the floating button also carries a phone icon, shown only in the phone-sized circle', () => {
-    const fab = buttons.find((b) => /id="fab-call"/.test(b.attrs));
-    assert.match(fab.inner, /<svg class="kb__phone"/);
-    assert.match(fab.attrs, /aria-label=/);
+  it('the floating "Talk to us" button is a solid button with the call icon and a label, and keeps its accessible name', () => {
+    const fab = /<button class="fab" id="fab-call"([^>]*)>(.*?)<\/button>/s.exec(html);
+    assert.ok(fab, 'the floating button is a plain .fab, not a knob button');
+    assert.match(fab[1], /aria-label=/);
+    assert.match(fab[2], /^<svg class="fab__icon" aria-hidden="true"[^>]*>.*<\/svg><span class="fab__label" data-i18n="fab\.label">[^<]+<\/span>$/s);
+    assert.doesNotMatch(fab[2], /kb__|arrow/);
+    assert.ok(!buttons.some((b) => /fab-call/.test(b.attrs)));
   });
 
   it('utility controls keep their own style: language toggle, menu, mute, end call, close and the hero tabs', () => {
