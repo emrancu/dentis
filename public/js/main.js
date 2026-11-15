@@ -1,5 +1,5 @@
 import { BanglaCall } from './voice.js';
-import { LANGUAGES, daysLabel, t } from './i18n.js';
+import { DEFAULT_LANG, LANGUAGES, daysLabel, t } from './i18n.js';
 import { esc } from './util.js';
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -11,9 +11,9 @@ let lang = (() => {
     const saved = localStorage.getItem('dentis-lang');
     if (LANGUAGES.includes(saved)) return saved;
   } catch {
-    // storage can be blocked; fall back to the browser language
+    // storage can be blocked; use the default
   }
-  return navigator.language?.toLowerCase().startsWith('bn') ? 'bn' : 'en';
+  return DEFAULT_LANG;
 })();
 let site = null;
 let callError = null;
@@ -21,6 +21,7 @@ let callError = null;
 function applyLanguage() {
   document.documentElement.lang = lang;
   document.title = t(lang, 'meta.title');
+  document.querySelector('meta[name="description"]')?.setAttribute('content', t(lang, 'meta.description'));
   $$('[data-i18n]').forEach((el) => (el.textContent = t(lang, el.dataset.i18n)));
   $$('[data-i18n-html]').forEach((el) => (el.innerHTML = t(lang, el.dataset.i18nHtml))); // our own constants, not user data
   $$('[data-i18n-aria]').forEach((el) => el.setAttribute('aria-label', t(lang, el.dataset.i18nAria)));

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { STRINGS, daysLabel, t } from '../../public/js/i18n.js';
+import { DEFAULT_LANG, STRINGS, daysLabel, t } from '../../public/js/i18n.js';
 import { esc, formatDateTime, formatDuration, formatSlot, formatTime, statusLabel } from '../../public/js/util.js';
 
 const read = (path) => readFileSync(new URL(`../../public/${path}`, import.meta.url), 'utf8');
@@ -47,6 +47,43 @@ describe('landing page copy', () => {
     assert.equal(daysLabel([0, 6, 1], 'en'), 'Sat, Sun, Mon');
     assert.equal(daysLabel([6], 'bn'), 'শনি');
     assert.equal(daysLabel([], 'en'), '');
+  });
+});
+
+describe('Bangla is the default language', () => {
+  const html = read('index.html');
+
+  it('the default is Bangla, and a visitor choice (not the browser language) is the only thing that overrides it', () => {
+    assert.equal(DEFAULT_LANG, 'bn');
+    const main = read('js/main.js');
+    assert.match(main, /return DEFAULT_LANG;/);
+    assert.doesNotMatch(main, /navigator\.language/);
+  });
+
+  it('the page is Bangla before any script runs: html lang, title and description', () => {
+    assert.match(html, /<html lang="bn">/);
+    assert.ok(html.includes(`<title>${STRINGS.bn['meta.title']}</title>`));
+    assert.ok(html.includes(`<meta name="description" content="${STRINGS.bn['meta.description']}">`));
+  });
+
+  it('every translatable element holds the Bangla text in the static HTML, so there is no flash of English', () => {
+    const drift = [];
+    for (const m of html.matchAll(/<[^>]*\sdata-i18n="([^"]+)"[^>]*>([^<]*)</g)) if (m[2] !== STRINGS.bn[m[1]]) drift.push(`${m[1]}: "${m[2]}"`);
+    for (const m of html.matchAll(/<[^>]*\sdata-i18n-html="([^"]+)"[^>]*>(.*?)<\/h1>/gs)) if (m[2] !== STRINGS.bn[m[1]]) drift.push(`${m[1]}: "${m[2]}"`);
+    for (const m of html.matchAll(/<[^>]*\sdata-i18n-aria="([^"]+)"[^>]*>/g)) {
+      const label = /aria-label="([^"]*)"/.exec(m[0])?.[1];
+      if (label !== STRINGS.bn[m[1]].replace(/"/g, '&quot;')) drift.push(`${m[1]} aria-label: "${label}"`);
+    }
+    assert.deepEqual(drift, []);
+  });
+
+  it('the language button offers the other language and is marked with its language', () => {
+    assert.match(html, /<button class="lang-btn"[^>]*lang="en"[^>]*>English<\/button>/);
+  });
+
+  it('the skip link is translatable too', () => {
+    assert.ok(STRINGS.en.skip && STRINGS.bn.skip);
+    assert.match(html, /class="skip"[^>]*data-i18n="skip"/);
   });
 });
 

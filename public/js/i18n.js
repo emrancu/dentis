@@ -2,6 +2,8 @@
 export const STRINGS = {
   en: {
     'meta.title': 'Dentis Dental Care, Dhanmondi, Dhaka',
+    'meta.description': 'Dentis Dental Care in Dhanmondi, Dhaka. Gentle, modern dentistry for the whole family.',
+    'skip': 'Skip to content',
     'nav.services': 'Services',
     'nav.how': 'Your first visit',
     'nav.doctors': 'Our dentists',
@@ -80,6 +82,8 @@ export const STRINGS = {
   },
   bn: {
     'meta.title': 'ডেন্টিস ডেন্টাল কেয়ার, ধানমন্ডি, ঢাকা',
+    'meta.description': 'ডেন্টিস ডেন্টাল কেয়ার, ধানমন্ডি, ঢাকা। পুরো পরিবারের জন্য আরামদায়ক ও আধুনিক ডেন্টাল সেবা।',
+    'skip': 'মূল অংশে যান',
     'nav.services': 'সেবা',
     'nav.how': 'প্রথম ভিজিট',
     'nav.doctors': 'আমাদের ডেন্টিস্ট',
@@ -164,6 +168,8 @@ const WEEKDAYS = {
 };
 
 export const LANGUAGES = Object.keys(STRINGS);
+/** Bangla is the default: patients are Bangla speakers. A visitor's own choice, once made, wins. */
+export const DEFAULT_LANG = 'bn';
 
 /** Falls back to English, then to the key, so a missing string never shows as "undefined". */
 export const t = (lang, key) => STRINGS[lang]?.[key] ?? STRINGS.en[key] ?? key;
