@@ -156,3 +156,26 @@ dialog:has(.prompt-pre) { width: min(760px, calc(100vw - 24px)); }
 .keywords::before { content: 'Keywords: '; font-weight: 600; }
 @media (max-width: 900px) { textarea[name='instructions'] { min-height: 200px; } }
 .chip.warn-bn { background: var(--warn-bg); color: var(--warn); }
+
+/* how the agent works */
+.diagram { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px; }
+.node { flex: 1 1 170px; display: grid; gap: 6px; align-content: start; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: linear-gradient(180deg, #fff, #f4fafa); }
+.node strong { font-size: 1rem; }
+.node span { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+.node:nth-of-type(1) { border-top: 3px solid #94a3b8; }
+.node:nth-of-type(2) { border-top: 3px solid #0e7490; }
+.node:nth-of-type(3) { border-top: 3px solid #14b8a6; }
+.node:nth-of-type(4) { border-top: 3px solid #0b1f2a; }
+.arrow { align-self: center; color: #0e7490; font-size: 1.4rem; }
+.diagram-note { margin: 12px 0 0; font-size: 13.5px; }
+.lanes { display: grid; gap: 12px; }
+.lane { display: grid; gap: 4px; padding: 14px; border-radius: 12px; border-left: 4px solid; background: #f7fafa; }
+.lane em { font-style: normal; font-size: 13px; color: var(--muted); }
+.lane span { font-size: 14px; }
+.lane-ok { border-color: #14b8a6; }
+.lane-doctor { border-color: #f59e0b; }
+.lane-off { border-color: #94a3b8; }
+.why { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.why h3 { font-size: 1rem; margin-bottom: 6px; }
+.why p { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.55; }
+@media (max-width: 720px) { .arrow { display: none; } }

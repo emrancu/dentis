@@ -13,7 +13,7 @@ const NAV = [
   ['skills', 'Agent knowledge'],
   ['doctors', 'Doctors'],
   ['clinic', 'Clinic profile'],
-  ['data', 'How data is stored'],
+  ['how-it-works', 'How the agent works'],
 ];
 
 /* ---------- api ---------- */
@@ -114,7 +114,7 @@ const views = {
   skills: skillsView,
   doctors: doctorsView,
   clinic: clinicView,
-  data: dataView,
+  'how-it-works': howItWorksView,
 };
 
 async function route() {
@@ -492,30 +492,53 @@ async function clinicView(view) {
 }
 
 /* ---------- how data is stored ---------- */
-function dataView(view) {
-  const tables = [
-    ['calls', 'One record per conversation.', 'id, started_at, ended_at, duration_s,\nstatus, patient_id → patients,\nrecording_key (R2), summary, ip_hash'],
-    ['call_extractions', 'Structured fields captured from the call. One row per call.', 'call_id → calls, patient_name, phone,\nreason_for_visit, preferred_datetime,\nintent, outcome, notes'],
-    ['transcript_turns', 'The full transcript, one row per turn.', 'call_id → calls, idx, speaker,\ntext_bn, text_en, ts'],
-    ['patients', 'The person behind the calls, unique by phone.', 'id, full_name, phone (unique), created_at'],
-    ['appointments', 'Bookings. One active booking per doctor and slot (unique index).', 'patient_id, call_id, doctor_id → doctors,\nslot, service, status'],
-    ['callbacks', 'Requests for a human to call back.', 'call_id → calls, name, phone, reason,\npreferred_time, status'],
-    ['skills', 'Agent knowledge you manage here: services, FAQs and policies.', 'title, description (English), title_bn,\ndescription_bn (Bangla, optional, helps matching),\ncontent, kind, keywords, enabled'],
-    ['doctors', 'Who can be booked and when.', 'name_en, name_bn, specialty, specialty_bn,\ndays, start_time, end_time, active'],
-    ['settings', 'Clinic profile and agent prompt as key/value. Text fields have Bangla twins (*_bn).', 'key, value'],
+function howItWorksView(view) {
+  const nodes = [
+    ['Caller', 'Speaks Bangla or English in the browser. Audio goes straight to the voice model.'],
+    ['Voice model', 'Listens, understands and speaks. It follows the prompt you edit under Agent prompt.'],
+    ['Dentis server', 'Runs the tools the model asks for. Checks every input before it is used.'],
+    ['Your data', 'Knowledge, doctors, hours, free slots and bookings. The only source of facts.'],
   ];
-  view.innerHTML = `${head('How data is stored', 'The path from a live call into this portal')}
-    <div class="grid two">
-      <section class="card"><h2>From call to record</h2><ol class="flow">
-        <li><span><strong>Session.</strong> The website asks the server to start a call. A <code>calls</code> row is created and a short-lived key is issued, so the API key never reaches the browser.</span></li>
-        <li><span><strong>Tools.</strong> While the caller talks, the agent calls server tools: check slots, book, save details, look up skills. Each one validates input (Bangla digits and BD phone numbers are normalised) and writes to the database.</span></li>
-        <li><span><strong>Finish.</strong> At hang-up the browser sends the ordered transcript. The server stores the turns and works out the status from what actually happened.</span></li>
-        <li><span><strong>Recording.</strong> The audio is stored in a private R2 bucket, linked from the call.</span></li>
-      </ol></section>
-      <section class="card"><h2>Validation</h2><p class="muted" style="margin-top:0">Phone: 11-digit Bangladeshi mobile starting 01 (+880 and Bangla digits accepted). Date: a real calendar day, not in the past, within 60 days. Time: inside the doctor's hours on a slot boundary. Names: 2–80 characters.</p></section>
+  const steps = [
+    ['The call starts', 'The server builds the prompt from what you saved, adds today\'s date, the doctors and the list of knowledge titles, and hands the browser a short-lived key. The real API key never leaves the server.'],
+    ['The caller speaks', 'The model hears the question and decides what kind it is: something the clinic knows, something for a doctor, or something off topic.'],
+    ['It asks the data, not its memory', 'For a fee, an hour, a doctor or a policy it calls a tool (<code>get_skill</code>, <code>lookup_skill</code>, <code>get_clinic_info</code>, <code>list_doctors</code>). For a booking it calls <code>check_availability</code> and offers only real free slots.'],
+    ['It answers from what came back', 'The reply is built from the tool result. If the data has no answer, it says so and offers a colleague\'s call back. It does not guess.'],
+    ['It does the work', 'Booking, rescheduling and cancelling go through the same checked code the staff use. A slot cannot be double booked, a phone number must be valid, a date must be real.'],
+    ['It reads details back', 'Name, phone, date, time and doctor are repeated and confirmed before the booking is made.'],
+    ['Everything is kept', 'At hang-up the transcript, the captured details, the appointment and the recording are saved and appear in this portal.'],
+  ];
+  const lanes = [
+    ['ok', 'The clinic knows it', 'Fees, hours, directions, doctors, services, parking, what to bring.', 'The agent looks it up and answers in the caller\'s language, using the saved text.'],
+    ['doctor', 'Only a doctor can answer', '"What is wrong with my tooth?" "Which medicine should I take?"', 'No diagnosis and no medicine advice. It explains that the dentist must examine them and offers a booking. Severe swelling, bleeding or trouble breathing: it sends them to emergency care.'],
+    ['off', 'Not about the clinic', 'Politics, general chat, other businesses, anything unrelated.', 'It stays polite, says it can only help with the clinic, and brings the call back to dental care.'],
+  ];
+  const why = [
+    ['Answers come from your data', 'Prices, hours and policies are fetched live from what you wrote here. Change an entry and the next call uses it, with no deploy and no retraining.'],
+    ['It stays on the clinic', 'The scope and safety rules are locked in code and always added after the editable persona, followed by a line saying they win. Staff cannot edit them away by accident.'],
+    ['It does not play doctor', 'A frightened caller with a toothache gets a booking and kindness, not a guess. That protects patients and the clinic.'],
+    ['It really completes the task', 'It does not just talk. It books through validated tools, so what the caller hears is what is in the calendar.'],
+    ['Small and quick', 'The prompt holds only the titles of the knowledge, never the details. The agent fetches one entry only when it needs it, which keeps the call fast and the cost low.'],
+    ['You can check its work', 'Every call keeps its transcript, recording and captured fields. Listening to a few calls is the best test of any change.'],
+  ];
+  view.innerHTML = `${head('How the agent works', 'The full path of a call, and why callers get reliable answers')}
+    <section class="card"><h2>The full flow</h2>
+      <div class="diagram" role="img" aria-label="Caller, voice model, Dentis server and data, with answers returning the same way">
+        ${nodes.map(([t, d], i) => `<div class="node"><strong>${t}</strong><span>${d}</span></div>${i < nodes.length - 1 ? '<span class="arrow" aria-hidden="true">⇄</span>' : ''}`).join('')}
+      </div>
+      <p class="muted diagram-note">Questions travel to the right. Facts travel back to the left. The voice model only says what the server returned.</p>
+    </section>
+    <div class="grid two" style="margin-top:16px">
+      <section class="card"><h2>Step by step</h2><ol class="flow">${steps.map(([t, d]) => `<li><span><strong>${t}.</strong> ${d}</span></li>`).join('')}</ol></section>
+      <section class="card"><h2>What happens to each question</h2>
+        <div class="lanes">${lanes.map(([k, t, e, d]) => `<div class="lane lane-${k}"><strong>${t}</strong><em>${e}</em><span>${d}</span></div>`).join('')}</div>
+      </section>
     </div>
-    <h2 style="margin:24px 0 12px">Tables</h2>
-    <div class="schema">${tables.map(([n, d, c]) => `<div class="card"><h3>${n}</h3><p>${esc(d)}</p><code>${esc(c)}</code></div>`).join('')}</div>`;
+    <h2 style="margin:24px 0 12px">Why this is a good support agent</h2>
+    <div class="why">${why.map(([t, d]) => `<div class="card"><h3>${t}</h3><p>${d}</p></div>`).join('')}</div>
+    <section class="card" style="margin-top:16px"><h2>Know the limits</h2>
+      <p class="muted" style="margin:0">Staying on topic and refusing medical advice are rules in the prompt. The model follows them very well but no prompt is a guarantee, so review recordings of real calls. Facts and bookings are different: those are enforced by code and cannot be invented.</p>
+    </section>`;
 }
 
 /* ---------- boot ---------- */
