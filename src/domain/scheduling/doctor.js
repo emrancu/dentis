@@ -7,7 +7,7 @@ const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 /** Entity: a doctor and the weekly window in which they take appointments. `days` uses 0=Sunday … 6=Saturday. */
 export class Doctor {
-  constructor({ id = null, nameEn, nameBn = '', specialty = '', days = [6, 0, 1, 2, 3, 4], startTime = '10:00', endTime = '20:00', active = true }) {
+  constructor({ id = null, nameEn, nameBn = '', specialty = '', specialtyBn = '', days = [6, 0, 1, 2, 3, 4], startTime = '10:00', endTime = '20:00', active = true }) {
     if (!nameEn || nameEn.trim().length < 2) throw new ValidationError('doctor_name_required', 'Doctor name is required.');
     if (!HHMM.test(startTime) || !HHMM.test(endTime) || toMinutes(startTime) >= toMinutes(endTime)) {
       throw new ValidationError('doctor_hours_invalid', 'Working hours must be HH:MM with start before end.');
@@ -15,7 +15,7 @@ export class Doctor {
     if (!Array.isArray(days) || days.some((d) => !Number.isInteger(d) || d < 0 || d > 6)) {
       throw new ValidationError('doctor_days_invalid', 'Days must be numbers 0 (Sunday) to 6 (Saturday).');
     }
-    Object.assign(this, { id, nameEn: nameEn.trim(), nameBn: nameBn.trim(), specialty: specialty.trim(), days: [...new Set(days)], startTime, endTime, active: Boolean(active) });
+    Object.assign(this, { id, nameEn: nameEn.trim(), nameBn: nameBn.trim(), specialty: specialty.trim(), specialtyBn: String(specialtyBn ?? '').trim(), days: [...new Set(days)], startTime, endTime, active: Boolean(active) });
   }
 
   worksOn(weekday) {

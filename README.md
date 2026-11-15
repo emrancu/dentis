@@ -1,11 +1,21 @@
 # Dentis: a Bangla voice receptionist for a dental centre
 
-A dental centre website: the hero's main action is **Book an appointment** (booked by voice in Bangla), with an interactive Three.js 3D tooth on the right (hover it and a toothbrush scrubs the plaque away; drag to spin) and a floating **Call Dentis** button at the bottom right. A staff portal lives at `/admin`. Built for the StrategyByte AI Engineer task brief (`StrategyByte_AI_Engineer_Task_Brief_14Nov.pdf`).
+A dental centre website: the hero's main action is **Book an appointment** (booked by voice in Bangla), with a Three.js 3D stage on the right that cycles through four dental treatments (drag to spin) and a floating **Call Dentis** button at the bottom right. A staff portal lives at `/admin`. Built for the StrategyByte AI Engineer task brief (`StrategyByte_AI_Engineer_Task_Brief_14Nov.pdf`).
 
 - **Voice:** OpenAI Realtime API over WebRTC, straight from the browser. The Worker only mints a short-lived key.
 - **Backend:** one Cloudflare Worker (vanilla JS), D1 for data, R2 for recordings. No framework, no build step, no runtime dependencies.
 - **Admin:** access-key login. Staff manage the agent's knowledge ("skills"), doctors and the clinic profile, and read every call.
 - **Code:** domain-driven layers, tested. Rules, decisions and contracts live in [`agentic-hub/`](agentic-hub/README.md). Agents read [`CLAUDE.md`](CLAUDE.md).
+
+## The website: Bangla first, complete in both languages
+
+- **Bangla is the default.** English is one tap away, remembered, and a link can carry it: `/?lang=en` or `/?lang=bn` wins over the saved choice. The static HTML is Bangla, so there is no flash of English.
+- **Nothing mixes languages.** Every display field has a Bangla twin (skill title and description, doctor specialty, clinic address, hours, directions, prep notes). English fields hold English only, Bangla fields Bangla only. The site shows the visitor's language and falls back to the other only when a field is empty. Admin marks services that have no Bangla text.
+- **One style per language.** Times are 12-hour: `10:00 am` in English and `সকাল ১০:০০` in Bangla, with Bangla digits. Working days read `Sat–Thu` / `শনি–বৃহ`. The phone number is a tappable `tel:` link.
+- **Names are consistent.** The navigation label is the section label, every booking button says the same, and the hero treatment cards use exactly the Services names (a test enforces it).
+- **The floating button is "Talk to us" / "কথা বলুন"**: a voice call in the browser. The clinic's phone number is a separate link.
+- **No third-party hosts.** Fonts (Inter, Fraunces, Hind Siliguri, Noto Serif Bengali) and Three.js are served from `public/fonts` and `public/vendor`.
+- **Link previews and search.** The Worker serves `/` itself and adds the per-language title and description, canonical and `hreflang` links, Open Graph and Twitter tags, and `Dentist` JSON-LD built from the live clinic profile. `public/og.png` is the preview image.
 
 ## Admin: the agent's prompt and knowledge
 
@@ -39,7 +49,7 @@ cp .dev.vars.example .dev.vars        # put your OPENAI_API_KEY and an ADMIN_ACC
 npm run db:init:local                 # apply migrations (tracked): schema + Dentis demo clinic + knowledge
 npm run db:samples:local              # optional: 4 invented sample calls from seed/
 npm run dev                           # http://localhost:8787  (admin: /admin)
-npm test                              # 341 tests, no setup needed
+npm test                              # 401 tests, no setup needed
 ```
 
 ## Deploy
@@ -64,8 +74,8 @@ src/application/     use cases, agent prompt + tools, ports
 src/infrastructure/  D1, R2, OpenAI, WebCrypto adapters
 src/interface/http/  router and routes
 src/composition.js   the only place that wires adapters to use cases
-public/              landing page (Three.js line-art hero) and /admin SPA, plain ES modules
-migrations/          numbered, tracked migrations (schema, demo clinic, skill kinds + knowledge)
+public/              landing page (Three.js hero) and /admin SPA, plain ES modules; fonts/ and vendor/ are self-hosted
+migrations/          numbered, tracked migrations (schema, demo clinic, skill kinds, knowledge, Bangla twin fields)
 seed/                optional sample calls, not a migration
 test/                mirrors src/, plus frontend and architecture tests
 agentic-hub/         requirements, principles, epics, contracts, task commands
@@ -73,7 +83,7 @@ agentic-hub/         requirements, principles, epics, contracts, task commands
 
 ## Tests
 
-`npm test` runs 341 tests with Node's built-in runner:
+`npm test` runs 401 tests with Node's built-in runner:
 
 | Folder | What it proves |
 |---|---|
@@ -87,6 +97,12 @@ agentic-hub/         requirements, principles, epics, contracts, task commands
 
 ## What is not done, honestly
 
+- **The Bangla copy has not been read by a native speaker.** I wrote it, checked it for consistency, and tests keep both languages in step, but wording such as "অ্যাপয়েন্টমেন্ট" (many patients say "সিরিয়াল") needs a person's judgement.
+- **Search engines get the right metadata per language, but the page body is rendered in the browser.** A crawler sees Bangla body text even for `?lang=en`. Separate server-rendered `/en` pages are out of scope. Opening hours are free text, so the JSON-LD carries them as text and not as structured days and times.
+- The hero's small treatment pills are 32px tall with an invisible 44px touch area, to keep them compact.
+- The `social image` is a fixed picture. It does not change when the clinic profile does.
+
+
 - **A live voice call was not run end to end.** This build environment had no OpenAI key or microphone. Everything around the call is tested: session creation, tool execution, transcript handling, status derivation, the call panel states. The Realtime endpoint shapes (`/v1/realtime/client_secrets`, `/v1/realtime/calls`, GA event names) follow OpenAI's docs as I know them. **Make one real call first** and watch the browser console if anything differs.
 - **Bangla quality is not measured.** The prompt asks for colloquial Dhaka Bangla, code-switching, digit read-back and safe behaviour. Accent and number recognition depend on the model. Read-back confirmation and the post-call analysis are the safety nets.
 - **Not deployed.** I had no Cloudflare account access. The steps above are tested only against `wrangler dev` with local D1.
@@ -96,7 +112,7 @@ agentic-hub/         requirements, principles, epics, contracts, task commands
 
 ## 3-minute video outline
 
-1. Landing page, hover and spin the 3D tooth in the hero, switch to Bangla (20 s).
+1. Landing page, flip through the treatments in the hero, switch to Bangla (20 s).
 2. Press **Book an appointment**, book an appointment by voice, mixing in English words, read the phone number back (90 s).
 3. Open `/admin`, log in, show the call, transcript with English translation, captured fields, the appointment and the recording (45 s).
 4. Edit a skill's fee in **Agent skills**, call again and ask for the price (25 s).

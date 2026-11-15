@@ -32,6 +32,11 @@ describe('Doctor', () => {
     assert.throws(() => doctor({ days: [7] }), (e) => e.code === 'doctor_days_invalid');
   });
 
+  it('keeps a Bangla specialty, empty by default', () => {
+    assert.equal(doctor().specialtyBn, '');
+    assert.equal(doctor({ specialty: 'Braces', specialtyBn: '  ব্রেসেস ' }).specialtyBn, 'ব্রেসেস');
+  });
+
   it('removes duplicate days', () => {
     assert.deepEqual(doctor({ days: [1, 1, 2] }).days, [1, 2]);
   });

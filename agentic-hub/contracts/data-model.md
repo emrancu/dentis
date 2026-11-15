@@ -5,8 +5,8 @@ Times are ISO 8601 UTC unless named `slot` (clinic-local `YYYY-MM-DDTHH:MM`).
 | Table | Columns | Purpose |
 |---|---|---|
 | `settings` | `key` PK, `value` | Clinic profile and agent prompt as key/value |
-| `skills` | `id` PK, `title`, `description`, `content`, `kind`, `keywords`, `enabled`, `updated_at` | Agent knowledge |
-| `doctors` | `id` PK, `name_en`, `name_bn`, `specialty`, `days` (JSON array 0=Sun…6=Sat), `start_time`, `end_time`, `active` | Who can be booked |
+| `skills` | `id` PK, `title`, `description`, `title_bn`, `description_bn`, `content`, `kind`, `keywords`, `enabled`, `updated_at` | Agent knowledge. `title` and `description` are English, the `_bn` columns are the Bangla text shown on the website |
+| `doctors` | `id` PK, `name_en`, `name_bn`, `specialty`, `specialty_bn`, `days` (JSON array 0=Sun…6=Sat), `start_time`, `end_time`, `active` | Who can be booked |
 | `patients` | `id` PK, `full_name`, `phone` UNIQUE, `created_at` | The person behind calls |
 | `calls` | `id` PK (uuid), `started_at`, `ended_at`, `duration_s`, `status`, `patient_id` FK, `recording_key`, `summary`, `ip_hash` | One record per call |
 | `call_extractions` | `call_id` PK FK, `patient_name`, `phone`, `reason_for_visit`, `preferred_datetime`, `intent`, `outcome`, `notes` | Structured fields |
@@ -28,3 +28,6 @@ Times are ISO 8601 UTC unless named `slot` (clinic-local `YYYY-MM-DDTHH:MM`).
 - `skills.title` is unique ignoring case (checked by the application).
 - `settings` keys for the agent: `agent_instructions` (up to 4000 characters) and `agent_greeting` (up to 300). An empty value means "use the default text in code".
 - Schema changes are numbered files in `migrations/`, applied once and tracked with `wrangler d1 migrations apply`. The optional sample calls live in `seed/` and are not a migration.
+- `skills.title_bn` (up to 80) and `skills.description_bn` (up to 400) default to an empty string. Search also matches them.
+- `doctors.specialty_bn` defaults to an empty string.
+- The clinic profile settings keys gain `address_bn`, `hours_bn`, `directions_bn`, `prep_notes_bn`.

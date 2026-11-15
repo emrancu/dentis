@@ -45,6 +45,9 @@ const CASES = [
   ['can I pay by bkash', 'Booking and cancellation policy'],
   ['I will be late, what happens', 'Booking and cancellation policy'],
   ['ডাক্তার appointment cancel করব', 'Booking and cancellation policy'],
+  ['হারানো দাঁতের জন্য ইমপ্ল্যান্ট করা যায়?', 'Dental implants'],
+  ['can I replace a missing tooth', 'Dental implants'],
+  ['নকল দাঁত লাগাতে কত টাকা', 'Dental implants'],
 ];
 
 async function runEval() {

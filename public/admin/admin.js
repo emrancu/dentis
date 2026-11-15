@@ -363,7 +363,7 @@ async function skillsView(view) {
       ${[['all', 'All', items.length], ...KINDS.map(([k, , plural]) => [k, plural, items.filter((s) => s.kind === k).length])].map(([k, label, n]) => `<button type="button" class="tab" data-filter="${k}" aria-pressed="${skillFilter === k}">${esc(label)} <span>${n}</span></button>`).join('')}
     </div>
     ${shown.length ? `<div class="skills">${shown.map((s) => `
-      <article class="card skill ${s.enabled ? '' : 'off'}"><div><span class="chip kind-${esc(s.kind)}">${esc(kindLabel(s.kind))}</span></div><h3 class="bn">${esc(s.title)}</h3><p class="muted bn" style="margin:0">${esc(s.description)}</p>${s.content ? `<div class="content bn">${esc(s.content)}</div>` : ''}${s.keywords ? `<p class="keywords bn">${esc(s.keywords)}</p>` : ''}
+      <article class="card skill ${s.enabled ? '' : 'off'}"><div><span class="chip kind-${esc(s.kind)}">${esc(kindLabel(s.kind))}</span>${s.kind === 'service' && s.enabled && !(s.title_bn && s.description_bn) ? ' <span class="chip warn-bn">No Bangla text for the website</span>' : ''}</div><h3>${esc(s.title)}</h3>${s.title_bn ? `<p class="muted bn" style="margin:-4px 0 0">${esc(s.title_bn)}</p>` : ''}<p class="muted" style="margin:0">${esc(s.description)}</p>${s.content ? `<div class="content bn">${esc(s.content)}</div>` : ''}${s.keywords ? `<p class="keywords bn">${esc(s.keywords)}</p>` : ''}
         <div class="actions"><label class="switch"><input type="checkbox" data-toggle="${s.id}" ${s.enabled ? 'checked' : ''}> ${s.enabled ? 'Enabled' : 'Disabled'}</label><span style="flex:1"></span><button class="btn btn-small" data-edit="${s.id}">Edit</button><button class="btn btn-small btn-danger" data-del="${s.id}">Delete</button></div>
       </article>`).join('')}</div>` : empty(items.length ? 'Nothing of this type yet.' : 'No entries yet. Add the first one so the agent can answer questions.')}`;
   const byId = new Map(items.map((s) => [String(s.id), s]));
@@ -408,12 +408,15 @@ function dialog(html, onSubmit) {
 function skillDialog(skill) {
   dialog(`<h2>${skill ? 'Edit entry' : 'Add entry'}</h2>
     <label class="field"><span>Type</span><select name="kind">${KINDS.map(([k, label]) => `<option value="${k}" ${(skill?.kind ?? 'service') === k ? 'selected' : ''}>${label}${k === 'service' ? ' (shown on the website)' : ' (agent only)'}</option>`).join('')}</select></label>
-    <label class="field"><span>Title: what the agent looks up. English with a short Bangla hint works best.</span><input type="text" name="title" value="${esc(skill?.title ?? '')}" maxlength="80" required class="bn"></label>
-    <label class="field"><span>Short description (shown on the website for services)</span><input type="text" name="description" value="${esc(skill?.description ?? '')}" maxlength="400" required class="bn"></label>
+    <label class="field"><span>Title in English: what the agent looks up</span><input type="text" name="title" value="${esc(skill?.title ?? '')}" maxlength="80" required></label>
+    <label class="field"><span>Description in English</span><input type="text" name="description" value="${esc(skill?.description ?? '')}" maxlength="400" required></label>
+    <label class="field"><span>Title in Bangla (shown on the website)</span><input type="text" name="title_bn" value="${esc(skill?.title_bn ?? '')}" maxlength="80" class="bn"></label>
+    <label class="field"><span>Description in Bangla (shown on the website)</span><input type="text" name="description_bn" value="${esc(skill?.description_bn ?? '')}" maxlength="400" class="bn"></label>
+    <p class="hint">Shown on the website for services. Agent-only entries (FAQ, policy) can leave these empty.</p>
     <label class="field"><span>Details the agent will say: prices, steps, rules</span><textarea name="content" maxlength="4000" class="bn">${esc(skill?.content ?? '')}</textarea></label>
     <label class="field"><span>Keywords: other words callers use, Bangla and English, separated by commas</span><input type="text" name="keywords" value="${esc(skill?.keywords ?? '')}" maxlength="300" class="bn" placeholder="wisdom, দাঁত তোলা, আক্কেল দাঁত"></label>
     <label class="switch"><input type="checkbox" name="enabled" ${skill?.enabled ?? true ? 'checked' : ''}> Enabled</label>`, (f) => {
-    const body = { title: f.get('title'), description: f.get('description'), content: f.get('content'), kind: f.get('kind'), keywords: f.get('keywords'), enabled: f.get('enabled') === 'on' };
+    const body = { title: f.get('title'), description: f.get('description'), title_bn: f.get('title_bn'), description_bn: f.get('description_bn'), content: f.get('content'), kind: f.get('kind'), keywords: f.get('keywords'), enabled: f.get('enabled') === 'on' };
     return skill ? api('PUT', `/skills/${skill.id}`, body) : api('POST', '/skills', body);
   });
 }
@@ -422,7 +425,7 @@ function skillDialog(skill) {
 async function doctorsView(view) {
   const { items } = await api('GET', '/doctors');
   view.innerHTML = `${head('Doctors', 'The agent only books inside these working hours', '<button class="btn btn-primary" id="add">+ Add doctor</button>')}
-    ${items.length ? `<div class="table-wrap"><table><thead><tr><th>Doctor</th><th>Specialty</th><th>Days</th><th>Hours</th><th>Status</th><th></th></tr></thead><tbody>${items.map((d) => `<tr><td><strong>${esc(d.name_en)}</strong><br><span class="muted bn">${esc(d.name_bn)}</span></td><td>${esc(d.specialty || '–')}</td><td>${esc(DAY_ORDER.filter((x) => d.days.includes(x)).map((x) => DAY_NAMES[x]).join(', '))}</td><td>${esc(d.start_time)}–${esc(d.end_time)}</td><td><span class="chip ${d.active ? 'booked' : 'cancelled'}">${d.active ? 'Active' : 'Inactive'}</span></td><td><button class="btn btn-small" data-edit="${d.id}">Edit</button> <button class="btn btn-small btn-danger" data-del="${d.id}">Delete</button></td></tr>`).join('')}</tbody></table></div>` : empty('No doctors yet.')}`;
+    ${items.length ? `<div class="table-wrap"><table><thead><tr><th>Doctor</th><th>Specialty</th><th>Days</th><th>Hours</th><th>Status</th><th></th></tr></thead><tbody>${items.map((d) => `<tr><td><strong>${esc(d.name_en)}</strong><br><span class="muted bn">${esc(d.name_bn)}</span></td><td>${esc(d.specialty || '–')}${d.specialty_bn ? `<br><span class="muted bn">${esc(d.specialty_bn)}</span>` : ''}</td><td>${esc(DAY_ORDER.filter((x) => d.days.includes(x)).map((x) => DAY_NAMES[x]).join(', '))}</td><td>${esc(d.start_time)}–${esc(d.end_time)}</td><td><span class="chip ${d.active ? 'booked' : 'cancelled'}">${d.active ? 'Active' : 'Inactive'}</span></td><td><button class="btn btn-small" data-edit="${d.id}">Edit</button> <button class="btn btn-small btn-danger" data-del="${d.id}">Delete</button></td></tr>`).join('')}</tbody></table></div>` : empty('No doctors yet.')}`;
   const byId = new Map(items.map((d) => [String(d.id), d]));
   view.querySelector('#add').onclick = () => doctorDialog(null);
   view.querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => doctorDialog(byId.get(b.dataset.edit))));
@@ -443,13 +446,14 @@ function doctorDialog(d) {
     <div class="form-grid">
       <label class="field"><span>Name (English)</span><input type="text" name="name_en" value="${esc(d?.name_en ?? '')}" required></label>
       <label class="field"><span>Name (বাংলা)</span><input type="text" name="name_bn" value="${esc(d?.name_bn ?? '')}" class="bn"></label>
-      <label class="field full"><span>Specialty</span><input type="text" name="specialty" value="${esc(d?.specialty ?? '')}"></label>
+      <label class="field"><span>Specialty in English</span><input type="text" name="specialty" value="${esc(d?.specialty ?? '')}"></label>
+      <label class="field"><span>Specialty in Bangla</span><input type="text" name="specialty_bn" value="${esc(d?.specialty_bn ?? '')}" class="bn"></label>
       <label class="field"><span>Starts</span><input type="time" name="start_time" value="${esc(d?.start_time ?? '10:00')}" required></label>
       <label class="field"><span>Ends</span><input type="time" name="end_time" value="${esc(d?.end_time ?? '20:00')}" required></label>
       <div class="field full"><span>Working days</span><div class="days">${DAY_ORDER.map((n) => `<label><input type="checkbox" name="days" value="${n}" ${(d?.days ?? [6, 0, 1, 2, 3, 4]).includes(n) ? 'checked' : ''}><span>${DAY_NAMES[n]}</span></label>`).join('')}</div></div>
     </div>
     <label class="switch"><input type="checkbox" name="active" ${d?.active ?? true ? 'checked' : ''}> Active (can be booked)</label>`, (f) => {
-    const body = { name_en: f.get('name_en'), name_bn: f.get('name_bn'), specialty: f.get('specialty'), start_time: f.get('start_time'), end_time: f.get('end_time'), days: f.getAll('days').map(Number), active: f.get('active') === 'on' };
+    const body = { name_en: f.get('name_en'), name_bn: f.get('name_bn'), specialty: f.get('specialty'), specialty_bn: f.get('specialty_bn'), start_time: f.get('start_time'), end_time: f.get('end_time'), days: f.getAll('days').map(Number), active: f.get('active') === 'on' };
     return d ? api('PUT', `/doctors/${d.id}`, body) : api('POST', '/doctors', body);
   });
 }
@@ -458,12 +462,14 @@ function doctorDialog(d) {
 async function clinicView(view) {
   const p = await api('GET', '/settings');
   const input = (key, label, opts = '') => `<label class="field ${opts.includes('full') ? 'full' : ''}"><span>${label}</span><input type="text" name="${key}" value="${esc(p[key])}" ${opts.includes('bn') ? 'class="bn"' : ''}></label>`;
-  const area = (key, label) => `<label class="field full"><span>${label}</span><textarea name="${key}" class="bn">${esc(p[key])}</textarea></label>`;
+  const area = (key, label, bn) => `<label class="field"><span>${label}</span><textarea name="${key}" ${bn ? 'class="bn"' : ''}>${esc(p[key])}</textarea></label>`;
+  const pair = (key, en, bn) => area(key, `${en} (English)`) + area(`${key}_bn`, bn, true);
   view.innerHTML = `${head('Clinic profile', 'The agent reads this when callers ask about hours, location or preparation')}
     <form class="card form-grid" id="clinic-form">
       ${input('name_en', 'Clinic name (English)')}${input('name_bn', 'Clinic name (বাংলা)', 'bn')}${input('phone', 'Phone')}
       <label class="field"><span>Appointment length</span><select name="slot_minutes">${[15, 20, 30, 45, 60].map((m) => `<option value="${m}" ${m === p.slot_minutes ? 'selected' : ''}>${m} minutes</option>`).join('')}</select></label>
-      ${area('address', 'Address')}${area('hours', 'Opening hours')}${area('directions', 'Directions')}${area('prep_notes', 'Before your visit')}
+      <p class="hint full">Write English in the English box and Bangla in the Bangla box. The website shows the box for the visitor's language.</p>
+      ${pair('address', 'Address', 'ঠিকানা (বাংলা)')}${pair('hours', 'Opening hours', 'খোলার সময় (বাংলা)')}${pair('directions', 'Directions', 'কীভাবে আসবেন (বাংলা)')}${pair('prep_notes', 'Before your visit', 'আসার আগে (বাংলা)')}
       <div class="full"><p class="error-text" id="clinic-error" role="alert"></p><button class="btn btn-primary" type="submit">Save changes</button></div>
     </form>`;
   view.querySelector('#clinic-form').onsubmit = async (e) => {
@@ -488,9 +494,9 @@ function dataView(view) {
     ['patients', 'The person behind the calls, unique by phone.', 'id, full_name, phone (unique), created_at'],
     ['appointments', 'Bookings. One active booking per doctor and slot (unique index).', 'patient_id, call_id, doctor_id → doctors,\nslot, service, status'],
     ['callbacks', 'Requests for a human to call back.', 'call_id → calls, name, phone, reason,\npreferred_time, status'],
-    ['skills', 'Agent knowledge you manage here: services, FAQs and policies.', 'title, description, content, kind, keywords, enabled'],
-    ['doctors', 'Who can be booked and when.', 'name_en, name_bn, specialty, days, start_time,\nend_time, active'],
-    ['settings', 'Clinic profile and agent prompt as key/value.', 'key, value'],
+    ['skills', 'Agent knowledge you manage here: services, FAQs and policies.', 'title, description (English), title_bn,\ndescription_bn (Bangla, shown on the website),\ncontent, kind, keywords, enabled'],
+    ['doctors', 'Who can be booked and when.', 'name_en, name_bn, specialty, specialty_bn,\ndays, start_time, end_time, active'],
+    ['settings', 'Clinic profile and agent prompt as key/value. Text fields have Bangla twins (*_bn).', 'key, value'],
   ];
   view.innerHTML = `${head('How data is stored', 'The path from a live call into this portal')}
     <div class="grid two">

@@ -17,11 +17,23 @@ export class ToolExecutor {
         return { date: n.date, time: n.time, weekday_en: WEEKDAYS_EN[n.weekday], weekday_bn: WEEKDAYS_BN[n.weekday] };
       },
       get_clinic_info: async () => {
-        const { nameEn, nameBn, phone, address, directions, hours, prepNotes } = await clinic.profile();
-        return { name_en: nameEn, name_bn: nameBn, phone, address, directions, hours, prep_notes: prepNotes };
+        const p = await clinic.profile();
+        return {
+          name_en: p.nameEn,
+          name_bn: p.nameBn,
+          phone: p.phone,
+          address: p.address,
+          address_bn: p.addressBn,
+          directions: p.directions,
+          directions_bn: p.directionsBn,
+          hours: p.hours,
+          hours_bn: p.hoursBn,
+          prep_notes: p.prepNotes,
+          prep_notes_bn: p.prepNotesBn,
+        };
       },
       list_doctors: async () => ({
-        doctors: (await doctors.list()).filter((d) => d.active).map((d) => ({ name_en: d.nameEn, name_bn: d.nameBn, specialty: d.specialty, days: d.days, start_time: d.startTime, end_time: d.endTime })),
+        doctors: (await doctors.list()).filter((d) => d.active).map((d) => ({ name_en: d.nameEn, name_bn: d.nameBn, specialty: d.specialty, specialty_bn: d.specialtyBn, days: d.days, start_time: d.startTime, end_time: d.endTime })),
       }),
       list_skills: async () => ({ skills: await knowledge.list() }),
       get_skill: (a) => knowledge.get({ title: a.title }),

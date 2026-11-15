@@ -5,9 +5,13 @@ const FIELDS = {
   nameBn: 'name_bn',
   phone: 'phone',
   address: 'address',
+  addressBn: 'address_bn',
   directions: 'directions',
+  directionsBn: 'directions_bn',
   hours: 'hours',
+  hoursBn: 'hours_bn',
   prepNotes: 'prep_notes',
+  prepNotesBn: 'prep_notes_bn',
   slotMinutes: 'slot_minutes',
 };
 
@@ -16,9 +20,13 @@ const DEFAULTS = {
   nameBn: 'ডেন্টিস ডেন্টাল কেয়ার',
   phone: '',
   address: '',
+  addressBn: '',
   directions: '',
+  directionsBn: '',
   hours: '',
+  hoursBn: '',
   prepNotes: '',
+  prepNotesBn: '',
   slotMinutes: 30,
 };
 

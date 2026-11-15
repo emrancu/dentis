@@ -1,15 +1,17 @@
 import { UnauthorizedError } from '../../domain/shared/errors.js';
 import { COOKIE, registerAdminRoutes } from './admin-routes.js';
+import { registerHomeRoute } from './home.js';
 import { registerPublicRoutes } from './public-routes.js';
 import { Router, errorResponse, json } from './router.js';
 
 const cookieValue = (request, name) => request.headers.get('Cookie')?.split(/;\s*/).find((c) => c.startsWith(`${name}=`))?.slice(name.length + 1);
 
 /** Builds the request handler from the wired services. */
-export function createApp(services) {
+export function createApp(services, { assets = null } = {}) {
   const router = new Router();
   registerPublicRoutes(router, services);
   registerAdminRoutes(router, services);
+  if (assets) registerHomeRoute(router, services, assets); // the Worker serves "/" itself so the tags are in the HTML
 
   async function requireAdmin(request) {
     if (!(await services.adminAuth.verify(cookieValue(request, COOKIE)))) throw new UnauthorizedError('unauthorized', 'Please log in.');
