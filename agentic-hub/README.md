@@ -5,7 +5,7 @@ The hub for **Dentis**: a dental centre website with a Bangla voice agent and an
 All work must follow the [principles](principles.md) and the [contracts](contracts/README.md).
 
 - [requirements.md](requirements.md): what the brief asks for, mapped to epics
-- [principles.md](principles.md): how we build (DDD, YAGNI, tests)
+- [principles.md](principles.md): how we build (grouped by part, YAGNI, tests)
 - [decisions.md](decisions.md): what is decided, assumed and out of scope
 - [epics/](epics/README.md): one file per product area
 - [contracts/](contracts/README.md): HTTP API, agent tools and data model

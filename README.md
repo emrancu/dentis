@@ -1,131 +1,352 @@
 # Dentis: a Bangla voice receptionist for a dental centre
 
-A dental centre website: the hero's main action is **Book an appointment** (booked by voice in Bangla), with a Three.js 3D stage on the right that cycles through four dental treatments (drag to spin) and a floating **Call Dentis** button at the bottom right. A staff portal lives at `/admin`. Built for the StrategyByte AI Engineer task brief (`StrategyByte_AI_Engineer_Task_Brief_14Nov.pdf`).
+A dental centre website where a visitor presses **Book an appointment** and talks to a Bangla-speaking AI receptionist in the browser. The agent greets, takes name and phone number, finds a free slot, books, reschedules or cancels, answers questions from clinic knowledge, and hands over to a human when it should. Staff see every call, its transcript, the captured fields, bookings and callback requests in an admin portal, and can change the agent's prompt and knowledge without a deploy.
 
-**Live:** website https://dentis.emrancu1.workers.dev, staff portal https://dentis.emrancu1.workers.dev/admin (reviewer login is in the submission email), code https://github.com/emrancu/dentis
+**Live:** website https://dentis.emrancu1.workers.dev, staff portal https://dentis.emrancu1.workers.dev/admin (login is sent with the submission), code https://github.com/emrancu/dentis
 
-- **Voice:** OpenAI Realtime API over WebRTC, straight from the browser. The Worker only mints a short-lived key.
-- **Backend:** one Cloudflare Worker (vanilla JS), D1 for data. No framework, no build step, no runtime dependencies.
-- **Admin:** access-key login. Staff manage the agent's knowledge ("skills"), doctors and the clinic profile, and read every call.
-- **Code:** domain-driven layers, tested. Rules, decisions and contracts live in [`agentic-hub/`](agentic-hub/README.md). Agents read [`CLAUDE.md`](CLAUDE.md).
+This README is for engineers. It explains how the system is built and why. Rules, decisions and contracts are in [`agentic-hub/`](agentic-hub/README.md). AI coding agents read [`CLAUDE.md`](CLAUDE.md).
 
-## The website: Bangla first, complete in both languages
+## Contents
 
-- **Bangla is the default.** English is one tap away, remembered, and a link can carry it: `/?lang=en` or `/?lang=bn` wins over the saved choice. The static HTML is Bangla, so there is no flash of English.
-- **Nothing mixes languages.** Every display field has a Bangla twin (doctor specialty, clinic address, hours, directions). English fields hold English only, Bangla fields Bangla only. The site shows the visitor's language and falls back to the other only when a field is empty. Admin marks services that have no Bangla text.
-- **One style per language.** Times are 12-hour: `10:00 am` in English and `সকাল ১০:০০` in Bangla, with Bangla digits. Working days read `Sat–Thu` / `শনি–বৃহ`. The phone number is a tappable `tel:` link.
-- **Names are consistent.** The navigation label is the section label, every booking button says the same, and the hero treatment cards use exactly the Services names (a test enforces it).
-- **The floating button is "Talk to us" / "কথা বলুন"**: a voice call in the browser. The clinic's phone number is a separate link.
-- **No third-party hosts.** Fonts (Inter, Fraunces, Hind Siliguri, Noto Serif Bengali) and Three.js are served from `public/fonts` and `public/vendor`.
-- **Link previews and search.** The Worker serves `/` itself and adds the per-language title and description, canonical and `hreflang` links, Open Graph and Twitter tags, and `Dentist` JSON-LD built from the live clinic profile. `public/og.png` is the preview image.
+1. [Architecture](#architecture)
+2. [Repository layout](#repository-layout)
+3. [The agentic hub, in short](#the-agentic-hub-in-short)
+4. [The voice agent](#the-voice-agent)
+5. [Data model](#data-model)
+6. [Scheduling rules](#scheduling-rules)
+7. [HTTP API](#http-api)
+8. [Admin portal](#admin-portal)
+9. [Website](#website)
+10. [Security](#security)
+11. [Tests](#tests)
+12. [Run locally and deploy](#run-locally-and-deploy)
+13. [Design decisions and trade-offs](#design-decisions-and-trade-offs)
+14. [Known limits](#known-limits)
 
-## Admin: the agent's prompt and knowledge
-
-Everything the agent says and knows is edited in `/admin`, with no deploy. The next call uses it.
-
-- **Agent prompt:** edit the persona and tone (`Instructions`) and the `Greeting`. Write `{clinic}` where the clinic name goes. **Show final prompt** previews the whole prompt for unsaved text, and **Reset to default** restores the built-in text. The booking steps, tool rules, "facts only from tools" and safety rules are **locked in code**. They always come after your text and win over it, so they cannot be edited away.
-- **Agent knowledge:** each entry is a title and the details the agent will say, in English or Bangla. One plain form. This knowledge is for the voice agent only. The website's service list is fixed copy in `public/website/js/services.js`, so editing it needs a code change.
-- **How the agent finds an entry:** it is shown the titles of every enabled entry (never the details) and decides which ones a question needs, usually one and sometimes up to four. It fetches each by exact title with `get_skill`. There is no search and no limit on titles. If no title fits, it says so and hands over to a human.
-
-## How a call works
+## Architecture
 
 ```
-Browser ──POST /api/session {intent}──▶ StartCall: new call row, prompt built from clinic + doctors + skill titles,
-   │                                  short-lived OpenAI key returned
-   ├─ WebRTC audio + data channel ──▶ OpenAI Realtime (gpt-realtime-mini, Bangla)
-   ├─ model function call ──POST /api/agent/tools/:name──▶ ToolExecutor ─▶ use cases ─▶ D1
-   └─ hang up ──POST /api/calls/:id/finish──▶ transcript saved, status derived
+                         audio (WebRTC)
+  Browser  ◀──────────────────────────────────────────▶  OpenAI Realtime
+  (website)  ── data channel: events, tool calls ───────▶  (gpt-realtime-mini)
+     │  ▲
+     │  │ JSON over HTTPS
+     ▼  │
+  Cloudflare Worker ──▶ D1 (SQLite)         static files: Workers Assets (public/)
+  (src/, vanilla JS)
 ```
 
-**Agent tools** (see [contract](agentic-hub/contracts/agent-tools.md)): `get_clinic_info`, `list_doctors`, `get_skill`, `check_availability`, `book_appointment`, `reschedule_appointment`, `cancel_appointment`, `save_patient_details`, `request_human_callback`, `get_current_datetime`, `end_call`. Facts such as fees, hours and slots come only from these tools. Editing a skill in `/admin` changes the next call, with no deploy.
+- **Audio never touches our server.** The browser opens a WebRTC connection straight to OpenAI. The Worker only mints a short-lived client key for it, so the real API key stays on the server.
+- **The model has no facts of its own.** Prices, hours, slots and bookings come from tool calls. The browser relays each tool call to the Worker (`POST /api/agent/tools/:name`), the Worker runs the real use case against D1, and the result goes back to the model.
+- **One Worker, no framework, no build step, no runtime dependencies.** Vanilla JS ES modules in the Worker and in the browser. `wrangler` is the only dev dependency.
+- **Free-tier friendly:** Workers, D1 and static assets. The only paid dependency is the OpenAI key.
 
-**Data model** ([contract](agentic-hub/contracts/data-model.md)): `calls`, `call_extractions`, `transcript_turns`, `patients`, `appointments`, `callbacks`, `skills`, `doctors`, `settings`. Validation lives in the domain: Bangladeshi mobile numbers (Bangla digits and `+880` accepted), real future dates within 60 days, doctor hours, one active booking per doctor and slot (also a unique index). 
+## Repository layout
 
-**Where the data lives and how it moves**
-- **Storage:** Cloudflare D1 (SQLite), created in the APAC region. The Worker is the only thing that reads or writes it.
-- **No audio is recorded or stored.** Audio goes from the browser straight to OpenAI. Only text is kept.
-- **During the call:** the agent's tools save the name, phone, reason, bookings and callback requests as they are learned (`save_patient_details`, `book_appointment`, `request_human_callback`), so nothing depends on the call ending cleanly.
-- **After the call:** the browser builds the transcript from the Realtime events and posts it to `POST /api/calls/:id/finish`. The server stores the turns with speaker and time and works out the call status (booked, rescheduled, cancelled, enquiry, follow-up needed, incomplete, failed).
-- **Validation:** Bangla or English digits are normalised (`০১৭১…` and `+880 17…` become `01712345678`) before a number is accepted. Dates and times are checked against real calendar days, the booking window and doctor hours.
-- **Transcript language:** turns are stored in the language spoken. The `text_en` column exists for an English translation but is not filled, because there is no translation step yet.
+Code is grouped by part of the app. A folder holds the rules, use cases and database code for one part.
 
-## Run locally
+```
+src/
+  index.js              Worker entry: builds D1 stores, OpenAI gateway, security, then the app
+  composition.js        wires stores into use cases (the only place that knows both)
+  app.js                the HTTP app: website routes + admin routes + the admin guard
+  scheduling/           doctors, appointments, slots, availability, phone numbers, patients (rules, use cases, store.js)
+  calls/                calls, transcript turns, extractions, callback requests, status rules (rules, use cases, store.js)
+  agent/                prompt builder, tool definitions, tool executor, editable agent settings, OpenAI gateway
+  knowledge/            agent knowledge entries ("skills") and the get_skill use case (+ store.js)
+  clinic/               clinic profile and settings (+ store.js)
+  admin/                staff API: routes/ (one file per area), login, session guard, dashboard queries
+  website/              public site data, the voice-call API, the SEO home page
+  shared/               errors, time (Asia/Dhaka), Bangla digits, router and response helpers
+public/
+  index.html            the website, served at /
+  website/              css/ and js/ for the website: Three.js hero, call client (voice.js), i18n
+  admin/                the staff portal: index.html, admin.css, js/ and js/pages/ (one file per page)
+  shared/util.js        formatters used by both
+  fonts/, vendor/       self-hosted fonts and Three.js
+migrations/             numbered D1 migrations, applied once and tracked by wrangler
+seed/sample_calls.sql   optional invented sample calls (not a migration)
+test/                   mirrors src/ and public/; plus architecture.test.js
+agentic-hub/            requirements, principles, decisions, epics, contracts
+```
+
+**Import rules** (enforced by `test/architecture.test.js`): `shared` imports nothing. A business area (`scheduling`, `knowledge`, `clinic`, `calls`, `agent`) may use `shared` and the other areas. `admin` and `website` use `shared` and the areas, never each other. Only `index.js` imports the outside adapters (`store.js` files, `agent/realtime-gateway.js`, `admin/security.js`). Rules live in the area's entity or domain-service files, never in routes, SQL or the front end.
+
+## The agentic hub, in short
+
+`agentic-hub/` is the project's written memory for AI coding agents and for people. It holds what decides what we build, so an agent does not guess:
+
+| File or folder | What it holds |
+|---|---|
+| `requirements.md` | the StrategyByte brief, mapped to epics |
+| `principles.md` | how we build: contract first, grouped by part, YAGNI, tests with code, safety |
+| `decisions.md` | what is decided, assumed and out of scope. An open choice stays a line here, not code |
+| `epics/` | scope and acceptance per product area |
+| `contracts/` | the HTTP API, the agent tools and the data model. Written before the code |
+| `commands/` | the two workflows below |
+| `tasks/` and `outcomes/` | a feature in progress, and a one-file record when it is done |
+
+**How work flows.** An agent reads `CLAUDE.md`, which points to the hub, then follows two commands:
+
+1. **`/create-task <details>`** plans a feature into `tasks/<id>.md`: a goal, a spec, and subtasks that say whether they can run in parallel and when each is done. The plan is checked against the principles, the epic and the contracts first. Breaking a rule needs a human to approve it in two separate asks. The last subtask is always a **premortem and spec re-evaluation**.
+2. **`/task-loop <id>`** runs that file on branch `feature/<id>`. For each subtask it marks `[~]`, changes the contract before the code that uses it, writes the tests with the code, checks "done when" and `npm test`, commits, then marks `[x]`. After the premortem it opens one pull request into `main`. It never pushes to `main`, merges or force-pushes.
+
+When the pull request is merged, `outcomes/<id>.md` records what was done, open risks move into the epic, and the task file is deleted. Anything worth keeping has by then moved into the contracts, the epic or `decisions.md`.
+
+## The voice agent
+
+### Call lifecycle
+
+```
+1  Browser   getUserMedia (mic)                    → mic_denied / no_mic handled before anything else
+2  Browser   POST /api/session {intent}            → StartCall
+3  Worker    rate limit, create call row, build prompt, mint OpenAI client key (TTL 300 s)
+4  Browser   WebRTC offer → OpenAI /v1/realtime/calls with the client key; opens data channel
+5  Browser   on channel open: speaks the scripted greeting, starts the timer and silence watch
+6  Model     function calls → Browser → POST /api/agent/tools/:name → Worker → D1 → result → Model
+7  Model     end_call → Browser speaks the scripted closing line, hangs up when the audio ends
+8  Browser   POST /api/calls/:id/finish {turns, reason} → transcript saved, status derived
+```
+
+The browser side is `public/website/js/voice.js` (state machine: `idle → connecting → live → ended | error`). Pure logic is split into small testable modules: `transcript.js` (events → transcript), `idle.js` (silence clock), `call-messages.js` (the messages we send on the data channel).
+
+### Session creation (`calls/call-records.js`, `StartCall`)
+
+- **Rate limit:** 10 calls per hour per network. The IP is hashed (SHA-256 with a prefix) and only the hash is stored in `calls.ip_hash`.
+- **Stale calls:** a call still `in_progress` after 30 minutes is marked `incomplete` on the next session start.
+- **Prompt:** built fresh for every call from live data: clinic profile, active doctors, enabled knowledge titles and today's date in Dhaka. An edit in admin applies to the next call. A call already running never changes.
+- **Intent:** the hero button sends `booking`, which adds an instruction to go straight to the booking flow. Any other value is a general call.
+- **Realtime session settings** (`agent/realtime-gateway.js`): model `gpt-realtime-mini`, voice `marin`, input transcription `gpt-4o-mini-transcribe` with `language: 'bn'`, noise reduction `near_field`, `semantic_vad` with `eagerness: 'low'` (callers pause between digits of a phone number and must not be cut off), `tool_choice: 'auto'`.
+- If minting the key fails, the call is marked `failed` and the browser shows a retry panel.
+
+### The prompt (`agent/prompt.js` and `agent/agent-prompt.js`)
+
+The prompt is two layers. The order matters, because the last section tells the model that the locked rules win over anything above.
+
+| Layer | Content | Who can change it |
+|---|---|---|
+| **Editable** | persona and tone (`Instructions`, up to 4000 chars), `Greeting` (300), `Closing` (300). `{clinic}` becomes the clinic name. Empty means the built-in default. | Staff, in `/admin/#/agent` |
+| **Locked, in code** | Today (date, weekday, "evening" means 17:00 to 20:00) · Call flow (9 steps) · Facts always come from tools · Human handoff · Safety · Clinic summary and doctors · Knowledge titles · "these sections take priority" | Developers |
+
+The call flow is: greet, name, phone (saved first, see below), reason, date and time (`check_availability`, real slots only), read back everything before `book_appointment`, reschedule or cancel with explicit confirmation, `save_patient_details` as details are learned, summary then `end_call`.
+
+Default persona rules: colloquial Dhaka Bangla, keep common English words as Bangladeshis say them (appointment, doctor, scaling), one or two short sentences, one question at a time, dates with weekday, patience while a caller looks something up. If the caller speaks only English, the agent continues in English.
+
+### Tools (`agent/tools.js`, `agent/tool-executor.js`)
+
+Eleven tools. Every result is `{ ok: true, … }` or `{ ok: false, error: "<code>", message: "<what the agent should do>", … }`, always HTTP 200, so the model gets guidance instead of an exception. Domain errors become `ok:false` with a stable code. Anything else is a real 500. Full schemas: [contracts/agent-tools.md](agentic-hub/contracts/agent-tools.md).
+
+| Tool | What it does | Side effects |
+|---|---|---|
+| `get_current_datetime` | date, time, weekday in Dhaka | none |
+| `get_clinic_info` | name, phone (+ `phone_spoken`), address, directions, hours | none |
+| `list_doctors` | active doctors with specialty, days, hours | none |
+| `get_skill` | details of one knowledge entry by exact title | none |
+| `check_availability` | free slots on a date, optional doctor and part of day (max 8) | none |
+| `book_appointment` | books a slot, registers the patient, records the outcome | appointment, patient, extraction |
+| `reschedule_appointment` | moves the caller's upcoming appointment | appointment, extraction |
+| `cancel_appointment` | cancels it | appointment, extraction |
+| `save_patient_details` | saves name, phone, reason, preferred time, intent, notes as they are learned | extraction, patient |
+| `request_human_callback` | records a handoff for staff, `urgent` for emergencies | callback, extraction |
+| `end_call` | signals that the caller needs nothing more | none (the browser says the closing and hangs up) |
+
+Guards in `ToolExecutor.execute`: unknown tool or call is an HTTP 404, a finished call is refused, and a call older than 5 minutes plus 15 seconds gets `call_time_limit` so a client that forgot to hang up cannot keep working.
+
+### Phone numbers: one standard path
+
+Voice models read digits unreliably, and a Bangla voice tends to say them in Bangla words. So the number is never spoken from the model's own text.
+
+1. The agent saves the number with `save_patient_details` as soon as it has it.
+2. The server normalises it (`০১৭১২৩৪৫৬৭৮`, `+880 1712-345678` and `1712345678` all become `01712345678`) and validates it as a Bangladeshi mobile number. An invalid number returns `phone_invalid` at once, so the agent asks again.
+3. The result contains `phone_spoken`: `zero one seven, one two three four, five six seven eight`. The prompt tells the agent to read the number back with exactly that text. `get_clinic_info`, `book_appointment` and `request_human_callback` return it too.
+
+### Knowledge: titles in the prompt, details by tool
+
+The prompt lists the **title of every enabled knowledge entry** and never the details. The model decides from the titles which entries a question needs (usually one, sometimes up to four) and fetches each with `get_skill`. There is no search tool and no cap on titles. If no title fits, the agent says it does not have that information and hands over to a human. An entry is a title and its details, written in English or Bangla, edited in `/admin/#/skills`. Titles are unique ignoring case. Write them clearly, for example "Root canal treatment cost", because the title is all the model sees before it fetches.
+
+### Turn-taking, silence and limits
+
+- **Turn-taking:** server-side semantic VAD at low eagerness. The caller can interrupt the agent.
+- **Scripted lines:** the greeting, the "are you on the line?" nudge and the closing are spoken with a `response.create` that carries its own instruction ("Say exactly the following…"). A response-level instruction replaces the session prompt for that one reply, so the exact words are inside it. This keeps the greeting and closing word for word what staff wrote.
+- **Silence** (`public/website/js/idle.js`, pure and tested): the clock starts when the caller stops speaking or the agent finishes a normal turn, and it never runs while the caller is speaking, so a long phone number is not silence. After **25 s** the agent asks "হ্যালো, আপনি কি লাইনে আছেন?" once. After **50 s** it speaks the closing and the call ends with reason `idle`.
+- **Time limit:** 300 s. At the limit the agent is interrupted, speaks the closing and the call ends with reason `timeout`. A hard stop follows 10 s later if the audio stuck.
+- **Ending:** on `end_call` the browser waits for the model's reply to finish, sends the tool result, speaks the scripted closing, waits for its audio to stop, then tears down. A 20 s fallback timer catches a stuck call.
+- **Page closed mid-call:** `sendBeacon` posts the transcript so far.
+
+### Transcript and call status
+
+- `TranscriptBuilder` turns Realtime events (item created, input transcription completed, output transcript delta and done) into ordered, speaker-labelled turns (`patient` or `agent`) with timestamps. It tolerates both the older and newer event names.
+- `POST /api/calls/:id/finish` stores up to 500 turns of up to 2000 characters, fixes the end time and duration, and derives the status. It is **idempotent**: a second finish returns the call unchanged.
+- Status rule (`calls/call.js`, `deriveCallStatus`):
+
+| Condition, first match wins | Status |
+|---|---|
+| call errored and the patient never spoke | `failed` |
+| outcome `booked` / `rescheduled` / `cancelled` | `booked` / `rescheduled` / `cancelled` |
+| outcome `callback_needed` or intent `callback` | `follow_up_needed` |
+| patient spoke fewer than 2 turns | `incomplete` |
+| otherwise | `enquiry` |
+
+Outcomes are written by the use cases as they happen, not inferred from the transcript, so the status is right even if the browser never delivers the transcript. Outcomes merge by rank so a later callback cannot overwrite a booking.
+
+### Human handoff
+
+The agent hands over when the caller asks for a person, has an emergency or a complaint, asks something the tools cannot answer, or when a tool fails. It collects name, phone (saved and read back as above) and a short reason, and calls `request_human_callback` with `urgent: true` for pain emergencies, swelling, bleeding, an accident or an upset caller. It tells the caller a callback is recorded only after the tool says ok. If the tool fails it gives the clinic number instead. Staff see open callbacks, urgent first, in `/admin/#/callbacks` with a badge in the menu, and mark them done.
+
+### Safety
+
+No diagnosis, medicine or dosage. Severe swelling, heavy bleeding, trouble breathing or an accident gets an emergency-department instruction and an urgent callback. The agent stays on dental topics. These rules are in the locked prompt layer and the closing line tells the model they win over the persona text.
+
+### What happens when things fail
+
+| Failure | Behaviour |
+|---|---|
+| Mic denied, no mic, unsupported browser | message and retry before any call row exists |
+| Rate limited (429) | "try again later" message |
+| OpenAI key minting fails | call marked `failed`, retry panel |
+| Connection drops mid-call | transcript so far is saved, status from what was captured |
+| A tool fails or times out | result `tool_unavailable`, the agent offers a human callback |
+| Slot taken between check and book | `slot_unavailable` with `alternatives`, also guaranteed by a unique index |
+| Invalid phone, date or time | coded error with guidance, the agent asks again |
+| Caller silent | nudge, then a closing after 50 s |
+
+## Data model
+
+Cloudflare D1 (SQLite), created in the APAC region. The Worker is the only thing that reads or writes it. Contract: [contracts/data-model.md](agentic-hub/contracts/data-model.md).
+
+```
+patients 1 ──< appointments >── 1 doctors
+    │ 1              │ ∗
+    └──< calls >─────┘ (call_id)        calls 1 ── 1 call_extractions
+          │ 1                           calls 1 ──< transcript_turns
+          └──< callbacks                settings, skills (standalone)
+```
+
+| Table | Holds |
+|---|---|
+| `calls` | one row per call: `started_at`, `ended_at`, `duration_s`, `status`, `patient_id`, `ip_hash` |
+| `call_extractions` | structured fields: `patient_name`, `phone`, `reason_for_visit`, `preferred_datetime`, `intent`, `outcome`, `notes` |
+| `transcript_turns` | `call_id`, `idx`, `speaker`, `text_bn` (the text as spoken), `ts` |
+| `patients` | `full_name`, `phone` (unique, normalised `01XXXXXXXXX`) |
+| `appointments` | `patient_id`, `doctor_id`, `call_id`, `slot` (clinic-local `YYYY-MM-DDTHH:MM`), `status` |
+| `callbacks` | `call_id`, `name`, `phone`, `reason`, `urgent`, `status` (`open`, `resolved`) |
+| `doctors` | names (English and Bangla), specialty, working days (JSON), hours, `active` |
+| `skills` | agent knowledge: `title`, `content`, `enabled` |
+| `settings` | key/value: clinic profile (with Bangla twins) and the three editable agent texts |
+
+**How data moves.** During the call the tools write the extraction, patient, appointment and callback as soon as each fact is learned, so nothing depends on the call ending cleanly. After the call the browser posts the transcript and the server derives the status. **No audio is recorded or stored.** Audio goes from the browser to OpenAI only. `text_en` and `calls.summary` exist but are not written, because there is no post-call analysis step.
+
+**Migrations** are numbered files in `migrations/`, applied once and tracked by `wrangler d1 migrations apply`. They hold the schema, the demo clinic and knowledge, and later clean-ups. Principle: a migration cleans up what a removed feature leaves behind.
+
+## Scheduling rules
+
+All in `scheduling/` and covered by tests with a fixed clock (Saturday 2026-11-14 10:00, Asia/Dhaka).
+
+- Slots are `slot_minutes` long (15, 20, 30, 45 or 60, default 30) inside a doctor's working days and hours.
+- A slot must start at least 30 minutes from now and within 60 days.
+- Dates and times are validated as real calendar values. Bangla digits are accepted everywhere.
+- One active appointment per doctor and slot: checked in the use case and enforced by the unique index `uq_appt_active_slot`.
+- Without a doctor name, any doctor free at that time is used. With one, the name is matched and an unknown name returns `doctor_not_found`. `check_availability` offers at most 8 slots and `slot_unavailable` returns up to 5 alternatives.
+- Reschedule and cancel find the caller's upcoming appointment by phone. With several, they return `appointment_ambiguous` and the agent asks which date.
+- Patients are registered by phone number: the same number is the same patient.
+
+## HTTP API
+
+Full contract: [contracts/http-api.md](agentic-hub/contracts/http-api.md). Errors are `{ error: { code, message, details? } }` with 400, 401, 404, 409, 429 or 500.
+
+| Area | Routes |
+|---|---|
+| Website | `GET /` (rendered by the Worker with SEO tags) · `GET /api/public/site` (clinic profile and active doctors, no agent knowledge) |
+| Voice call | `POST /api/session` · `POST /api/agent/tools/:name` · `POST /api/calls/:id/finish` |
+| Admin auth | `POST /api/admin/login` · `POST /api/admin/logout` · `GET /api/admin/me` |
+| Admin data | `GET /api/admin/dashboard` · `calls` · `calls/:id` · `appointments` (+ `PATCH :id`) · `patients` · `callbacks` (+ `PATCH :id/resolve`) |
+| Admin config | `skills` (CRUD) · `doctors` (CRUD) · `agent` (get, put, `preview`) · `settings` (clinic profile) |
+
+## Admin portal
+
+`/admin`, a plain ES-module single-page app (`public/admin/js/`, one file per page). Pages: **Overview** (calls, outcomes, last 7 days) · **Calls** (search and filter, then a per-call view with extracted fields, transcript, appointment and callbacks) · **Appointments** · **Schedule** (one day, one column per doctor) · **Callbacks** · **Patients** · **Agent prompt** (edit persona, greeting, closing; **Show final prompt** previews the whole prompt for unsaved text; **Reset to default**) · **Agent knowledge** · **Doctors** · **Clinic profile** · **How the agent works** (a one-page engineering overview with the call diagram, the decision paths and the known gaps).
+
+## Website
+
+- **Bangla by default, complete in both languages.** English is one tap away and remembered, and `/?lang=en` or `/?lang=bn` wins over the saved choice. The static HTML is Bangla, so there is no flash of English. A test keeps the static Bangla text equal to the dictionary.
+- **One style per language:** times `10:00 am` / `সকাল ১০:০০`, Bangla digits in the Bangla page, day ranges `Sat–Thu` / `শনি–বৃহ`, the phone as a `tel:` link.
+- **Hero:** a Three.js 3D stage that cycles through four dental treatments (drag to spin), the main action **Book an appointment**, and a floating **Call Dentis** button. Both start the same live voice call. The call panel shows connecting, live (timer, caption, mute, end), ended and error states.
+- **SEO and previews:** the Worker serves `/` itself and writes per-language title, description, canonical and `hreflang` links, Open Graph and Twitter tags and `Dentist` JSON-LD from the live clinic profile.
+- **No third-party hosts at load.** Fonts and Three.js are served from this site.
+- The Services section is fixed copy in `public/website/js/services.js`. Agent knowledge is never shown on the website.
+
+## Security
+
+- **Secrets** live only in Wrangler secrets (`OPENAI_API_KEY`, `ADMIN_ACCESS_KEY`) and a git-ignored `.dev.vars`. Nothing secret is in the repo, and a scan for key patterns is clean.
+- **The browser never sees the OpenAI key.** It gets a client key that expires after 300 s.
+- **Admin login:** one access key, compared in constant time. The session cookie is `<expiry>.<HMAC-SHA256>` and carries no user data, `HttpOnly`, `SameSite=Strict`, `Secure` on HTTPS, valid 12 hours.
+- **CSRF:** writes also require the `X-Requested-With: dentis` header.
+- **Input:** every tool argument and every admin field is validated again on the server, whatever the model or form sent.
+- **Privacy:** only a hash of the caller's IP is stored. Test data only, no real patient data.
+
+## Tests
+
+`npm test` runs 456 tests with Node's built-in runner, no dependencies and no setup.
+
+| Folder | What it proves |
+|---|---|
+| `test/scheduling`, `knowledge`, `clinic`, `calls`, `agent`, `shared` | rules and use cases: phone, slot, availability, status derivation, prompt contents, every tool on its success and failure paths, with in-memory ports |
+| `test/stores` | the **real SQL and migrations**, run on a `node:sqlite` stand-in for D1 |
+| `test/admin`, `test/website`, `test/api` | the HTTP API end to end: sessions, tools, finish, admin auth, CRUD, the SEO home page, HMAC |
+| `test/frontend` | transcript building from Realtime events, the silence clock, copy completeness in both languages, and every admin page drawn against the real in-memory API |
+| `test/architecture.test.js` | each part imports only what it may |
+
+A bug fix starts with a failing test.
+
+## Run locally and deploy
 
 ```bash
 npm install
-cp .dev.vars.example .dev.vars        # put your OPENAI_API_KEY and an ADMIN_ACCESS_KEY in it
-npm run db:init:local                 # apply migrations (tracked): schema + Dentis demo clinic + knowledge
-npm run db:samples:local              # optional: 4 invented sample calls from seed/
-npm run dev                           # http://localhost:8787  (admin: /admin)
-npm test                              # 465 tests, no setup needed
+cp .dev.vars.example .dev.vars     # put in OPENAI_API_KEY and an ADMIN_ACCESS_KEY
+npm run db:init:local              # apply migrations: schema, demo clinic, knowledge
+npm run db:samples:local           # optional: invented sample calls
+npm run dev                        # http://localhost:8787   (admin: /admin)
+npm test
 ```
 
-## Deploy
+To run without real keys: `npx wrangler dev --var OPENAI_API_KEY:x --var ADMIN_ACCESS_KEY:local-test-key` (command-line vars win over `.dev.vars`, and a fake key avoids real OpenAI calls).
 
 ```bash
-npx wrangler d1 create dentis         # copy the database_id into wrangler.jsonc
-npm run db:init:remote                # applies pending migrations once
-npm run db:samples:remote             # optional sample calls
+npx wrangler d1 create dentis          # copy the database_id into wrangler.jsonc
+npm run db:init:remote                 # applies pending migrations once
+npm run db:samples:remote              # optional sample calls
 npx wrangler secret put OPENAI_API_KEY
 npx wrangler secret put ADMIN_ACCESS_KEY
 npm run deploy
 ```
 
-Add a Cloudflare rate-limiting rule on `POST /api/admin/login` in production.
+Add a Cloudflare rate-limiting rule on `POST /api/admin/login` in production. The OpenAI key needs a credit balance for calls to work.
 
-## Layout
+## Design decisions and trade-offs
 
-```
-src/scheduling/      doctors, appointments, slots, availability, phone numbers (rules, use cases, D1 store)
-src/knowledge/       agent knowledge entries (skills)
-src/clinic/          clinic profile and settings
-src/calls/           calls, transcripts, callback requests
-src/agent/           the agent prompt, tools, tool executor, OpenAI gateway
-src/admin/           staff portal API (routes/ per area), login guard, dashboard queries
-src/website/         public site data, the voice call API, the SEO home page
-src/shared/          errors, time, router and response helpers
-src/composition.js   the only place that wires stores to use cases
-public/index.html    the website page, served at /
-public/website/      the website's css/ and js/ (Three.js hero, voice call client)
-public/admin/        the staff portal: index.html, admin.css, js/ (main, api, ui, shell, login) and js/pages/ (one file per page)
-public/shared/       util.js, used by both
-public/fonts, vendor self-hosted fonts and Three.js
-migrations/          numbered, tracked migrations (schema, demo clinic and knowledge, later clean-ups)
-seed/                optional sample calls, not a migration
-test/                mirrors src/, plus frontend and architecture tests
-agentic-hub/         requirements, principles, epics, contracts, task commands
-```
+- **WebRTC straight from the browser.** Lowest latency and no audio proxy to run, at the cost that tool calls and the transcript pass through the browser. Tool calls are therefore authorised only by the call id (see limits).
+- **A realtime speech model, not a separate speech-to-text, LLM and text-to-speech chain.** Natural turn-taking and interruption come built in, and one model handles Bangla and mixed English. The cost is less control over exact wording, which is why greeting, nudge and closing are scripted and phone numbers come from the server.
+- **Facts through tools, behaviour through the prompt.** Anything that must be right (slots, bookings, phone numbers, the call status) is code that returns a result. The prompt only shapes tone and flow. The model is told the code's answer is the truth.
+- **Titles in the prompt, details by tool, no search.** The model is better at choosing from a short title list than a keyword search is at guessing, and there is nothing to tune. If the list ever gets very long, the prompt gets longer with it.
+- **Outcomes recorded as they happen.** The call status does not depend on parsing the transcript or on the browser delivering it.
+- **No recording, no post-call AI analysis.** Less to store, less to get wrong, and no recordings to protect. The transcript and the structured fields are the record.
+- **D1 and vanilla JS.** One deployable unit, nothing to build, easy to read in review. A framework would add moving parts the task does not need.
+- **Grouped by part of the app, with dependency rules in a test.** A change to one area stays in one folder, and a bad import fails the build.
 
-## Tests
+## Known limits
 
-`npm test` runs 465 tests with Node's built-in runner:
-
-| Folder | What it proves |
-|---|---|
-| `test/scheduling`, `knowledge`, `clinic`, `calls`, `agent`, `shared` | the rules and use cases of each area: phone, slot, availability, call status, skill ranking, agent prompt and every agent tool (success and failure paths), with in-memory ports |
-| `test/stores` | the **real SQL and migrations** (via a `node:sqlite` stand-in for D1) |
-| `test/admin`, `test/website`, `test/api` | the admin and website HTTP API end to end: sessions, tools, finish, admin auth, CRUD, the SEO home page, HMAC |
-| `test/frontend` | transcript building from Realtime events, copy completeness in both languages, formatters |
-| `test/architecture.test.js` | each part imports only what it may (fails on a bad import) |
-
-## What is not done, honestly
-
-- **The Bangla copy has not been read by a native speaker.** I wrote it, checked it for consistency, and tests keep both languages in step, but wording such as "অ্যাপয়েন্টমেন্ট" (many patients say "সিরিয়াল") needs a person's judgement.
-- **Search engines get the right metadata per language, but the page body is rendered in the browser.** A crawler sees Bangla body text even for `?lang=en`. Separate server-rendered `/en` pages are out of scope. Opening hours are free text, so the JSON-LD carries them as text and not as structured days and times.
-- The hero's small treatment pills are 32px tall with an invisible 44px touch area, to keep them compact.
-- The `social image` is a fixed picture. It does not change when the clinic profile does.
-
-
-- **Live calls have been tried, and the prompt was tuned from them** (phone numbers are read back from a server-generated English digit text, and silence is counted from when the caller stops speaking). Everything around the call is also tested: session creation, tool execution, transcript handling, status derivation, the call panel states.
-- **Bangla quality is not measured.** The prompt asks for colloquial Dhaka Bangla, code-switching, digit read-back and safe behaviour. Accent and number recognition depend on the model. Read-back confirmation is the safety net.
-- **Deployed on the Cloudflare Workers free tier** with D1. The OpenAI key must keep a credit balance for calls to work.
-- **Any sample calls in the portal are invented test data** (`seed/sample_calls.sql`). No real patient data is used.
-- Single shared access key, no per-user audit, no login rate limit in code.
-- Out of scope: phone (PSTN) calls, outbound calls, calendar sync, several clinics, payments. See [decisions](agentic-hub/decisions.md).
+- **Bangla quality is judged by ear, not measured.** The Bangla copy has not been reviewed by a native speaker. Accent and number recognition depend on the model, so read-back is the safety net.
+- **Tool calls are authorised only by the call id.** Signing them to the session is the next hardening step. The transcript is built in the browser, so the server cannot verify it.
+- **Staying on topic and refusing medical advice come from the prompt,** so they are not guaranteed. Latency and cost of the mini model are not measured.
+- **One shared admin key,** no per-user audit, and no login rate limit in code (set one in Cloudflare).
+- **The transcript has no English translation** and there is no post-call summary.
+- **The page body is rendered in the browser.** Crawlers get the right metadata per language but see Bangla body text even for `?lang=en`.
+- **Fees, phone and address are demo data** and any sample calls are invented. No real patient data is used.
+- **Out of scope:** phone (PSTN) calls, outbound calls, calendar sync, several clinics, payments. See [decisions](agentic-hub/decisions.md).
 
 ## 3-minute video outline
 
 1. Landing page, flip through the treatments in the hero, switch to Bangla (20 s).
-2. Press **Book an appointment**, book an appointment by voice, mixing in English words, read the phone number back (90 s).
-3. Open `/admin`, log in, show the call, transcript, captured fields, and the appointment (45 s).
+2. Press **Book an appointment**, book by voice mixing in English words, hear the phone number read back (90 s).
+3. Open `/admin`, log in, show the call, transcript, captured fields and the appointment (45 s).
 4. Edit an entry's fee in **Agent knowledge**, call again and ask for the price (25 s).
