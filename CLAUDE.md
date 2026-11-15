@@ -18,7 +18,7 @@ Read [agentic-hub/README.md](agentic-hub/README.md) first. The hub holds everyth
 ## Conventions
 
 - **Contract first.** Change the contract doc in the same change as the code.
-- **Domain-driven, YAGNI.** `src/` has `domain`, `application`, `infrastructure`, `interface`. Dependencies point inward. Build only what the current task needs.
+- **Grouped by part, YAGNI.** `src/` is grouped by part of the app: `admin`, `website`, `scheduling`, `knowledge`, `clinic`, `calls`, `agent`, `shared`. See principle 2. Build only what the current task needs.
 - **Tests with code**, under `test/`, mirroring `src/`. Run `npm test` before you say a change is done.
 - **Tasks live in the hub.** A feature is one file in `agentic-hub/tasks/`, created with `/create-task` and run with `/task-loop`. Branch: `feature/<task-id>`.
 - **Open choices** are in `decisions.md`. Do not build on an open one without telling the user which default you used.

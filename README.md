@@ -47,7 +47,7 @@ cp .dev.vars.example .dev.vars        # put your OPENAI_API_KEY and an ADMIN_ACC
 npm run db:init:local                 # apply migrations (tracked): schema + Dentis demo clinic + knowledge
 npm run db:samples:local              # optional: 4 invented sample calls from seed/
 npm run dev                           # http://localhost:8787  (admin: /admin)
-npm test                              # 463 tests, no setup needed
+npm test                              # 465 tests, no setup needed
 ```
 
 ## Deploy
@@ -66,11 +66,15 @@ Add a Cloudflare rate-limiting rule on `POST /api/admin/login` in production.
 ## Layout
 
 ```
-src/domain/          entities, value objects, rules (imports nothing)
-src/application/     use cases, agent prompt + tools, ports
-src/infrastructure/  D1, OpenAI, WebCrypto adapters
-src/interface/http/  router and routes
-src/composition.js   the only place that wires adapters to use cases
+src/scheduling/      doctors, appointments, slots, availability, phone numbers (rules, use cases, D1 store)
+src/knowledge/       agent knowledge entries (skills)
+src/clinic/          clinic profile and settings
+src/calls/           calls, transcripts, callback requests
+src/agent/           the agent prompt, tools, tool executor, OpenAI gateway
+src/admin/           staff portal API (routes/ per area), login guard, dashboard queries
+src/website/         public site data, the voice call API, the SEO home page
+src/shared/          errors, time, router and response helpers
+src/composition.js   the only place that wires stores to use cases
 public/              landing page (Three.js hero) and /admin SPA, plain ES modules; fonts/ and vendor/ are self-hosted
 migrations/          numbered, tracked migrations (schema, demo clinic, skill kinds, knowledge, Bangla twin fields)
 seed/                optional sample calls, not a migration
@@ -80,16 +84,15 @@ agentic-hub/         requirements, principles, epics, contracts, task commands
 
 ## Tests
 
-`npm test` runs 463 tests with Node's built-in runner:
+`npm test` runs 465 tests with Node's built-in runner:
 
 | Folder | What it proves |
 |---|---|
-| `test/domain` | phone, slot, availability, call status, skill ranking (Bangla word endings), agent prompt rules |
-| `test/application` | every use case and every agent tool (success and failure paths) with in-memory ports |
-| `test/infrastructure` | the **real SQL and migrations** (via a `node:sqlite` stand-in for D1), OpenAI request shapes, HMAC |
-| `test/interface` | the whole HTTP API end to end: sessions, tools, finish, admin auth, CRUD |
+| `test/scheduling`, `knowledge`, `clinic`, `calls`, `agent`, `shared` | the rules and use cases of each area: phone, slot, availability, call status, skill ranking, agent prompt and every agent tool (success and failure paths), with in-memory ports |
+| `test/stores` | the **real SQL and migrations** (via a `node:sqlite` stand-in for D1) |
+| `test/admin`, `test/website`, `test/api` | the admin and website HTTP API end to end: sessions, tools, finish, admin auth, CRUD, the SEO home page, HMAC |
 | `test/frontend` | transcript building from Realtime events, copy completeness in both languages, formatters |
-| `test/architecture.test.js` | layers only import inward (fails on a bad import) |
+| `test/architecture.test.js` | each part imports only what it may (fails on a bad import) |
 
 ## What is not done, honestly
 
