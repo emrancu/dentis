@@ -101,7 +101,7 @@ function renderStatus() {
   const state = panel.dataset.state;
   $('#call-status').textContent = state === 'connecting' ? t(lang, 'call.connecting') : state === 'live' ? t(lang, 'call.live') : state === 'ended' ? t(lang, 'call.ended') : '';
   if (state === 'error' && callError) $('#call-error').textContent = t(lang, `error.${callError}`);
-  if (state === 'connecting' || (state === 'live' && !$('#call-caption').textContent)) $('#call-caption').textContent = t(lang, 'call.greeting');
+  if (state === 'connecting' || (state === 'live' && !$('#call-caption').textContent)) $('#call-caption').textContent = t(lang, 'call.joining');
 }
 
 call.addEventListener('state', ({ detail }) => {
