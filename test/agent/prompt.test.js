@@ -57,7 +57,7 @@ describe('buildInstructions', () => {
   });
 
   it('sends a booking caller straight to booking, and a general caller to the normal greeting', () => {
-    assert.match(buildInstructions({ ...base, intent: 'booking' }), /pressed "Book an appointment"[\s\S]*go straight to booking/);
+    assert.match(buildInstructions({ ...base, intent: 'booking' }), /pressed "Book an appointment"[\s\S]*wait for the caller[\s\S]*Only when they say they want an appointment/);
     assert.doesNotMatch(buildInstructions({ ...base, intent: 'general' }), /pressed "Book an appointment"/);
     assert.doesNotMatch(buildInstructions(base), /pressed "Book an appointment"/);
   });

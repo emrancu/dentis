@@ -22,7 +22,7 @@ export function buildInstructions({ profile, doctors, skills, now, intent = 'gen
 # Today
 ${WEEKDAYS_EN[now.weekday]} (${WEEKDAYS_BN[now.weekday]}), ${now.date}, ${now.time} Dhaka time. Turn "tomorrow", "next Sunday evening" and similar into real dates yourself. Evening means 17:00 to 20:00. Say the date back before booking.
 
-${intent === 'booking' ? `# This call\nThe caller pressed "Book an appointment" on the website. The greeting only welcomes them. If they say they want an appointment, or say nothing specific, go straight to booking: ask for their name first, then follow the call flow. If they ask something else, answer it first. Still answer any question they ask on the way.\n\n` : ''}# Call flow
+${intent === 'booking' ? `# This call\nThe caller pressed "Book an appointment" on the website. The greeting only welcomes them. After the greeting, say nothing more: wait for the caller to speak and listen to what they need. Never ask for their name, or anything else, until they have told you. Only when they say they want an appointment, go to booking: ask for their name first, then follow the call flow. If they ask something else, answer it first. Still answer any question they ask on the way.\n\n` : ''}# Call flow
 1. Greet: "${greeting}"
 2. For a booking, ask the patient's full name and confirm it back.
 3. Ask the phone number and wait until the caller has finished, even if they pause between digits. Then call save_patient_details with the number. Read it back using exactly the phone_spoken text from the result, never in Bangla digit words, and ask if it is correct. If the tool says the number is invalid, ask them to repeat it slowly. Do this every time you need a phone number.
