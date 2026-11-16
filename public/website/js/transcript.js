@@ -14,7 +14,7 @@ export class TranscriptBuilder {
       case 'conversation.item.created':
         return this.#add(event.item, now);
       case 'conversation.item.input_audio_transcription.completed':
-        return this.#set(event.item_id, event.transcript, now);
+        return this.#set(event.item_id, event.transcript, now, 'patient');
       case 'response.output_audio_transcript.delta':
       case 'response.audio_transcript.delta':
         return this.#append(event.item_id, event.delta, now);
@@ -35,15 +35,15 @@ export class TranscriptBuilder {
     return false;
   }
 
-  #entry(id, now) {
-    // A transcript can arrive before its item was announced; assume the agent when unknown.
-    if (!this.#items.has(id)) this.#items.set(id, { speaker: 'agent', text: '', ts: now() });
+  #entry(id, now, speaker = 'agent') {
+    // A transcript can arrive before its item was announced; the event type tells who spoke.
+    if (!this.#items.has(id)) this.#items.set(id, { speaker, text: '', ts: now() });
     return this.#items.get(id);
   }
 
-  #set(id, text, now) {
+  #set(id, text, now, speaker) {
     if (!id || typeof text !== 'string') return false;
-    this.#entry(id, now).text = text.trim();
+    this.#entry(id, now, speaker).text = text.trim();
     return true;
   }
 
