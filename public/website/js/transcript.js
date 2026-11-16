@@ -63,11 +63,6 @@ export class TranscriptBuilder {
     return true;
   }
 
-  /** The latest agent sentence, for live captions. */
-  lastAgentText() {
-    return [...this.#items.values()].reverse().find((i) => i.speaker === 'agent' && i.text)?.text ?? '';
-  }
-
   /** Turns in conversation order, empty ones dropped, in the shape POST /api/calls/:id/finish expects. */
   toTurns() {
     return [...this.#items.values()].filter((i) => i.text.trim()).map((i) => ({ speaker: i.speaker, text: i.text.trim(), ts: i.ts }));

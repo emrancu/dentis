@@ -17,19 +17,18 @@ describe('TranscriptBuilder', () => {
     assert.deepEqual(t.toTurns().map((x) => [x.speaker, x.text]), [['patient', 'আমি অ্যাপয়েন্টমেন্ট চাই'], ['agent', 'আপনার নাম বলুন']]);
   });
 
-  it('labels a caller transcript as the patient even when it arrives before its item, so it never becomes an agent caption', () => {
+  it('labels a caller transcript as the patient even when it arrives before its item, not an agent line', () => {
     const t = new TranscriptBuilder();
     t.handle({ type: 'conversation.item.input_audio_transcription.completed', item_id: 'u9', transcript: 'noise' }, clock);
-    assert.equal(t.lastAgentText(), '');
     assert.deepEqual(t.toTurns().map((x) => x.speaker), ['patient']);
   });
 
-  it('streams agent text from deltas and exposes the latest sentence for captions', () => {
+  it('streams agent text from deltas and keeps the sentence', () => {
     const t = new TranscriptBuilder();
     t.handle(item('a1', 'assistant'), clock);
     assert.equal(t.handle({ type: 'response.output_audio_transcript.delta', item_id: 'a1', delta: 'আস' }, clock), true);
     t.handle({ type: 'response.output_audio_transcript.delta', item_id: 'a1', delta: 'সালামু' }, clock);
-    assert.equal(t.lastAgentText(), 'আসসালামু');
+    assert.equal(t.toTurns()[0].text, 'আসসালামু');
   });
 
   it('understands the older event names too', () => {

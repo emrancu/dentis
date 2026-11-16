@@ -10,7 +10,7 @@ const fail = (kind, cause) => Object.assign(new Error(kind), { kind, cause });
 
 /**
  * One browser voice call with the Bangla agent.
- * Events: `state` ({state, error}), `caption` ({text}), `tick` ({seconds}).
+ * Events: `state` ({state, error}), `tick` ({seconds}).
  * States: idle, connecting, live, ended, error.
  */
 export class BanglaCall extends EventTarget {
@@ -164,7 +164,7 @@ export class BanglaCall extends EventTarget {
     } catch {
       return;
     }
-    if (this.#transcript.handle(event)) this.dispatchEvent(new CustomEvent('caption', { detail: { text: this.#transcript.lastAgentText() } }));
+    this.#transcript.handle(event);
     // end_call: wait until the model's own reply is finished, then speak the scripted closing line, then hang up.
     if (event.type === 'response.done' && this.#closingCallId && !this.#closingSent) {
       this.#closingSent = true;

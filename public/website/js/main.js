@@ -101,7 +101,6 @@ function renderStatus() {
   const state = panel.dataset.state;
   $('#call-status').textContent = state === 'connecting' ? t(lang, 'call.connecting') : state === 'live' ? t(lang, 'call.live') : state === 'ended' ? t(lang, 'call.ended') : '';
   if (state === 'error' && callError) $('#call-error').textContent = t(lang, `error.${callError}`);
-  if (state === 'connecting' || (state === 'live' && !$('#call-caption').textContent)) $('#call-caption').textContent = t(lang, 'call.joining');
 }
 
 call.addEventListener('state', ({ detail }) => {
@@ -120,12 +119,8 @@ call.addEventListener('state', ({ detail }) => {
 call.addEventListener('tick', ({ detail }) => {
   $('#call-timer').textContent = `${Math.floor(detail.seconds / 60)}:${String(detail.seconds % 60).padStart(2, '0')}`;
 });
-call.addEventListener('caption', ({ detail }) => {
-  if (detail.text) $('#call-caption').textContent = detail.text;
-});
 
 function startCall(intent) {
-  $('#call-caption').textContent = '';
   document.body.classList.add('panel-open');
   call.start(intent);
 }

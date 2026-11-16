@@ -270,7 +270,7 @@ Full contract: [contracts/http-api.md](agentic-hub/contracts/http-api.md). Error
 
 - **Bangla by default, complete in both languages.** English is one tap away and remembered, and `/?lang=en` or `/?lang=bn` wins over the saved choice. The static HTML is Bangla, so there is no flash of English. A test keeps the static Bangla text equal to the dictionary.
 - **One style per language:** times `10:00 am` / `সকাল ১০:০০`, Bangla digits in the Bangla page, day ranges `Sat–Thu` / `শনি–বৃহ`, the phone as a `tel:` link.
-- **Hero:** a Three.js 3D stage that cycles through four dental treatments (drag to spin), the main action **Book an appointment**, and a floating **Call Dentis** button. Both start the same live voice call. The call panel shows connecting, live (timer, caption, mute, end), ended and error states.
+- **Hero:** a Three.js 3D stage that cycles through four dental treatments (drag to spin), the main action **Book an appointment**, and a floating **Call Dentis** button. Both start the same live voice call. The call panel shows connecting, live (timer, mute, end; voice only, no text), ended and error states.
 - **SEO and previews:** the Worker serves `/` itself and writes per-language title, description, canonical and `hreflang` links, Open Graph and Twitter tags and `Dentist` JSON-LD from the live clinic profile.
 - **No third-party hosts at load.** Fonts and Three.js are served from this site.
 - The Services section is fixed copy in `public/website/js/services.js`. Agent knowledge is never shown on the website.

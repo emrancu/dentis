@@ -159,7 +159,6 @@ html[lang='bn'] .hero h1 em { font-style: normal; }
 [data-state='connecting'] .when-active, [data-state='live'] .when-active, [data-state='ended'] .when-ended, [data-state='error'] .when-error { display: block; }
 [data-state='error'] .call-timer, [data-state='ended'] .call-timer { display: none; }
 .call-consent { margin: 0 0 10px; font-size: 0.82rem; color: rgb(255 255 255 / 0.72); }
-.call-caption { min-height: 4.6em; font-size: 1.05rem; line-height: 1.6; color: rgb(255 255 255 / 0.92); font-family: 'Hind Siliguri', var(--body); }
 .wave { display: flex; align-items: center; gap: 3px; height: 44px; margin: 10px 0 16px; }
 .wave i { flex: 1; height: 100%; border-radius: 3px; background: linear-gradient(to top, var(--teal-400), #a7f3e5); transform: scaleY(0.12); transform-origin: center; transition: transform 0.08s linear; }
 [data-state='connecting'] .wave i { animation: shimmer 1.2s ease-in-out infinite; }
