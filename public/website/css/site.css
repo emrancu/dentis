@@ -180,7 +180,8 @@ html[lang='bn'] .hero h1 em { font-style: normal; }
 [data-state='error'] .call-body { margin-top: 0; }
 .call-actions { align-items: stretch; }
 .call-actions .kb { flex: 1 1 auto; }
-.call-actions .ctl { justify-content: center; }
+/* Same height as the knob button beside it (.kb--sm is 44px). The Bangla line-height would otherwise make this one taller. */
+.call-actions .ctl { justify-content: center; height: 44px; min-height: 0; padding-block: 0; line-height: 1; }
 .fab { transition: transform 0.3s var(--ease), background 0.2s, box-shadow 0.3s var(--ease), opacity 0.3s var(--ease); }
 .panel-open .fab { display: none; }
 

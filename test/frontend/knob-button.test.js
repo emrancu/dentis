@@ -180,3 +180,13 @@ describe('slide-knob buttons in the page', () => {
     }
   });
 });
+
+describe('call panel buttons', () => {
+  it('the text buttons are exactly as tall as the small knob button beside them, in Bangla too', () => {
+    const kbHeight = css.match(/\.kb--sm \{[^}]*--kb-h: (\d+)px/)[1];
+    const ctl = css.match(/\.call-actions \.ctl \{([^}]*)\}/)[1];
+    assert.match(ctl, new RegExp(`height: ${kbHeight}px`));
+    assert.match(ctl, /line-height: 1;/, 'the Bangla line-height must not make it taller');
+    assert.match(ctl, /padding-block: 0/);
+  });
+});
