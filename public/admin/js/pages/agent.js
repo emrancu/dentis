@@ -29,6 +29,7 @@ export async function agentView(view) {
         <p class="muted" style="margin-top:0">These parts stay in code, come after your text, and win over it. They cannot be edited or removed here.</p>
         <ul class="locked">
           <li>Today's date and time</li>
+          <li>Greet, then wait: no name or questions until the caller says what they need</li>
           <li>The call flow: name, phone read back in English digits, reason, time, confirm before booking</li>
           <li>Facts only from the clinic's tools: never invent prices, hours or slots</li>
           <li>Safety: no medical advice, emergencies go to a doctor or hospital</li>

@@ -3,14 +3,14 @@ import { head } from '../ui.js';
 
 /** Short engineering overview for reviewers: one diagram, the rules in one place, what breaks, what is missing. */
 export function howItWorksView(view) {
-  const lanes = ['Browser', 'Worker', 'ElevenLabs · OpenAI', 'D1'];
+  const lanes = ['Browser', 'Worker', 'ElevenLabs · Gemini', 'D1'];
   const msgs = [ // [from, to, label, reply?]
     [0, 1, '1  start call'],
     [1, 2, '2  one-use listen token'],
     [1, 0, '3  token, greeting, closing', true],
     [0, 2, '4  mic audio → Bangla text (Scribe)'],
     [0, 1, '5  caller turn → /api/agent/turn'],
-    [1, 2, '6  GPT mini streams reply + tool calls'],
+    [1, 2, '6  Gemini (or GPT mini) streams reply + tool calls'],
     [1, 3, '7  run tools, validate, read or write'],
     [1, 0, '8  reply text, sentence by sentence', true],
     [0, 2, '9  each sentence → ElevenLabs voice'],
@@ -20,7 +20,7 @@ export function howItWorksView(view) {
   const W = 900, left = 70, gap = 253, top = 52, row = 32;
   const x = (n) => left + n * gap;
   const H = top + msgs.length * row + 16;
-  const svg = `<svg class="seq" viewBox="0 0 ${W} ${H}" role="img" aria-label="One call across browser, worker, OpenAI and database">
+  const svg = `<svg class="seq" viewBox="0 0 ${W} ${H}" role="img" aria-label="One call across browser, worker, speech and brain providers, and database">
     <defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L8 4L0 8z" fill="currentColor"/></marker></defs>
     ${lanes.map((l, n) => `<text x="${x(n)}" y="22" text-anchor="middle" class="seq-lane">${l}</text><line x1="${x(n)}" y1="32" x2="${x(n)}" y2="${H - 8}" class="seq-line"/>`).join('')}
     ${msgs.map(([a, b, label, back], k) => {
@@ -30,11 +30,12 @@ export function howItWorksView(view) {
   </svg>`;
 
   const rules = [
-    ['Facts come from code', 'The model asks 10 server tools, run on the server inside the turn. Prices, hours, slots and bookings come from D1 and are checked in the domain layer, so the agent cannot invent them.'],
+    ['Facts come from code', 'The model asks 11 server tools, run on the server inside the turn. Prices, hours, slots and bookings come from D1 and are checked in the domain layer, so the agent cannot invent them.'],
     ['Knowledge is chosen by title', 'The prompt lists only the entry titles. The model picks the ones a question needs and fetches their details. Staff write each entry in one plain form, in English or Bangla.'],
     ['Numbers are spoken by the server', 'Every phone number is saved first and read back from the tool result as English digit words, so it is never said in Bangla and a wrong number is caught at once.'],
+    ['The caller leads', 'The agent greets, then waits. It asks for a name only when the caller wants an appointment, and answers any question first. It speaks no caption text: the call panel is voice only.'],
     ['Persona is editable, rules are not', 'Staff edit tone, greeting and closing. Flow, safety and scope are code, added last, and win over the persona.'],
-    ['Secrets stay on the server', 'The browser only gets a one-use speech token. The OpenAI and ElevenLabs keys never leave the Worker, which also streams the voice audio.'],
+    ['Secrets stay on the server', 'The browser only gets a one-use speech token. The Gemini (or OpenAI) and ElevenLabs keys never leave the Worker, which also streams the voice audio.'],
     ['Bounded', 'A call ends at 5 minutes; silence gets a nudge at 25 s and a hang-up at 50 s. 10 calls per IP per hour.'],
   ];
   const breaks = [
@@ -46,7 +47,7 @@ export function howItWorksView(view) {
   const gaps = [
     'The transcript is built in the browser, so the server cannot verify it. No audio is stored.',
     'Tool calls are authorised only by the call id. Signing them to the session is the next hardening step.',
-    'Staying on topic and refusing medical advice come from the prompt, so they are not guaranteed. Latency, cost and Bangla quality of the mini model are not measured.',
+    'Staying on topic and refusing medical advice come from the prompt, so they are not guaranteed. Latency and Bangla quality of the brain model (Gemini by default when its key is set, else GPT mini) and the Bangla accent of the ElevenLabs voice are judged by ear, not measured.',
   ];
   // Every path a caller's sentence can take: what triggers it, which tools run, what the agent says, where it ends.
   const paths = [
