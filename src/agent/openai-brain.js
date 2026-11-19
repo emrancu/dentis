@@ -1,7 +1,7 @@
 export const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 /** Gemini speaks the same Chat Completions protocol, and has a free tier. */
 export const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-export const GEMINI_DEFAULT_MODEL = 'gemini-2.5-flash';
+export const GEMINI_DEFAULT_MODEL = 'gemini-3.1-flash-lite';
 // Measured through the Worker: first spoken word in ~0.9-1.2 s and steady. gpt-5-mini (minimal reasoning) ranged 1.0-2.8 s. Set OPENAI_MODEL to change it.
 export const DEFAULT_MODEL = 'gpt-4.1-mini';
 
@@ -61,6 +61,7 @@ export class OpenAIBrain {
         call.id ||= part.id ?? '';
         call.name ||= part.function?.name ?? '';
         call.arguments += part.function?.arguments ?? '';
+        if (part.extra_content) call.extra_content = part.extra_content; // Gemini 3: the thought signature must go back with the call
       }
     }
     yield { type: 'done', toolCalls: calls.filter((c) => c.name) };

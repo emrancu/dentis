@@ -142,10 +142,20 @@ describe('OpenAIBrain with Gemini', () => {
         '[DONE]',
       ),
     );
-    const brain = new OpenAIBrain({ apiKey: 'g', model: 'gemini-2.5-flash', endpoint: 'https://example.test/chat', fetchFn });
+    const brain = new OpenAIBrain({ apiKey: 'g', model: 'gemini-3.1-flash-lite', endpoint: 'https://example.test/chat', fetchFn });
     const parts = [];
     for await (const p of brain.stream({ messages: [], tools: [] })) parts.push(p);
     assert.equal(fetchFn.last.url, 'https://example.test/chat');
     assert.deepEqual(parts.at(-1).toolCalls.map((c) => [c.name, c.arguments]), [['check_availability', '{"date":"2026-11-16"}'], ['end_call', '{}']]);
+  });
+});
+
+describe('Gemini thought signatures', () => {
+  it('keeps the signature on a streamed tool call', async () => {
+    const extra = { google: { thought_signature: 'sig' } };
+    const fetchFn = recorder(sse(chunk({ tool_calls: [{ index: 0, id: 'a', function: { name: 'end_call', arguments: '{}' }, extra_content: extra }] }), '[DONE]'));
+    const parts = [];
+    for await (const p of new OpenAIBrain({ apiKey: 'g', fetchFn }).stream({ messages: [], tools: [] })) parts.push(p);
+    assert.deepEqual(parts.at(-1).toolCalls[0].extra_content, extra);
   });
 });

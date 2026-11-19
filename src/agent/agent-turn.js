@@ -6,6 +6,9 @@ import { AgentPrompt } from './agent-prompt.js';
 import { buildInstructions } from './prompt.js';
 import { AGENT_TOOLS } from './tools.js';
 
+/** Gemini 3 thought signature, kept only in its known shape and size, so a tampered history cannot smuggle other data. */
+const signature = (extra) => (typeof extra?.google?.thought_signature === 'string' && extra.google.thought_signature.length < 20000 ? { extra_content: { google: { thought_signature: extra.google.thought_signature } } } : {});
+
 const MAX_MESSAGES = 80;
 const MAX_CONTENT_CHARS = 4000;
 const MAX_TOOL_ROUNDS = 5;
@@ -23,7 +26,7 @@ function cleanMessages(messages) {
     const content = typeof m.content === 'string' ? m.content.slice(0, MAX_CONTENT_CHARS) : '';
     if (m.role === 'tool') return { role: 'tool', tool_call_id: String(m.tool_call_id ?? ''), content };
     if (m.role === 'assistant' && Array.isArray(m.tool_calls) && m.tool_calls.length) {
-      const tool_calls = m.tool_calls.map((c) => ({ id: String(c.id), type: 'function', function: { name: String(c.function?.name ?? ''), arguments: String(c.function?.arguments ?? '{}') } }));
+      const tool_calls = m.tool_calls.map((c) => ({ id: String(c.id), type: 'function', function: { name: String(c.function?.name ?? ''), arguments: String(c.function?.arguments ?? '{}') }, ...signature(c.extra_content) }));
       return { role: 'assistant', content: content || null, tool_calls };
     }
     return { role: m.role, content };
@@ -76,7 +79,7 @@ export class RunAgentTurn {
         if (text) yield { type: 'messages', messages: [{ role: 'assistant', content: text }] };
         return;
       }
-      const assistant = { role: 'assistant', content: text || null, tool_calls: toolCalls.map((c) => ({ id: c.id, type: 'function', function: { name: c.name, arguments: c.arguments } })) };
+      const assistant = { role: 'assistant', content: text || null, tool_calls: toolCalls.map((c) => ({ id: c.id, type: 'function', function: { name: c.name, arguments: c.arguments }, ...signature(c.extra_content) })) };
       const results = [];
       let ending = false;
       for (const call of toolCalls) {
