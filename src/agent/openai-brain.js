@@ -47,7 +47,7 @@ export class OpenAIBrain {
       body: JSON.stringify({ model: this.model, messages, tools: toChatTools(tools), stream: true, ...speedOptions(this.model) }),
       signal,
     });
-    if (!response.ok) throw new Error(`Chat request failed with status ${response.status}`);
+    if (!response.ok) throw new Error(`Chat request failed with status ${response.status}: ${(await response.text().catch(() => '')).slice(0, 500)}`);
     const calls = [];
     for await (const data of sseData(response.body)) {
       if (data === '[DONE]') break;
