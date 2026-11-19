@@ -1,13 +1,10 @@
-import { NotFoundError, RateLimitError, ValidationError } from '../shared/errors.js';
+import { NotConfiguredError, NotFoundError, RateLimitError, ValidationError } from '../shared/errors.js';
 import { Call, deriveCallStatus, INTENTS, Outcome } from './call.js';
 import { CallbackRequest } from './callback-request.js';
 import { cleanName } from '../scheduling/patient.js';
 import { PhoneNumber } from '../scheduling/phone-number.js';
 import { ClinicProfile } from '../clinic/clinic-profile.js';
-import { dhakaParts } from '../shared/time.js';
 import { AgentPrompt } from '../agent/agent-prompt.js';
-import { buildInstructions } from '../agent/prompt.js';
-import { AGENT_TOOLS } from '../agent/tools.js';
 
 export const MAX_SESSIONS_PER_HOUR = 10;
 export const MAX_CALL_SECONDS = 300;
@@ -19,11 +16,12 @@ const ago = (now, ms) => new Date(now.getTime() - ms).toISOString();
 const definedOnly = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined));
 
 export class StartCall {
-  constructor({ calls, doctors, skills, settings, gateway, security, clock, newId = () => crypto.randomUUID() }) {
-    Object.assign(this, { calls, doctors, skills, settings, gateway, security, clock, newId });
+  constructor({ settings, calls, voice, brain, security, clock, newId = () => crypto.randomUUID() }) {
+    Object.assign(this, { settings, calls, voice, brain, security, clock, newId });
   }
 
-  async execute({ ip, intent }) {
+  async execute({ ip }) {
+    if (!this.voice.configured || !this.brain.configured) throw new NotConfiguredError('not_configured', 'The voice agent is not set up: an API key is missing.');
     const now = this.clock.now();
     const ipHash = await this.security.sha256(`dentis:${ip || 'unknown'}`);
     await this.calls.expireStale(ago(now, STALE_AFTER_MS), now.toISOString());
@@ -33,20 +31,10 @@ export class StartCall {
     const call = Call.start({ id: this.newId(), now, ipHash });
     await this.calls.create(call);
     try {
-      const [doctors, skills, map] = await Promise.all([this.doctors.list(), this.skills.list(), this.settings.all()]);
-      const agentPrompt = AgentPrompt.fromSettings(map);
-      const profile = ClinicProfile.fromMap(map);
-      const instructions = buildInstructions({
-        profile,
-        doctors: doctors.filter((d) => d.active),
-        skills,
-        now: dhakaParts(now),
-        intent: intent === 'booking' ? 'booking' : 'general',
-        agentPrompt,
-      });
-      const { greeting, closing } = agentPrompt.resolve(profile.nameEn);
-      const secret = await this.gateway.createClientSecret({ instructions, tools: AGENT_TOOLS });
-      return { callId: call.id, clientSecret: secret.value, model: secret.model, maxSeconds: MAX_CALL_SECONDS, greeting, closing };
+      const map = await this.settings.all();
+      const { greeting, closing } = AgentPrompt.fromSettings(map).resolve(ClinicProfile.fromMap(map).nameEn);
+      const listenUrl = await this.voice.createListenUrl();
+      return { callId: call.id, listenUrl, maxSeconds: MAX_CALL_SECONDS, greeting, closing };
     } catch (error) {
       call.markFailed(now);
       await this.calls.save(call);

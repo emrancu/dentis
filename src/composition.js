@@ -1,6 +1,8 @@
 import { AdminAuth } from './admin/auth.js';
 import { AdminQueries, ResolveCallback, UpdateAppointmentStatus } from './admin/portal.js';
 import { AgentSettings } from './agent/agent-settings.js';
+import { RenewListenUrl, SynthesizeSpeech } from './agent/speech.js';
+import { RunAgentTurn } from './agent/agent-turn.js';
 import { ToolExecutor } from './agent/tool-executor.js';
 import { CallNotes } from './calls/call-notes.js';
 import { FinishCall, RequestCallback, SaveCallDetails, StartCall } from './calls/call-records.js';
@@ -13,10 +15,10 @@ import { BookAppointment, CancelAppointment, CheckAvailability, RescheduleAppoin
 
 /**
  * The only place that knows both use cases and adapters.
- * `ports` is the stores (D1), the OpenAI gateway and the security helper, plus `clock`, `accessKey` and an optional `newId`.
+ * `ports` is the stores (D1), the OpenAI brain, the ElevenLabs voice and the security helper, plus `clock`, `accessKey` and an optional `newId`.
  */
 export function buildServices(ports) {
-  const { calls, patients, appointments, doctors, skills, settings, callbacks, gateway, security, clock, accessKey, newId } = ports;
+  const { calls, patients, appointments, doctors, skills, settings, callbacks, voice, brain, security, clock, accessKey, newId } = ports;
   const notes = new CallNotes({ calls });
   const patientRegistry = new PatientRegistry({ patients, clock });
   const clinic = new ClinicService({ settings });
@@ -28,6 +30,19 @@ export function buildServices(ports) {
   const cancelAppointment = new CancelAppointment(scheduling);
   const saveCallDetails = new SaveCallDetails({ notes, patientRegistry });
   const requestCallback = new RequestCallback({ callbacks, notes, clock });
+  const toolExecutor = new ToolExecutor({
+    calls,
+    clock,
+    clinic,
+    doctors,
+    knowledge,
+    checkAvailability,
+    bookAppointment,
+    rescheduleAppointment,
+    cancelAppointment,
+    saveCallDetails,
+    requestCallback,
+  });
 
   return {
     adminAuth: new AdminAuth({ accessKey, security, clock }),
@@ -39,7 +54,9 @@ export function buildServices(ports) {
     clinic,
     agentSettings: new AgentSettings({ settings, doctors, skills, clock }),
     getPublicSite: new GetPublicSite({ clinic, doctors }),
-    startCall: new StartCall({ calls, doctors, skills, settings, gateway, security, clock, newId }),
+    startCall: new StartCall({ calls, settings, voice, brain, security, clock, newId }),
+    synthesizeSpeech: new SynthesizeSpeech({ voice, calls }),
+    renewListenUrl: new RenewListenUrl({ voice, calls }),
     finishCall: new FinishCall({ calls, clock }),
     checkAvailability,
     bookAppointment,
@@ -47,18 +64,7 @@ export function buildServices(ports) {
     cancelAppointment,
     saveCallDetails,
     requestCallback,
-    toolExecutor: new ToolExecutor({
-      calls,
-      clock,
-      clinic,
-      doctors,
-      knowledge,
-      checkAvailability,
-      bookAppointment,
-      rescheduleAppointment,
-      cancelAppointment,
-      saveCallDetails,
-      requestCallback,
-    }),
+    runAgentTurn: new RunAgentTurn({ brain, toolExecutor, calls, doctors, skills, settings, clock }),
+    toolExecutor,
   };
 }

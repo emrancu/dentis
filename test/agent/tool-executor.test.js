@@ -66,6 +66,14 @@ describe('ToolExecutor results', () => {
     assert.deepEqual(r.doctors.map((d) => d.name_en), ['Dr. Nusrat Jahan']);
   });
 
+  it('list_doctors tells the agent each doctor\'s degree, gender and experience', async () => {
+    const doctor = await world.ports.doctors.findById(1);
+    Object.assign(doctor, { degree: 'BDS', gender: 'female', experienceYears: 8 });
+    await world.ports.doctors.save(doctor);
+    const first = (await run('list_doctors')).doctors[0];
+    assert.deepEqual([first.degree, first.gender, first.experience_years], ['BDS', 'female', 8]);
+  });
+
   it('the search and list tools no longer exist', async () => {
     assert.deepEqual(exec.toolNames.filter((n) => /skill/.test(n)), ['get_skill']);
     await assert.rejects(run('lookup_skill', { query: 'root canal' }), (e) => e.code === 'unknown_tool');

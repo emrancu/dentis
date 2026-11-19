@@ -25,11 +25,23 @@ describe('Doctor', () => {
     assert.equal(d.matches(''), false);
   });
 
+  it('keeps degree, gender and experience, and cleans them', () => {
+    const d = doctor({ degree: ' BDS, MS ', degreeBn: ' বিডিএস ', gender: ' Female ', experienceYears: '8' });
+    assert.deepEqual([d.degree, d.degreeBn, d.gender, d.experienceYears], ['BDS, MS', 'বিডিএস', 'female', 8]);
+    const none = doctor();
+    assert.deepEqual([none.degree, none.gender, none.experienceYears], ['', '', null]);
+    assert.equal(doctor({ experienceYears: '' }).experienceYears, null);
+  });
+
   it('rejects a missing name, bad hours and bad days', () => {
     assert.throws(() => doctor({ nameEn: ' ' }), (e) => e.code === 'doctor_name_required');
     assert.throws(() => doctor({ startTime: '12:00', endTime: '10:00' }), (e) => e.code === 'doctor_hours_invalid');
     assert.throws(() => doctor({ startTime: '9am' }), (e) => e.code === 'doctor_hours_invalid');
     assert.throws(() => doctor({ days: [7] }), (e) => e.code === 'doctor_days_invalid');
+    assert.throws(() => doctor({ gender: 'robot' }), (e) => e.code === 'doctor_gender_invalid');
+    assert.throws(() => doctor({ experienceYears: -1 }), (e) => e.code === 'doctor_experience_invalid');
+    assert.throws(() => doctor({ experienceYears: 2.5 }), (e) => e.code === 'doctor_experience_invalid');
+    assert.throws(() => doctor({ degree: 'x'.repeat(201) }), (e) => e.code === 'doctor_text_too_long');
   });
 
   it('keeps a Bangla specialty, empty by default', () => {

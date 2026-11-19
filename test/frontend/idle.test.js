@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { closingOnlyMessage, interruptMessages, nudgeMessage } from '../../public/website/js/call-messages.js';
+import { NUDGE_TEXT } from '../../public/website/js/call-messages.js';
 import { IDLE, IdleWatch } from '../../public/website/js/idle.js';
 
 describe('IdleWatch', () => {
@@ -52,19 +52,8 @@ describe('IdleWatch', () => {
   });
 });
 
-describe('silence messages', () => {
+describe('silence message', () => {
   it('the nudge asks if the caller is there, word for word', () => {
-    assert.ok(nudgeMessage().response.instructions.includes('হ্যালো, আপনি কি লাইনে আছেন?'));
-  });
-  it('the silent hang-up speaks only the closing line', () => {
-    const m = closingOnlyMessage('ধন্যবাদ।');
-    assert.equal(m.type, 'response.create');
-    assert.ok(m.response.instructions.includes('ধন্যবাদ।'));
-  });
-});
-
-describe('time limit', () => {
-  it('cuts the agent off before the closing line', () => {
-    assert.deepEqual(interruptMessages().map((m) => m.type), ['response.cancel', 'output_audio_buffer.clear']);
+    assert.equal(NUDGE_TEXT, 'হ্যালো, আপনি কি লাইনে আছেন?');
   });
 });

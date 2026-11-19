@@ -3,7 +3,7 @@ import { json, noContent, readJson } from '../../shared/http.js';
 
 const admin = { admin: true };
 const id = (params) => Number(params.id);
-const doctorInput = (b) => ({ nameEn: b.name_en, nameBn: b.name_bn, specialty: b.specialty, specialtyBn: b.specialty_bn, days: b.days, startTime: b.start_time, endTime: b.end_time, active: b.active });
+const doctorInput = (b) => ({ nameEn: b.name_en, nameBn: b.name_bn, specialty: b.specialty, specialtyBn: b.specialty_bn, degree: b.degree, degreeBn: b.degree_bn, gender: b.gender, experienceYears: b.experience_years, days: b.days, startTime: b.start_time, endTime: b.end_time, active: b.active });
 
 export function registerDoctorRoutes(router, s) {
   router.add('GET', '/api/admin/doctors', async () => json({ items: (await s.doctorDirectory.list()).map(doctorDto) }), admin);

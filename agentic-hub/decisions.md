@@ -9,7 +9,7 @@
 | Stack | Cloudflare Workers with vanilla JS (no framework, no front-end build), D1. Three.js only for the hero. |
 | Code style | Domain-driven layers, YAGNI, tests under `test/` (see principles). |
 | Admin | At `/admin`, login with one access key. |
-| Voice | **OpenAI Realtime API** over WebRTC from the browser. The Worker mints a short-lived client secret, so the API key stays on the server. |
+| Voice | **Three separate providers** (replaces OpenAI Realtime, at the owner's request). **Ears:** ElevenLabs Scribe v3 Live, Bangla, streamed over a WebSocket the browser opens with a one-use token. **Brain:** an OpenAI mini chat model (`gpt-5-mini`, minimal reasoning) with tool calling, streamed by the Worker, tools run on the server. **Mouth:** ElevenLabs `eleven_v4_turbo` (Flash v2.5 has no Bangla), streamed PCM through the Worker one sentence at a time. API keys stay on the server. |
 | Agent knowledge | Skills (a title and its details) managed in admin and read by the agent through `get_skill`. No description, no type, no keywords. |
 | Site focus | A dental centre website first. The main action is **Book an appointment** (voice booking in Bangla). A floating **Call Dentis** button sits at the bottom right. The hero shows a round 3D stage on the right that cycles through four dental treatments. |
 | Agent prompt | Admin edits the persona, tone and language text the greeting and the closing line. Booking flow, tool rules, truthfulness and safety stay in code and are appended after the editable text, with a closing line that says they win. Admin gets a preview of the final prompt and a reset to default. No version history. |
@@ -31,7 +31,7 @@
 ## Assumed
 | Topic | Default |
 |---|---|
-| Voice settings | Model `gpt-realtime-mini` (the low-cost model; switch to `gpt-realtime` for higher quality), voice `marin`, caller transcription `gpt-4o-mini-transcribe` with language `bn`, semantic VAD. |
+| Voice settings | Brain: if `GEMINI_API_KEY` is set, Gemini (`gemini-2.5-flash`, `GEMINI_MODEL` overrides) through its OpenAI-compatible endpoint, chosen for its free tier; Gemini latency and Bangla quality are **not yet measured**. Otherwise OpenAI `gpt-4.1-mini` (`OPENAI_MODEL`; chosen on speed: first word in 0.9-1.2 s and steady, where `gpt-5-mini` ranged 1.0-2.8 s). Speech model `scribe_v3_live`, language `bn`, `turn_prediction` with a 0.8 s silence fallback. The first clause of a reply is spoken before its sentence ends. Voice model `eleven_v4_turbo` (`ELEVENLABS_TTS_MODEL`), voice defaults to the premade "Sarah" (`EXAVITQu4vr4xnSDxMaL`) with `language_code=bn` because the owner had no voice id; `ELEVENLABS_VOICE_ID` overrides it. **Assumed, not heard:** check the Bangla accent by ear and swap in a library Bangla voice if it is not good enough. Barge-in: real mic sound plus a partial transcript while the agent talks stops it. |
 | Post-call analysis | **Removed.** The tools already capture structured data (name, phone, reason, time, outcome), so no summary, translation or gap-filling call is made. The transcript is stored in Bangla only. |
 | Clinic week | Doctors work Saturday to Thursday by default. Friday is off. Each doctor has their own days and hours. |
 | Booking | Slot length 30 minutes (setting), at least 30 minutes ahead, at most 60 days ahead. |

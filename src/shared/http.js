@@ -1,4 +1,4 @@
-import { ConflictError, NotFoundError, RateLimitError, UnauthorizedError, ValidationError } from './errors.js';
+import { ConflictError, NotConfiguredError, NotFoundError, RateLimitError, UnauthorizedError, ValidationError } from './errors.js';
 
 export const json = (data, status = 200, headers = {}) =>
   new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers } });
@@ -11,6 +11,7 @@ const STATUS = [
   [NotFoundError, 404],
   [ConflictError, 409],
   [RateLimitError, 429],
+  [NotConfiguredError, 503],
 ];
 
 export function errorResponse(error) {
@@ -26,17 +27,6 @@ export function errorResponse(error) {
 export async function readJson(request) {
   try {
     return (await request.json()) ?? {};
-  } catch {
-    throw new ValidationError('invalid_json', 'Request body must be valid JSON.');
-  }
-}
-
-/** Like readJson, but an empty body means "no options". */
-export async function readOptionalJson(request) {
-  const text = await request.text();
-  if (!text.trim()) return {};
-  try {
-    return JSON.parse(text) ?? {};
   } catch {
     throw new ValidationError('invalid_json', 'Request body must be valid JSON.');
   }

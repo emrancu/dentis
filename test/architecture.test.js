@@ -20,7 +20,7 @@ const ALLOWED = {
   website: ['shared', ...AREAS],
 };
 /** Files that talk to the outside (D1, OpenAI, WebCrypto). Only `index.js` may import them. */
-const ADAPTERS = [/\/store\.js$/, /\/realtime-gateway\.js$/, /\/security\.js$/];
+const ADAPTERS = [/\/store\.js$/, /\/elevenlabs-voice\.js$/, /\/openai-brain\.js$/, /\/security\.js$/];
 const ROOT_FILES = ['index.js', 'composition.js', 'app.js'];
 
 function files(dir) {

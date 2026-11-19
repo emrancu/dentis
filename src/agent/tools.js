@@ -10,7 +10,7 @@ const DATE = 'Date as YYYY-MM-DD (clinic local time).';
 const TIME = 'Time as 24-hour HH:MM.';
 const PHONE = 'Bangladeshi mobile number, exactly as the caller said it (Bangla or English digits). Write it with digits.';
 
-/** Tool definitions sent to the Realtime session. Keep in sync with contracts/agent-tools.md. */
+/** Tool definitions sent to the brain. Keep in sync with contracts/agent-tools.md. */
 export const AGENT_TOOLS = [
   tool('get_current_datetime', 'Get the current date, time and weekday in Dhaka. Use it to turn "next Sunday" or "tomorrow" into a real date.'),
   tool('get_clinic_info', 'Get the clinic name, phone (and phone_spoken, the way to say it aloud), address, directions, and opening hours. Always use this for hours or location questions.'),
@@ -25,8 +25,8 @@ export const AGENT_TOOLS = [
   tool(
     'book_appointment',
     'Book an appointment. Only call after the caller confirmed name, phone, date and time.',
-    { patient_name: str('Full name.'), phone: str(PHONE), reason: str('Reason for the visit.'), date: str(DATE), time: str(TIME), doctor_name: str('Optional doctor name.') },
-    ['patient_name', 'phone', 'reason', 'date', 'time'],
+    { patient_name: str('Full name.'), phone: str(PHONE), reason: str('Optional: the reason for the visit, only if the caller said it.'), date: str(DATE), time: str(TIME), doctor_name: str('Optional doctor name.') },
+    ['patient_name', 'phone', 'date', 'time'],
   ),
   tool(
     'reschedule_appointment',

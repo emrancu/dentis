@@ -25,9 +25,12 @@ Admin routes need the cookie `dentis_admin` (HttpOnly, SameSite=Strict, `Secure`
 ## Public
 | Method and path | Body | Success |
 |---|---|---|
-| `GET /api/public/site` | | `{ clinic, doctors: [{id,name_en,name_bn,specialty,specialty_bn,days,start_time,end_time}] }`. The Bangla fields are empty strings when not set; the page then falls back to the English field |
-| `POST /api/session` | optional `{ intent: "booking" \| "general" }`, default `general`. `booking` is sent by the **Book an appointment** button: the agent goes straight to booking after the greeting. `general` is the floating **Call Dentis** button | 201 `{ call_id, client_secret, model, max_seconds }`. 429 `rate_limited` when the IP has 10 sessions in the last hour |
-| `POST /api/agent/tools/:name` | `{ call_id, args }` | 200 tool result (see [agent-tools](agent-tools.md)). 404 `unknown_tool` or `call_not_found` |
+| `GET /api/public/site` | | `{ clinic, doctors: [{id,name_en,name_bn,specialty,specialty_bn,degree,degree_bn,gender,experience_years,days,start_time,end_time}] }`. The Bangla fields are empty strings when not set; the page then falls back to the English field |
+| `POST /api/session` | none | 201 `{ call_id, listen_url, max_seconds, greeting, closing }`. `listen_url` is a one-use ElevenLabs Scribe v3 Live WebSocket URL (Bangla, `turn_prediction`, 16 kHz PCM) valid 15 minutes. 429 `rate_limited` when the IP has 10 sessions in the last hour. 503 `not_configured` when an API key is missing |
+| `POST /api/voice/listen` | `{ call_id }` | 200 `{ listen_url }`, a fresh URL when the speech connection dropped. 404 `call_not_found`, 409 `call_finished`, 503 `not_configured` |
+| `POST /api/agent/turn` | `{ call_id, messages, intent? }`. `messages` is the chat history (`user`, `assistant`, `tool`; never `system`). `intent` is `booking` (**Book an appointment**: the agent goes straight to booking after the greeting) or `general` (default, **Call Dentis**) | `text/event-stream`. Events: `{type:"text", delta}` (words to speak), `{type:"messages", messages}` (new history: a tool round, then the final reply), `{type:"end_call"}`, `{type:"error", code:"brain_failed"}`, `{type:"done"}`. The Worker runs the tools inside the turn. 400 `message_invalid` / `messages_required` / `messages_too_long`, 404 `call_not_found`, 409 `call_finished` / `call_time_limit`, 503 `not_configured` |
+| `POST /api/voice/speak` | `{ call_id, text }` (one sentence, up to 600 characters) | Streamed raw PCM: 16-bit little-endian, 24 kHz, mono (ElevenLabs). 400 `text_required` / `text_too_long`, 404, 409 `call_finished`, 503 `not_configured` |
+| `POST /api/agent/tools/:name` | `{ call_id, args }` | 200 tool result (see [agent-tools](agent-tools.md)). 404 `unknown_tool` or `call_not_found`. The browser no longer calls this: the turn route runs tools itself. It stays for direct use and tests |
 | `POST /api/calls/:id/finish` | `{ turns: [{speaker:"agent"\|"patient", text, ts}], reason: "hangup"\|"error"\|"timeout" }` | 200 `{ status }` |
 
 ## Admin
@@ -52,7 +55,7 @@ Admin routes need the cookie `dentis_admin` (HttpOnly, SameSite=Strict, `Secure`
 | `PUT /api/admin/agent` | `{ instructions, greeting, closing }`. An empty or blank string means "use the default". `{clinic}` is replaced with the clinic name. Limits: instructions 4000 characters, greeting 300. 400 `instructions_too_long` or `greeting_too_long` | same shape as GET |
 | `POST /api/admin/agent/preview` | `{ instructions?, greeting?, closing? }` (unsaved text, blank means default). Saves nothing | `{ prompt }`: the full prompt a new call would get, with the locked rules, today's date, clinic, doctors and knowledge titles |
 | `GET /api/admin/doctors` | | `{ items: [doctor] }` |
-| `POST /api/admin/doctors` | `{ name_en, name_bn?, specialty?, specialty_bn?, days, start_time, end_time, active? }` | 201 doctor |
+| `POST /api/admin/doctors` | `{ name_en, name_bn?, specialty?, specialty_bn?, degree?, degree_bn?, gender? ("male", "female" or ""), experience_years? (0-70 or null), days, start_time, end_time, active? }`. 400 `doctor_gender_invalid`, `doctor_experience_invalid`, `doctor_text_too_long` | 201 doctor |
 | `PUT /api/admin/doctors/:id` | same as POST | doctor |
 | `DELETE /api/admin/doctors/:id` | | 204. 409 `doctor_has_appointments` |
 | `GET /api/admin/settings` | | clinic profile (snake_case keys) |

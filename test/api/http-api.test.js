@@ -18,6 +18,13 @@ async function login() {
   return res.headers.get('Set-Cookie').split(';')[0];
 }
 
+/** Runs one turn over HTTP on the latest call and returns the system prompt the brain saw. */
+async function promptSeen(intent, callId = 'call-1') {
+  const res = await request('POST', '/api/agent/turn', { body: { call_id: callId, messages: [{ role: 'user', content: 'হ্যালো' }], intent } });
+  await res.text();
+  return world.ports.brain.requests.at(-1).messages[0].content;
+}
+
 const asAdmin = (cookie) => ({ Cookie: cookie, 'X-Requested-With': 'dentis' });
 
 beforeEach(async () => {
@@ -36,19 +43,17 @@ describe('public API', () => {
     assert.equal(site.doctors.length, 2);
   });
 
-  it('POST /api/session starts a call and returns only the short-lived key', async () => {
+  it('POST /api/session starts a call and returns only a one-use listen URL', async () => {
     const res = await request('POST', '/api/session', { headers: { 'CF-Connecting-IP': '203.0.113.5' } });
     assert.equal(res.status, 201);
-    assert.deepEqual(await res.json(), { call_id: 'call-1', client_secret: 'ek_test', model: 'gpt-realtime-mini', max_seconds: 300, greeting: 'আসসালামু আলাইকুম, Dentis Dental Care-এ আপনাকে স্বাগতম। আমি কীভাবে আপনাকে সাহায্য করতে পারি?', closing: 'কল করার জন্য আপনাকে ধন্যবাদ। আপনার দিনটি ভালো কাটুক। আল্লাহ হাফেজ।' });
+    assert.deepEqual(await res.json(), { call_id: 'call-1', listen_url: 'wss://stt.test/realtime?token=sutkn_test', max_seconds: 300, greeting: 'আসসালামু আলাইকুম, Dentis Dental Care-এ আপনাকে স্বাগতম। আমি কীভাবে আপনাকে সাহায্য করতে পারি?', closing: 'কল করার জন্য আপনাকে ধন্যবাদ। আপনার দিনটি ভালো কাটুক। আল্লাহ হাফেজ।' });
   });
 
-  it('POST /api/session takes an optional intent in a JSON body, and an empty body still works', async () => {
-    assert.equal((await request('POST', '/api/session', { body: { intent: 'booking' } })).status, 201);
-    assert.match(world.ports.gateway.sessions.at(-1).instructions, /pressed "Book an appointment"/);
-    assert.equal((await request('POST', '/api/session')).status, 201);
-    assert.doesNotMatch(world.ports.gateway.sessions.at(-1).instructions, /pressed "Book an appointment"/);
-    const bad = await request('POST', '/api/session', { raw: '{oops', headers: { 'Content-Type': 'application/json' } });
-    assert.equal(bad.status, 400);
+  it('POST /api/agent/turn takes the intent per turn: booking only when asked', async () => {
+    await request('POST', '/api/session');
+    assert.match(await promptSeen('booking'), /pressed "Book an appointment"/);
+    assert.doesNotMatch(await promptSeen(), /pressed "Book an appointment"/);
+    assert.doesNotMatch(await promptSeen('hack'), /pressed "Book an appointment"/);
   });
 
   it('POST /api/session answers 429 when an IP asks too often', async () => {
@@ -59,10 +64,17 @@ describe('public API', () => {
   });
 
   it('POST /api/session answers 500 without details when the voice provider fails', async () => {
-    world.ports.gateway.fail = true;
+    world.ports.voice.fail = true;
     const res = await request('POST', '/api/session');
     assert.equal(res.status, 500);
     assert.deepEqual(await res.json(), { error: { code: 'internal_error', message: 'Something went wrong.' } });
+  });
+
+  it('POST /api/session answers 503 not_configured when an API key is missing', async () => {
+    world.ports.brain.configured = false;
+    const res = await request('POST', '/api/session');
+    assert.equal(res.status, 503);
+    assert.equal((await res.json()).error.code, 'not_configured');
   });
 
   it('runs an agent tool and returns its result', async () => {
@@ -186,7 +198,7 @@ describe('admin API', () => {
     assert.equal((await updated.json()).content, 'From 40000 taka');
 
     await request('POST', '/api/session');
-    const { instructions } = world.ports.gateway.sessions.at(-1);
+    const instructions = await promptSeen();
     assert.match(instructions, /- Braces/);
     const fetched = await (await request('POST', '/api/agent/tools/get_skill', { body: { call_id: 'call-1', args: { title: 'Braces' } } })).json();
     assert.equal(fetched.skill.content, 'From 40000 taka');
@@ -277,9 +289,26 @@ describe('admin API', () => {
   it('an FAQ added in admin is answered by the agent through get_skill on the next call', async () => {
     await request('POST', '/api/admin/skills', { body: { title: 'Where to park', content: 'Behind the building.' }, headers: h });
     await request('POST', '/api/session');
-    assert.match(world.ports.gateway.sessions.at(-1).instructions, /- Where to park/);
+    assert.match(await promptSeen(), /- Where to park/);
     const answer = await (await request('POST', '/api/agent/tools/get_skill', { body: { call_id: 'call-1', args: { title: 'Where to park' } } })).json();
     assert.deepEqual([answer.ok, answer.skill.content], [true, 'Behind the building.']);
+  });
+});
+
+describe('admin doctors', () => {
+  let h;
+  beforeEach(async () => {
+    h = asAdmin(await login());
+  });
+
+  it('saves degree, gender and experience through the admin API and returns them', async () => {
+    const created = await (await request('POST', '/api/admin/doctors', { headers: h, body: { name_en: 'Dr. Sadia Karim', degree: 'BDS, MDS', degree_bn: 'বিডিএস', gender: 'female', experience_years: 6, days: [0], start_time: '10:00', end_time: '12:00' } })).json();
+    assert.deepEqual([created.degree, created.degree_bn, created.gender, created.experience_years], ['BDS, MDS', 'বিডিএস', 'female', 6]);
+    const updated = await (await request('PUT', `/api/admin/doctors/${created.id}`, { headers: h, body: { name_en: 'Dr. Sadia Karim', gender: 'male', experience_years: null, days: [0], start_time: '10:00', end_time: '12:00' } })).json();
+    assert.deepEqual([updated.gender, updated.experience_years, updated.degree], ['male', null, '']);
+    const bad = await request('POST', '/api/admin/doctors', { headers: h, body: { name_en: 'Dr. X', gender: 'robot', days: [0], start_time: '10:00', end_time: '12:00' } });
+    assert.equal(bad.status, 400);
+    assert.equal((await bad.json()).error.code, 'doctor_gender_invalid');
   });
 });
 
@@ -308,7 +337,7 @@ describe('admin agent prompt', () => {
     const session = await (await request('POST', '/api/session', { headers: { 'CF-Connecting-IP': '203.0.113.9' } })).json();
     assert.equal(session.greeting, 'Salam from Dentis Dental Care.');
     assert.equal(session.closing, 'Dhonnobad for calling Dentis Dental Care.');
-    const prompt = world.ports.gateway.sessions.at(-1).instructions;
+    const prompt = await promptSeen(undefined, session.call_id);
     assert.match(prompt, /Dhonnobad for calling Dentis Dental Care\./);
     assert.match(prompt, /exactly the phone_spoken text/);
   });
@@ -318,7 +347,7 @@ describe('admin agent prompt', () => {
     assert.equal(saved.status, 200);
     assert.equal((await saved.json()).instructions, 'You are Nila at {clinic}.');
     await request('POST', '/api/session');
-    const prompt = world.ports.gateway.sessions.at(-1).instructions;
+    const prompt = await promptSeen();
     assert.ok(prompt.startsWith('You are Nila at Dentis Dental Care.'));
     assert.match(prompt, /Greet: "Salam, Nila here\."/);
     assert.match(prompt, /Never give medical advice/);

@@ -3,18 +3,19 @@ import { head } from '../ui.js';
 
 /** Short engineering overview for reviewers: one diagram, the rules in one place, what breaks, what is missing. */
 export function howItWorksView(view) {
-  const lanes = ['Browser', 'Worker', 'OpenAI Realtime', 'D1'];
+  const lanes = ['Browser', 'Worker', 'ElevenLabs · OpenAI', 'D1'];
   const msgs = [ // [from, to, label, reply?]
     [0, 1, '1  start call'],
-    [1, 3, '2  load prompt data'],
-    [1, 2, '3  create ephemeral key'],
-    [1, 0, '4  key, greeting, closing', true],
-    [0, 2, '5  audio both ways (WebRTC)'],
-    [2, 0, '6  tool call', true],
-    [0, 1, '7  run tool'],
-    [1, 3, '8  validate, read or write'],
-    [1, 0, '9  result', true],
-    [0, 1, '10  send transcript at hang-up'],
+    [1, 2, '2  one-use listen token'],
+    [1, 0, '3  token, greeting, closing', true],
+    [0, 2, '4  mic audio → Bangla text (Scribe)'],
+    [0, 1, '5  caller turn → /api/agent/turn'],
+    [1, 2, '6  GPT mini streams reply + tool calls'],
+    [1, 3, '7  run tools, validate, read or write'],
+    [1, 0, '8  reply text, sentence by sentence', true],
+    [0, 2, '9  each sentence → ElevenLabs voice'],
+    [2, 0, '10  streamed audio, played at once', true],
+    [0, 1, '11  send transcript at hang-up'],
   ];
   const W = 900, left = 70, gap = 253, top = 52, row = 32;
   const x = (n) => left + n * gap;
@@ -29,16 +30,16 @@ export function howItWorksView(view) {
   </svg>`;
 
   const rules = [
-    ['Facts come from code', 'The model asks 11 server tools. Prices, hours, slots and bookings come from D1 and are checked in the domain layer, so the agent cannot invent them.'],
+    ['Facts come from code', 'The model asks 10 server tools, run on the server inside the turn. Prices, hours, slots and bookings come from D1 and are checked in the domain layer, so the agent cannot invent them.'],
     ['Knowledge is chosen by title', 'The prompt lists only the entry titles. The model picks the ones a question needs and fetches their details. Staff write each entry in one plain form, in English or Bangla.'],
     ['Numbers are spoken by the server', 'Every phone number is saved first and read back from the tool result as English digit words, so it is never said in Bangla and a wrong number is caught at once.'],
     ['Persona is editable, rules are not', 'Staff edit tone, greeting and closing. Flow, safety and scope are code, added last, and win over the persona.'],
-    ['Secrets stay on the server', 'The browser only gets a short-lived key. Audio goes browser to OpenAI and never through the Worker.'],
+    ['Secrets stay on the server', 'The browser only gets a one-use speech token. The OpenAI and ElevenLabs keys never leave the Worker, which also streams the voice audio.'],
     ['Bounded', 'A call ends at 5 minutes; silence gets a nudge at 25 s and a hang-up at 50 s. 10 calls per IP per hour.'],
   ];
   const breaks = [
-    ['OpenAI session fails', 'Retry panel. Call marked failed.'],
-    ['Connection drops', 'Transcript so far is saved.'],
+    ['A provider key is missing or the session fails', 'Clear message and a retry panel. Call marked failed.'],
+    ['Connection drops', 'The speech connection reconnects up to 3 times, then the transcript so far is saved.'],
     ['A tool fails', 'The agent is told to offer a human callback, so it cannot confirm a booking that did not happen.'],
     ['Slot taken meanwhile', 'The database rejects the second booking and the agent offers other times.'],
   ];

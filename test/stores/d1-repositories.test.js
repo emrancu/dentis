@@ -151,6 +151,18 @@ describe('D1 scheduling repositories', () => {
     await assert.rejects(patients.insert(Patient.register({ fullName: 'Duplicate', phone: '01712345678', now })), /UNIQUE/);
   });
 
+  it('round-trips a doctor\'s degree, gender and experience through the real SQL and migration', async () => {
+    const d = await doctors.insert(new Doctor({ nameEn: 'Dr. Sadia', degree: 'BDS, MDS', degreeBn: 'বিডিএস', gender: 'female', experienceYears: 6 }));
+    const loaded = await doctors.findById(d.id);
+    assert.deepEqual([loaded.degree, loaded.degreeBn, loaded.gender, loaded.experienceYears], ['BDS, MDS', 'বিডিএস', 'female', 6]);
+    loaded.gender = '';
+    loaded.experienceYears = null;
+    await doctors.save(loaded);
+    const again = await doctors.findById(d.id);
+    assert.deepEqual([again.gender, again.experienceYears], ['', null]);
+    await doctors.remove(d.id);
+  });
+
   it('round-trips doctors including their days', async () => {
     const d = await doctors.insert(new Doctor({ nameEn: 'Dr. Nusrat', nameBn: 'ডা. নুসরাত', days: [6, 0, 1], startTime: '10:00', endTime: '17:00' }));
     const loaded = await doctors.findById(d.id);

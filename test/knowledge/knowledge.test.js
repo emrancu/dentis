@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
-import { buildWorld, startCall } from '../support/fixtures.js';
+import { buildWorld, promptOf, startCall } from '../support/fixtures.js';
 
 let world;
 let s;
@@ -93,14 +93,12 @@ describe('what the website and the agent see', () => {
   it('the agent sees every entry in the prompt and can fetch it', async () => {
     await add({ title: 'Where to park' });
     assert.equal((await run('get_skill', { title: 'Where to park' })).ok, true);
-    await startCall(world, '2.2.2.2');
-    assert.match(world.ports.gateway.sessions.at(-1).instructions, /- Where to park/);
+    assert.match(await promptOf(world, { ip: '2.2.2.2' }), /- Where to park/);
   });
 
   it('every enabled title is in the prompt however many there are', async () => {
     for (let i = 0; i < 60; i++) await add({ title: `Extra topic ${String(i).padStart(2, '0')}` });
-    await startCall(world, '3.3.3.3');
-    const prompt = world.ports.gateway.sessions.at(-1).instructions;
+    const prompt = await promptOf(world, { ip: '3.3.3.3' });
     assert.match(prompt, /- Extra topic 00/);
     assert.match(prompt, /- Extra topic 59/);
   });

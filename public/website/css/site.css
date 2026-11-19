@@ -217,6 +217,7 @@ html[lang='bn'] .kicker { letter-spacing: 0.02em; text-transform: none; font-siz
 .avatar { display: grid; place-items: center; width: 80px; height: 80px; margin: 0 auto 18px; border-radius: 50%; color: #fff; font-family: var(--display); font-size: 1.6rem; background: linear-gradient(135deg, var(--teal-400), var(--teal-600)); }
 .doctor h3 { font-size: 1.15rem; }
 .doctor-role { color: var(--teal-700); font-weight: 500; margin-top: 6px; font-size: 0.95rem; }
+.doctor-degree { color: var(--muted, #5b6b73); margin-top: 2px; font-size: 0.85rem; }
 .doctor-hours { margin-top: 12px; color: var(--ink-2); font-size: 0.9rem; }
 .visit { display: grid; grid-template-columns: 1.3fr 1fr; gap: 56px; align-items: center; }
 .visit h2 { margin-bottom: 28px; }

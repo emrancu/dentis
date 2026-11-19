@@ -12,3 +12,4 @@ export class NotFoundError extends DomainError {}
 export class ConflictError extends DomainError {}
 export class UnauthorizedError extends DomainError {}
 export class RateLimitError extends DomainError {}
+export class NotConfiguredError extends DomainError {}

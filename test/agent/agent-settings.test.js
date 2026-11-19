@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 import { MAX_GREETING, MAX_INSTRUCTIONS } from '../../src/agent/agent-prompt.js';
-import { buildWorld, startCall } from '../support/fixtures.js';
+import { buildWorld, promptOf } from '../support/fixtures.js';
 
 let world;
 let s;
@@ -82,23 +82,19 @@ describe('AgentSettings.preview', () => {
 });
 
 describe('an edit reaches the next call', () => {
-  it('uses the saved persona and greeting for a new session, and a call already started keeps its prompt', async () => {
-    await startCall(world, '1.1.1.1');
-    const before = world.ports.gateway.sessions[0].instructions;
+  it('uses the saved persona and greeting from the next turn', async () => {
+    const before = await promptOf(world, { ip: '1.1.1.1' });
     await s.agentSettings.update({ instructions: 'You are Nila at {clinic}.', greeting: 'Salam, Nila here.' });
-    await startCall(world, '1.1.1.2');
-    const after = world.ports.gateway.sessions[1].instructions;
+    const after = await promptOf(world, { ip: '1.1.1.2' });
     assert.ok(after.startsWith('You are Nila at Dentis Dental Care.'));
     assert.match(after, /Greet: "Salam, Nila here\."/);
     assert.match(after, /Never give medical advice/);
     assert.match(before, /virtual receptionist of Dentis Dental Care/);
-    assert.equal(world.ports.gateway.sessions[0].instructions, before);
   });
 
   it('a reset goes back to the default on the next call', async () => {
     await s.agentSettings.update({ instructions: 'Custom persona', greeting: '' });
     await s.agentSettings.update({ instructions: '', greeting: '' });
-    await startCall(world, '1.1.1.3');
-    assert.match(world.ports.gateway.sessions.at(-1).instructions, /virtual receptionist of Dentis Dental Care/);
+    assert.match(await promptOf(world, { ip: '1.1.1.3' }), /virtual receptionist of Dentis Dental Care/);
   });
 });

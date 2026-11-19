@@ -26,20 +26,19 @@ This README is for engineers. It explains how the system is built and why. Rules
 ## Architecture
 
 ```
-                         audio (WebRTC)
-  Browser  ◀──────────────────────────────────────────▶  OpenAI Realtime
-  (website)  ── data channel: events, tool calls ───────▶  (gpt-realtime-mini)
-     │  ▲
-     │  │ JSON over HTTPS
-     ▼  │
-  Cloudflare Worker ──▶ D1 (SQLite)         static files: Workers Assets (public/)
-  (src/, vanilla JS)
+   mic ──▶ ElevenLabs Scribe v3 Live (Bangla, WebSocket, one-use token)
+   Browser ◀─────────────────────────────────────────────┘
+   (website)  ── caller turn ──▶ Worker ──▶ OpenAI GPT mini (streamed, tools)
+      ▲  ▲                         │  └──▶ D1 (tools run here)
+      │  └── reply text, SSE ◀─────┘
+      └──── PCM audio, per sentence ◀── Worker ◀── ElevenLabs eleven_v4_turbo
+   Static files: Workers Assets (public/)         (src/, vanilla JS)
 ```
 
-- **Audio never touches our server.** The browser opens a WebRTC connection straight to OpenAI. The Worker only mints a short-lived client key for it, so the real API key stays on the server.
-- **The model has no facts of its own.** Prices, hours, slots and bookings come from tool calls. The browser relays each tool call to the Worker (`POST /api/agent/tools/:name`), the Worker runs the real use case against D1, and the result goes back to the model.
+- **Three providers, one job each.** ElevenLabs Scribe v3 Live hears Bangla, an OpenAI mini model thinks and calls tools, ElevenLabs `eleven_v4_turbo` speaks. The brain is behind `OpenAIBrain` and the voice behind `ElevenLabsVoice`, so either can be swapped.
+- **Keys stay on the server.** The browser gets only a one-use, 15-minute Scribe token. The OpenAI and ElevenLabs keys never leave the Worker, which also streams the speech audio to the browser.
+- **The model has no facts of its own.** Prices, hours, slots and bookings come from tool calls. The Worker runs each tool against D1 inside the turn, and the result goes back to the model.
 - **One Worker, no framework, no build step, no runtime dependencies.** Vanilla JS ES modules in the Worker and in the browser. `wrangler` is the only dev dependency.
-- **Free-tier friendly:** Workers, D1 and static assets. The only paid dependency is the OpenAI key.
 
 ## Repository layout
 
@@ -47,12 +46,12 @@ Code is grouped by part of the app. A folder holds the rules, use cases and data
 
 ```
 src/
-  index.js              Worker entry: builds D1 stores, OpenAI gateway, security, then the app
+  index.js              Worker entry: builds D1 stores, OpenAI brain, ElevenLabs voice, security, then the app
   composition.js        wires stores into use cases (the only place that knows both)
   app.js                the HTTP app: website routes + admin routes + the admin guard
   scheduling/           doctors, appointments, slots, availability, phone numbers, patients (rules, use cases, store.js)
   calls/                calls, transcript turns, extractions, callback requests, status rules (rules, use cases, store.js)
-  agent/                prompt builder, tool definitions, tool executor, editable agent settings, OpenAI gateway
+  agent/                prompt builder, tool definitions, tool executor, editable agent settings, turn runner, OpenAI brain, ElevenLabs voice
   knowledge/            agent knowledge entries ("skills") and the get_skill use case (+ store.js)
   clinic/               clinic profile and settings (+ store.js)
   admin/                staff API: routes/ (one file per area), login, session guard, dashboard queries
@@ -99,25 +98,33 @@ When the pull request is merged, `outcomes/<id>.md` records what was done, open 
 
 ```
 1  Browser   getUserMedia (mic)                    → mic_denied / no_mic handled before anything else
-2  Browser   POST /api/session {intent}            → StartCall
-3  Worker    rate limit, create call row, build prompt, mint OpenAI client key (TTL 300 s)
-4  Browser   WebRTC offer → OpenAI /v1/realtime/calls with the client key; opens data channel
-5  Browser   on channel open: speaks the scripted greeting, starts the timer and silence watch
-6  Model     function calls → Browser → POST /api/agent/tools/:name → Worker → D1 → result → Model
-7  Model     end_call → Browser speaks the scripted closing line, hangs up when the audio ends
-8  Browser   POST /api/calls/:id/finish {turns, reason} → transcript saved, status derived
+2  Browser   POST /api/session                     → StartCall: key check, rate limit, call row, one-use Scribe URL
+3  Browser   opens the Scribe WebSocket; the mic is streamed as 16 kHz PCM (AudioWorklet)
+4  Browser   speaks the scripted greeting (POST /api/voice/speak), starts the timer and silence watch
+5  Scribe    partial transcripts (barge-in) and a committed transcript when the caller's turn is over
+6  Browser   POST /api/agent/turn {call_id, messages, intent}  → Worker streams GPT mini, runs tools on D1
+7  Worker    SSE: text deltas, new history (tool rounds, final reply), end_call
+8  Browser   cuts the text into sentences; each goes to POST /api/voice/speak at once; PCM plays gapless
+9  Model     end_call → Browser speaks the scripted closing line, hangs up when the audio ends
+10 Browser   POST /api/calls/:id/finish {turns, reason} → transcript saved, status derived
 ```
 
-The browser side is `public/website/js/voice.js` (state machine: `idle → connecting → live → ended | error`). Pure logic is split into small testable modules: `transcript.js` (events → transcript), `idle.js` (silence clock), `call-messages.js` (the messages we send on the data channel).
+The browser side is `public/website/js/voice.js` (state machine: `idle → connecting → live → ended | error`, plus a phase while live: listening, thinking, speaking). Pure logic is split into small testable modules: `sentences.js` (streamed text to sentences), `sse.js`, `pcm.js` (PCM decoding and gapless playback), `scribe.js` (Scribe messages), `transcript.js`, `idle.js` (silence clock), `call-messages.js`. `mic-worklet.js` is the AudioWorklet that downsamples the mic.
+
+**Feeling real time.** Every step streams. The reply is spoken from its first clause, not its first full sentence. Before a slow tool the agent says a short phrase ("এক সেকেন্ড, দেখে নিচ্ছি।") so there is never silence. The clinic address, phone, hours and doctors are in the prompt, so the common questions need no tool round trip. The date sits at the end of the prompt so OpenAI can cache the long fixed part.
+
+**Barge-in.** While the agent thinks or speaks, a partial transcript from Scribe plus real sound on the caller's mic aborts the turn: the SSE request is cancelled, the audio player stops at once and queued sentences are dropped. The history keeps only what was actually spoken. Echo cancellation is on; headphones give the best result.
+
+**Recovery.** A dropped speech socket gets a new one-use URL (`POST /api/voice/listen`), up to 3 times. A failed brain turn gets a spoken apology and the call goes on; three failures in a row end it. A failed speech request skips that sentence.
 
 ### Session creation (`calls/call-records.js`, `StartCall`)
 
 - **Rate limit:** 10 calls per hour per network. The IP is hashed (SHA-256 with a prefix) and only the hash is stored in `calls.ip_hash`.
 - **Stale calls:** a call still `in_progress` after 30 minutes is marked `incomplete` on the next session start.
-- **Prompt:** built fresh for every call from live data: clinic profile, active doctors, enabled knowledge titles and today's date in Dhaka. An edit in admin applies to the next call. A call already running never changes.
-- **Intent:** the hero button sends `booking`, which adds an instruction to go straight to the booking flow. Any other value is a general call.
-- **Realtime session settings** (`agent/realtime-gateway.js`): model `gpt-realtime-mini`, voice `marin`, input transcription `gpt-4o-mini-transcribe` with `language: 'bn'`, noise reduction `near_field`, `semantic_vad` with `eagerness: 'low'` (callers pause between digits of a phone number and must not be cut off), `tool_choice: 'auto'`.
-- If minting the key fails, the call is marked `failed` and the browser shows a retry panel.
+- **Prompt:** built fresh for every turn (`agent/agent-turn.js`) from live data: clinic profile, active doctors, enabled knowledge titles and today's date in Dhaka. An edit in admin applies from the next turn.
+- **Intent:** the browser sends it with every turn. The hero button sends `booking`, which adds an instruction to go straight to the booking flow. Any other value is a general call.
+- **Provider settings:** brain Gemini `gemini-2.5-flash` when `GEMINI_API_KEY` is set (free tier, OpenAI-compatible endpoint, `GEMINI_MODEL` overrides; speed not yet measured), else `gpt-4.1-mini` (`OPENAI_MODEL` overrides; a `gpt-5*` model automatically gets minimal reasoning and low verbosity). Measured through the Worker, `gpt-4.1-mini` speaks its first word in 0.9-1.2 s and steadily, while `gpt-5-mini` ranged 1.0-2.8 s. Speech-to-text `scribe_v3_live`, `language_code=bn`, `commit_strategy=turn_prediction` (the model judges when the caller has finished, so a pause between phone digits is not the end of a turn) with a 0.8 s silence fallback. Text-to-speech `eleven_v4_turbo` (`ELEVENLABS_TTS_MODEL` overrides), raw `pcm_24000`, `language_code=bn`, default voice the premade "Sarah" (`ELEVENLABS_VOICE_ID` overrides with a Bangla library voice). Flash v2.5 is faster but its language list has no Bangla; Eleven v4 Turbo lists Bengali and is the real-time model.
+- If a key is missing, `POST /api/session` answers 503 `not_configured` and the page says so. If minting the Scribe URL fails, the call is marked `failed` and the browser shows a retry panel.
 
 ### The prompt (`agent/prompt.js` and `agent/agent-prompt.js`)
 
@@ -175,7 +182,7 @@ The prompt lists the **title of every enabled knowledge entry** and never the de
 
 ### Transcript and call status
 
-- `TranscriptBuilder` turns Realtime events (item created, input transcription completed, output transcript delta and done) into ordered, speaker-labelled turns (`patient` or `agent`) with timestamps. It tolerates both the older and newer event names.
+- `TranscriptBuilder` keeps ordered, speaker-labelled turns (`patient` or `agent`) with timestamps. The patient turn is the committed Scribe transcript, the agent turn is the text that was actually spoken, cut at a barge-in.
 - `POST /api/calls/:id/finish` stores up to 500 turns of up to 2000 characters, fixes the end time and duration, and derives the status. It is **idempotent**: a second finish returns the call unchanged.
 - Status rule (`calls/call.js`, `deriveCallStatus`):
 
@@ -277,7 +284,7 @@ Full contract: [contracts/http-api.md](agentic-hub/contracts/http-api.md). Error
 
 ## Security
 
-- **Secrets** live only in Wrangler secrets (`OPENAI_API_KEY`, `ADMIN_ACCESS_KEY`) and a git-ignored `.dev.vars`. Nothing secret is in the repo, and a scan for key patterns is clean.
+- **Secrets** live only in Wrangler secrets (`OPENAI_API_KEY`, `ELEVENLABS_API_KEY`, `ADMIN_ACCESS_KEY`) and a git-ignored `.dev.vars`. Nothing secret is in the repo, and a scan for key patterns is clean.
 - **The browser never sees the OpenAI key.** It gets a client key that expires after 300 s.
 - **Admin login:** one access key, compared in constant time. The session cookie is `<expiry>.<HMAC-SHA256>` and carries no user data, `HttpOnly`, `SameSite=Strict`, `Secure` on HTTPS, valid 12 hours.
 - **CSRF:** writes also require the `X-Requested-With: dentis` header.
@@ -293,7 +300,7 @@ Full contract: [contracts/http-api.md](agentic-hub/contracts/http-api.md). Error
 | `test/scheduling`, `knowledge`, `clinic`, `calls`, `agent`, `shared` | rules and use cases: phone, slot, availability, status derivation, prompt contents, every tool on its success and failure paths, with in-memory ports |
 | `test/stores` | the **real SQL and migrations**, run on a `node:sqlite` stand-in for D1 |
 | `test/admin`, `test/website`, `test/api` | the HTTP API end to end: sessions, tools, finish, admin auth, CRUD, the SEO home page, HMAC |
-| `test/frontend` | transcript building from Realtime events, the silence clock, copy completeness in both languages, and every admin page drawn against the real in-memory API |
+| `test/frontend` | transcript building, sentence chunking, SSE, PCM playback, Scribe messages, the silence clock, copy completeness in both languages, and every admin page drawn against the real in-memory API |
 | `test/architecture.test.js` | each part imports only what it may |
 
 A bug fix starts with a failing test.
@@ -302,30 +309,31 @@ A bug fix starts with a failing test.
 
 ```bash
 npm install
-cp .dev.vars.example .dev.vars     # put in OPENAI_API_KEY and an ADMIN_ACCESS_KEY
+cp .dev.vars.example .dev.vars     # put in OPENAI_API_KEY, ELEVENLABS_API_KEY and an ADMIN_ACCESS_KEY
 npm run db:init:local              # apply migrations: schema, demo clinic, knowledge
 npm run db:samples:local           # optional: invented sample calls
 npm run dev                        # http://localhost:8787   (admin: /admin)
 npm test
 ```
 
-To run without real keys: `npx wrangler dev --var OPENAI_API_KEY:x --var ADMIN_ACCESS_KEY:local-test-key` (command-line vars win over `.dev.vars`, and a fake key avoids real OpenAI calls).
+To run without real keys: `npx wrangler dev --var OPENAI_API_KEY:x --var ADMIN_ACCESS_KEY:local-test-key` (a call then answers "not configured" for the missing ElevenLabs key) (command-line vars win over `.dev.vars`, and a fake key avoids real OpenAI calls).
 
 ```bash
 npx wrangler d1 create dentis          # copy the database_id into wrangler.jsonc
 npm run db:init:remote                 # applies pending migrations once
 npm run db:samples:remote              # optional sample calls
 npx wrangler secret put OPENAI_API_KEY
+npx wrangler secret put ELEVENLABS_API_KEY
 npx wrangler secret put ADMIN_ACCESS_KEY
 npm run deploy
 ```
 
-Add a Cloudflare rate-limiting rule on `POST /api/admin/login` in production. The OpenAI key needs a credit balance for calls to work.
+Add a Cloudflare rate-limiting rule on `POST /api/admin/login` in production. The OpenAI and ElevenLabs accounts need credit for calls to work.
 
 ## Design decisions and trade-offs
 
-- **WebRTC straight from the browser.** Lowest latency and no audio proxy to run, at the cost that tool calls and the transcript pass through the browser. Tool calls are therefore authorised only by the call id (see limits).
-- **A realtime speech model, not a separate speech-to-text, LLM and text-to-speech chain.** Natural turn-taking and interruption come built in, and one model handles Bangla and mixed English. The cost is less control over exact wording, which is why greeting, nudge and closing are scripted and phone numbers come from the server.
+- **Speech in direct from the browser, speech out through the Worker.** The mic goes straight to Scribe over a one-use token (lowest latency, no audio proxy for input). The voice goes through the Worker so the ElevenLabs key stays secret. The chat history is held by the browser and sent each turn, so the Worker stays stateless. The Worker rejects `system` messages, so the history cannot change the rules, but the caller can edit it. Tool calls are authorised only by the call id (see limits).
+- **A separate speech-to-text, LLM and text-to-speech chain, not one realtime model.** The owner asked for ElevenLabs voices and a GPT mini brain with tools. Each part is swappable and the exact wording is under our control. The cost is more latency than a single realtime model and barge-in we build ourselves. Latency is cut by streaming at every step: the first sentence is spoken while the rest is still being written.
 - **Facts through tools, behaviour through the prompt.** Anything that must be right (slots, bookings, phone numbers, the call status) is code that returns a result. The prompt only shapes tone and flow. The model is told the code's answer is the truth.
 - **Titles in the prompt, details by tool, no search.** The model is better at choosing from a short title list than a keyword search is at guessing, and there is nothing to tune. If the list ever gets very long, the prompt gets longer with it.
 - **Outcomes recorded as they happen.** The call status does not depend on parsing the transcript or on the browser delivering it.
@@ -335,6 +343,7 @@ Add a Cloudflare rate-limiting rule on `POST /api/admin/login` in production. Th
 
 ## Known limits
 
+- **Nothing here has been run against the live OpenAI or ElevenLabs APIs.** The code follows their current docs and is tested against fakes. The first real call may need small fixes (model names, the `eleven_v4_turbo` dialogue endpoint, the default voice's Bangla accent).
 - **Bangla quality is judged by ear, not measured.** The Bangla copy has not been reviewed by a native speaker. Accent and number recognition depend on the model, so read-back is the safety net.
 - **Tool calls are authorised only by the call id.** Signing them to the session is the next hardening step. The transcript is built in the browser, so the server cannot verify it.
 - **Staying on topic and refusing medical advice come from the prompt,** so they are not guaranteed. Latency and cost of the mini model are not measured.

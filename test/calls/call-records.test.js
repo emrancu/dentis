@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 import { MAX_CALL_SECONDS, MAX_SESSIONS_PER_HOUR } from '../../src/calls/call-records.js';
-import { AGENT_TOOLS } from '../../src/agent/tools.js';
-import { VALID_PHONE, buildWorld, startCall } from '../support/fixtures.js';
+import { VALID_PHONE, buildWorld, promptOf, startCall } from '../support/fixtures.js';
 
 let world;
 let s;
@@ -15,34 +14,30 @@ beforeEach(async () => {
 });
 
 describe('StartCall', () => {
-  it('creates an in-progress call and returns the short-lived key', async () => {
+  it('creates an in-progress call and returns the one-use listen URL, never a key', async () => {
     const r = await s.startCall.execute({ ip: '1.2.3.4' });
-    assert.deepEqual([r.callId, r.clientSecret, r.model, r.maxSeconds], ['call-1', 'ek_test', 'gpt-realtime-mini', MAX_CALL_SECONDS]);
+    assert.deepEqual([r.callId, r.listenUrl, r.maxSeconds], ['call-1', 'wss://stt.test/realtime?token=sutkn_test', MAX_CALL_SECONDS]);
     const call = await world.ports.calls.findById('call-1');
     assert.equal(call.status, 'in_progress');
     assert.match(call.ipHash, /^[0-9a-f]{64}$/);
     assert.notEqual(call.ipHash, '1.2.3.4');
   });
 
-  it('gives the model the clinic prompt, doctors, enabled skills only, and every tool', async () => {
-    await s.startCall.execute({ ip: '1.2.3.4' });
-    const { instructions, tools } = world.ports.gateway.sessions[0];
+  it('gives the brain the clinic prompt, doctors and enabled skills only', async () => {
+    const instructions = await promptOf(world);
     assert.match(instructions, /Dentis Dental Care/);
     assert.match(instructions, /Dr\. Tanvir Rahman/);
     assert.match(instructions, /Scaling and polishing/);
     assert.doesNotMatch(instructions, /Secret draft/);
     assert.match(instructions, /2026-11-14/);
-    assert.equal(tools, AGENT_TOOLS);
   });
 
-  it('starts in booking mode only when asked, and ignores unknown intents', async () => {
-    await s.startCall.execute({ ip: '1.1.1.1', intent: 'booking' });
-    await s.startCall.execute({ ip: '1.1.1.2', intent: 'general' });
-    await s.startCall.execute({ ip: '1.1.1.3', intent: 'hack' });
-    await s.startCall.execute({ ip: '1.1.1.4' });
-    const [booking, ...others] = world.ports.gateway.sessions.map((x) => /pressed "Book an appointment"/.test(x.instructions));
-    assert.equal(booking, true);
-    assert.deepEqual(others, [false, false, false]);
+  it('is in booking mode only when asked, and ignores unknown intents', async () => {
+    const isBooking = async (intent, ip) => /pressed "Book an appointment"/.test(await promptOf(world, { intent, ip }));
+    assert.equal(await isBooking('booking', '1.1.1.1'), true);
+    assert.equal(await isBooking('general', '1.1.1.2'), false);
+    assert.equal(await isBooking('hack', '1.1.1.3'), false);
+    assert.equal(await isBooking(undefined, '1.1.1.4'), false);
   });
 
   it('allows a limited number of sessions per IP per hour', async () => {
@@ -58,15 +53,23 @@ describe('StartCall', () => {
   });
 
   it('marks the call failed when the voice provider is down', async () => {
-    world.ports.gateway.fail = true;
-    await assert.rejects(s.startCall.execute({ ip: '1.2.3.4' }), /gateway down/);
+    world.ports.voice.fail = true;
+    await assert.rejects(s.startCall.execute({ ip: '1.2.3.4' }), /voice down/);
     assert.equal((await world.ports.calls.findById('call-1')).status, 'failed');
   });
 
   it('reuses the clinic profile edited in settings on the next call', async () => {
     await s.clinic.update({ name_en: 'Smile House' });
-    await s.startCall.execute({ ip: '1.2.3.4' });
-    assert.match(world.ports.gateway.sessions[0].instructions, /Smile House/);
+    assert.match(await promptOf(world), /Smile House/);
+  });
+
+  it('says clearly that a key is missing and creates no call', async () => {
+    world.ports.voice.configured = false;
+    await assert.rejects(s.startCall.execute({ ip: '1.2.3.4' }), code('not_configured'));
+    world.ports.voice.configured = true;
+    world.ports.brain.configured = false;
+    await assert.rejects(s.startCall.execute({ ip: '1.2.3.4' }), code('not_configured'));
+    assert.equal(await world.ports.calls.findById('call-1'), null);
   });
 });
 

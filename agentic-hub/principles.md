@@ -6,7 +6,7 @@
    - `admin/`: the staff portal API. Routes are split by area in `admin/routes/`. The login guard and session cookie are here.
    - `website/`: the public site. `site-routes.js` for the page data, `call-routes.js` for the voice call (session, agent tools, finish), `home.js` for the SEO page.
    - `shared/`: errors, time, the router and response helpers. Imports nothing else.
-   - `admin/` and `website/` never import each other. Only `index.js` imports the outside adapters (`store.js` files, `agent/realtime-gateway.js`, `admin/security.js`). `composition.js` wires them to the use cases, `app.js` builds the HTTP app, `index.js` is the Worker entry.
+   - `admin/` and `website/` never import each other. Only `index.js` imports the outside adapters (`store.js` files, `agent/elevenlabs-voice.js`, `agent/openai-brain.js`, `admin/security.js`). `composition.js` wires them to the use cases, `app.js` builds the HTTP app, `index.js` is the Worker entry.
    A test (`test/architecture.test.js`) fails on a bad import.
 3. **Rules live with their business area.** Phone, date and time validation, slot rules, status rules and skill ranking are code in `scheduling/`, `knowledge/` and so on. Never in routes, SQL or the front end.
 4. **Typed errors.** Throw `DomainError` subclasses with a stable `code`. Adapters map them to an HTTP status or an agent tool result. Never match on messages.

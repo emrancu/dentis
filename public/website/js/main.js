@@ -61,7 +61,7 @@ function renderSite() {
     .map((d) => {
       const name = pick(lang, d.name_en, d.name_bn);
       const initials = d.name_en.replace(/^Dr\.?\s*/i, '').split(/\s+/).map((w) => w[0]).slice(0, 2).join('');
-      return `<article class="doctor reveal in"><span class="avatar" aria-hidden="true">${esc(initials)}</span><h3>${esc(name)}</h3><p class="doctor-role">${esc(pick(lang, d.specialty, d.specialty_bn))}</p><p class="doctor-hours">${esc(daysLabel(d.days, lang))} · ${esc(formatClockRange(d.start_time, d.end_time, lang))}</p></article>`;
+      return `<article class="doctor reveal in"><span class="avatar" aria-hidden="true">${esc(initials)}</span><h3>${esc(name)}</h3><p class="doctor-role">${esc(pick(lang, d.specialty, d.specialty_bn))}</p>${d.degree || d.degree_bn ? `<p class="doctor-degree">${esc(pick(lang, d.degree, d.degree_bn))}</p>` : ''}<p class="doctor-hours">${esc(daysLabel(d.days, lang))} · ${esc(formatClockRange(d.start_time, d.end_time, lang))}</p></article>`;
     })
     .join('');
 
@@ -99,7 +99,7 @@ const bars = [...wave.children];
 
 function renderStatus() {
   const state = panel.dataset.state;
-  $('#call-status').textContent = state === 'connecting' ? t(lang, 'call.connecting') : state === 'live' ? t(lang, 'call.live') : state === 'ended' ? t(lang, 'call.ended') : '';
+  $('#call-status').textContent = state === 'connecting' ? t(lang, 'call.connecting') : state === 'live' ? t(lang, `call.${call.phase}`) : state === 'ended' ? t(lang, 'call.ended') : '';
   if (state === 'error' && callError) $('#call-error').textContent = t(lang, `error.${callError}`);
 }
 
@@ -115,6 +115,10 @@ call.addEventListener('state', ({ detail }) => {
     $('#mute-btn').focus();
   }
   if (detail.state === 'error' || detail.state === 'ended') $('[data-restart]', panel.querySelector(`.when-${detail.state}`)).focus();
+});
+call.addEventListener('phase', () => {
+  panel.dataset.phase = call.phase;
+  renderStatus();
 });
 call.addEventListener('tick', ({ detail }) => {
   $('#call-timer').textContent = `${Math.floor(detail.seconds / 60)}:${String(detail.seconds % 60).padStart(2, '0')}`;

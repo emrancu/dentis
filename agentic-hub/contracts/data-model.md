@@ -6,7 +6,7 @@ Times are ISO 8601 UTC unless named `slot` (clinic-local `YYYY-MM-DDTHH:MM`).
 |---|---|---|
 | `settings` | `key` PK, `value` | Clinic profile and agent prompt as key/value |
 | `skills` | `id` PK, `title`, `content`, `enabled`, `updated_at` | Agent knowledge, for the agent only. Staff write it in English or Bangla, one plain form with no language fields |
-| `doctors` | `id` PK, `name_en`, `name_bn`, `specialty`, `specialty_bn`, `days` (JSON array 0=Sun…6=Sat), `start_time`, `end_time`, `active` | Who can be booked |
+| `doctors` | `id` PK, `name_en`, `name_bn`, `specialty`, `specialty_bn`, `degree`, `degree_bn`, `gender` (`male`, `female` or empty), `experience_years` (nullable), `days` (JSON array 0=Sun…6=Sat), `start_time`, `end_time`, `active` | Who can be booked |
 | `patients` | `id` PK, `full_name`, `phone` UNIQUE, `created_at` | The person behind calls |
 | `calls` | `id` PK (uuid), `started_at`, `ended_at`, `duration_s`, `status`, `patient_id` FK, `summary`, `ip_hash` | One record per call |
 | `call_extractions` | `call_id` PK FK, `patient_name`, `phone`, `reason_for_visit`, `preferred_datetime`, `intent`, `outcome`, `notes` | Structured fields |

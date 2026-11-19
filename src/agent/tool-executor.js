@@ -37,7 +37,7 @@ export class ToolExecutor {
         };
       },
       list_doctors: async () => ({
-        doctors: (await doctors.list()).filter((d) => d.active).map((d) => ({ name_en: d.nameEn, name_bn: d.nameBn, specialty: d.specialty, specialty_bn: d.specialtyBn, days: d.days, start_time: d.startTime, end_time: d.endTime })),
+        doctors: (await doctors.list()).filter((d) => d.active).map((d) => ({ name_en: d.nameEn, name_bn: d.nameBn, specialty: d.specialty, specialty_bn: d.specialtyBn, degree: d.degree, degree_bn: d.degreeBn, gender: d.gender, experience_years: d.experienceYears, days: d.days, start_time: d.startTime, end_time: d.endTime })),
       }),
       get_skill: (a) => knowledge.get({ title: a.title }),
       check_availability: (a) => checkAvailability.execute({ date: a.date, doctorName: a.doctor_name, period: a.period }),

@@ -1,5 +1,8 @@
 import { ConflictError, NotFoundError, ValidationError } from '../shared/errors.js';
-import { addDays, dhakaParts, requireDate, WEEKDAYS_BN } from '../shared/time.js';
+import { addDays, dhakaParts, requireDate, WEEKDAYS_BN, weekdayOf } from '../shared/time.js';
+
+/** The weekday of a slot like "2026-11-18T10:00", so the agent reads the real day aloud instead of working it out. */
+const weekdayBnOf = (slot) => WEEKDAYS_BN[weekdayOf(String(slot).slice(0, 10))];
 import { PhoneNumber } from './phone-number.js';
 import { Slot } from './slot.js';
 import { Appointment } from './appointment.js';
@@ -107,6 +110,7 @@ export class BookAppointment {
     return {
       appointment_id: appointment.id,
       slot: slot.toString(),
+      weekday_bn: weekdayBnOf(slot.toString()),
       doctor_name_en: opening.doctor.nameEn,
       doctor_name_bn: opening.doctor.nameBn,
       patient_name: patient.fullName,
@@ -138,7 +142,7 @@ export class RescheduleAppointment {
     appointment.moveTo(slot, opening.doctor.id);
     await this.appointments.save(appointment);
     await this.notes.record(callId, { intent: 'reschedule', preferredDatetime: slot.toString() }, Outcome.RESCHEDULED);
-    return { appointment_id: appointment.id, slot: slot.toString(), doctor_name_en: opening.doctor.nameEn, doctor_name_bn: opening.doctor.nameBn };
+    return { appointment_id: appointment.id, slot: slot.toString(), weekday_bn: weekdayBnOf(slot.toString()), doctor_name_en: opening.doctor.nameEn, doctor_name_bn: opening.doctor.nameBn };
   }
 }
 
@@ -152,6 +156,6 @@ export class CancelAppointment {
     appointment.cancel();
     await this.appointments.save(appointment);
     await this.notes.record(callId, { intent: 'cancel' }, Outcome.CANCELLED);
-    return { appointment_id: appointment.id, slot: appointment.slot };
+    return { appointment_id: appointment.id, slot: appointment.slot, weekday_bn: weekdayBnOf(appointment.slot) };
   }
 }

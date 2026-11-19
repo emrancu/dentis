@@ -15,13 +15,36 @@ export class FixedClock {
   set(iso) { this.current = new Date(iso); }
 }
 
-export class FakeGateway {
-  sessions = [];
+/** ElevenLabs stand-in: hands out a listen URL and records what was spoken. */
+export class FakeVoice {
+  configured = true;
   fail = false;
-  async createClientSecret(session) {
-    if (this.fail) throw new Error('gateway down');
-    this.sessions.push(session);
-    return { value: 'ek_test', model: 'gpt-realtime-mini' };
+  spoken = [];
+  async createListenUrl() {
+    if (this.fail) throw new Error('voice down');
+    return 'wss://stt.test/realtime?token=sutkn_test';
+  }
+  async speak(text) {
+    this.spoken.push(text);
+    return new Response(new Uint8Array([1, 2, 3, 4]));
+  }
+}
+
+/**
+ * OpenAI stand-in. `replies` is a queue of replies; each reply is a list of text deltas,
+ * or `{ toolCalls: [{ id, name, arguments }] }`. With the queue empty it answers "ঠিক আছে।".
+ * Every request is kept in `requests`, so tests can read the system prompt and the history.
+ */
+export class FakeBrain {
+  configured = true;
+  requests = [];
+  replies = [];
+  async *stream({ messages, tools }) {
+    this.requests.push({ messages, tools });
+    const reply = this.replies.shift() ?? ['ঠিক আছে।'];
+    if (reply.toolCalls) return yield { type: 'done', toolCalls: reply.toolCalls };
+    for (const delta of reply) yield { type: 'text', delta };
+    yield { type: 'done', toolCalls: [] };
   }
 }
 
@@ -36,7 +59,8 @@ export async function buildWorld({ now = NOW } = {}) {
     skills: new InMemorySkills(),
     settings: new InMemorySettings(),
     callbacks: new InMemoryCallbacks(),
-    gateway: new FakeGateway(),
+    voice: new FakeVoice(),
+    brain: new FakeBrain(),
     security: new WebCryptoSecurity({ secret: 'test-secret' }),
     clock: new FixedClock(now),
     accessKey: ACCESS_KEY,
@@ -54,4 +78,11 @@ export async function buildWorld({ now = NOW } = {}) {
 /** Starts a call and returns its id. */
 export async function startCall(world, ip = '203.0.113.7') {
   return (await world.services.startCall.execute({ ip })).callId;
+}
+
+/** Starts a call, runs one turn, and returns the system prompt the brain saw. */
+export async function promptOf(world, { ip = '203.0.113.7', intent } = {}) {
+  const callId = await startCall(world, ip);
+  const turn = await world.services.runAgentTurn.start({ callId, messages: [{ role: 'user', content: 'হ্যালো' }], intent });
+  return turn.system.content;
 }
